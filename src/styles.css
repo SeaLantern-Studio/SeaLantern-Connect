@@ -37,11 +37,19 @@ button, input { font: inherit; letter-spacing: 0; }
 button { color: inherit; }
 
 .app-shell { height: 100%; display: grid; grid-template-rows: 52px 1fr; }
-.titlebar { display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.titlebar { position: relative; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 22px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); user-select: none; -webkit-app-region: drag; }
+.titlebar.macos-overlay { padding-left: 98px; }
+.titlebar.macos-overlay .brand { position: absolute; left: 50%; transform: translateX(-50%); }
+.titlebar.macos-overlay .titlebar-actions { margin-left: auto; }
 .brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 650; color: var(--text); }
 .brand img { width: 25px; height: 25px; border-radius: 7px; }
-.icon-button { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.titlebar-actions { display: flex; align-items: center; gap: 10px; -webkit-app-region: no-drag; }
+.icon-button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); box-shadow: 0 2px 8px rgba(30, 55, 75, .06); cursor: pointer; -webkit-app-region: no-drag; }
 .icon-button:hover { background: var(--surface-soft); }
+.window-controls { display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
+.window-button { width: 32px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 5px; color: var(--muted); background: transparent; cursor: pointer; -webkit-app-region: no-drag; }
+.window-button:hover { color: var(--text); background: var(--surface-soft); }
+.window-button-close:hover { color: #fff; background: var(--danger); }
 
 .workspace { width: min(760px, calc(100% - 48px)); margin: auto; display: grid; gap: 20px; }
 .intro { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 16px; }
@@ -94,6 +102,9 @@ button:disabled { opacity: .45; cursor: default; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
 .spin { animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.splash-fade-leave-active { transition: opacity .25s ease; }
+.splash-fade-leave-to { opacity: 0; }
 
 @media (max-width: 720px) {
   .workspace { width: calc(100% - 28px); gap: 16px; }

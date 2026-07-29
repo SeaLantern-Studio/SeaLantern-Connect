@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import SplashScreen from "./components/SplashScreen.vue";
 import {
   ArrowRight,
   Check,
@@ -9,11 +11,14 @@ import {
   Copy,
   Link,
   LoaderCircle,
+  Minus,
   Moon,
   Network,
   Radio,
+  Square,
   Sun,
   Unplug,
+  X,
 } from "lucide-vue-next";
 
 type Phase = "idle" | "starting" | "active" | "stopping";
@@ -46,8 +51,14 @@ const validationError = ref("");
 const commandError = ref("");
 const confirming = ref(false);
 const copied = ref(false);
+const showSplash = ref(true);
+const isInitializing = ref(true);
 const dark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
+const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
+const appWindow = getCurrentWindow();
+const isMaximized = ref(false);
 let unlisten: UnlistenFn | null = null;
+let unlistenResize: UnlistenFn | null = null;
 
 const busy = computed(() => status.value.phase === "starting" || status.value.phase === "stopping");
 const connected = computed(() => status.value.phase === "active");
@@ -66,6 +77,22 @@ function applyTheme() {
 function toggleTheme() {
   dark.value = !dark.value;
   applyTheme();
+}
+
+async function minimizeWindow() {
+  await appWindow.minimize();
+}
+
+async function toggleMaximize() {
+  await appWindow.toggleMaximize();
+}
+
+async function closeWindow() {
+  await appWindow.close();
+}
+
+function hideSplash() {
+  showSplash.value = false;
 }
 
 function normalizeInvite(value: string) {
@@ -122,26 +149,60 @@ function formatBytes(value: number) {
 
 onMounted(async () => {
   applyTheme();
-  status.value = await invoke<ConnectStatus>("get_status");
-  unlisten = await listen<ConnectStatus>("connect-status", (event) => {
-    status.value = event.payload;
-  });
+  try {
+    isMaximized.value = await appWindow.isMaximized();
+    unlistenResize = await appWindow.onResized(async () => {
+      isMaximized.value = await appWindow.isMaximized();
+    });
+    status.value = await invoke<ConnectStatus>("get_status");
+    unlisten = await listen<ConnectStatus>("connect-status", (event) => {
+      status.value = event.payload;
+    });
+  } finally {
+    isInitializing.value = false;
+  }
 });
 
-onUnmounted(() => unlisten?.());
+onUnmounted(() => {
+  unlisten?.();
+  unlistenResize?.();
+});
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="titlebar" data-tauri-drag-region>
+  <Transition name="splash-fade">
+    <SplashScreen v-if="showSplash" :loading="isInitializing" @ready="hideSplash" />
+  </Transition>
+
+  <div v-if="!showSplash" class="app-shell">
+    <header class="titlebar" :class="{ 'macos-overlay': isMacOS }" data-tauri-drag-region>
       <div class="brand" data-tauri-drag-region>
         <img src="/logo.svg" alt="" />
         <span>SeaLantern Connect</span>
       </div>
-      <button class="icon-button" type="button" title="切换明暗主题" @click="toggleTheme">
-        <Sun v-if="dark" :size="17" />
-        <Moon v-else :size="17" />
-      </button>
+      <div class="titlebar-actions">
+        <button class="icon-button" type="button" title="切换明暗主题" @click="toggleTheme">
+          <Sun v-if="dark" :size="17" />
+          <Moon v-else :size="17" />
+        </button>
+        <div v-if="!isMacOS" class="window-controls">
+          <button class="window-button" type="button" title="最小化" @click="minimizeWindow">
+            <Minus :size="12" />
+          </button>
+          <button
+            class="window-button"
+            type="button"
+            :title="isMaximized ? '还原' : '最大化'"
+            @click="toggleMaximize"
+          >
+            <Copy v-if="isMaximized" :size="12" />
+            <Square v-else :size="12" />
+          </button>
+          <button class="window-button window-button-close" type="button" title="关闭" @click="closeWindow">
+            <X :size="12" />
+          </button>
+        </div>
+      </div>
     </header>
 
     <main class="workspace">
