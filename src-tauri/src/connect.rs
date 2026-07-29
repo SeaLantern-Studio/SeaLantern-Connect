@@ -31,7 +31,10 @@ impl ConnectState {
     fn snapshot(&self) -> ConnectSnapshot {
         snapshot_from_status(
             self.service.status(),
-            self.last_message.lock().ok().and_then(|value| value.clone()),
+            self.last_message
+                .lock()
+                .ok()
+                .and_then(|value| value.clone()),
         )
     }
 
@@ -47,7 +50,10 @@ impl ConnectState {
             .lock()
             .map_err(|_| "LAN broadcast state is unavailable".to_owned())?;
         let desired_port = if status.state.phase == TunnelPhase::Active {
-            status.state.local_addr.and_then(|addr| NonZeroU16::new(addr.port()))
+            status
+                .state
+                .local_addr
+                .and_then(|addr| NonZeroU16::new(addr.port()))
         } else {
             None
         };
@@ -183,7 +189,10 @@ fn event_message(event: TunnelEvent) -> Option<String> {
 }
 
 fn snapshot_from_status(status: TunnelStatus, message: Option<String>) -> ConnectSnapshot {
-    let connection = status.connections.iter().find(|connection| connection.alive);
+    let connection = status
+        .connections
+        .iter()
+        .find(|connection| connection.alive);
     ConnectSnapshot {
         phase: match status.state.phase {
             TunnelPhase::Idle => "idle",
