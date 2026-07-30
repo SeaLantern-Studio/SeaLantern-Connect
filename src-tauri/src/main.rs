@@ -3,11 +3,17 @@
 
 mod connect;
 mod settings;
+mod tray;
 
 fn main() {
     tauri::Builder::default()
         .manage(connect::ConnectState::new())
-        .setup(connect::setup)
+        .setup(|app| {
+            connect::setup(app)?;
+            tray::setup(app)?;
+            Ok(())
+        })
+        .on_window_event(tray::handle_window_event)
         .invoke_handler(tauri::generate_handler![
             connect::validate_invite,
             connect::get_status,
