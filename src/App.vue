@@ -2,28 +2,27 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import SplashScreen from "./components/SplashScreen.vue";
-import logoUrl from "./assets/logo.svg";
+import AppHeader from "./components/layout/AppHeader.vue";
+import AppSidebar from "./components/layout/AppSidebar.vue";
 import {
   ArrowRight,
   Check,
   CircleAlert,
   Copy,
+  HousePlus,
   Link,
   LoaderCircle,
-  Minus,
-  Moon,
   Network,
+  Palette,
   Radio,
   RotateCcw,
-  Square,
-  Sun,
+  Settings as SettingsIcon,
   Unplug,
-  X,
 } from "lucide-vue-next";
 
 type Phase = "idle" | "starting" | "active" | "stopping";
+type SectionId = "create" | "join" | "personalize" | "settings";
 
 interface ConnectStatus {
   phase: Phase;
@@ -61,15 +60,27 @@ const copied = ref(false);
 const showSplash = ref(true);
 const isInitializing = ref(true);
 const dark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
-const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
-const appWindow = getCurrentWindow();
-const isMaximized = ref(false);
+const activeSection = ref<SectionId>("join");
+const sidebarCollapsed = ref(false);
 let unlisten: UnlistenFn | null = null;
-let unlistenResize: UnlistenFn | null = null;
 
 const busy = computed(() => status.value.phase === "starting" || status.value.phase === "stopping");
 const connected = computed(() => status.value.phase === "active");
 const canPreview = computed(() => invite.value.trim().length > 0 && status.value.phase === "idle");
+const pageTitle = computed(
+  () =>
+    ({
+      create: "创建房间",
+      join: "加入房间",
+      personalize: "个性化",
+      settings: "设置",
+    })[activeSection.value],
+);
+const connectionState = computed(() => {
+  if (connected.value) return "active";
+  if (busy.value) return "busy";
+  return "idle";
+});
 const phaseLabel = computed(() => {
   if (status.value.phase === "starting") return "正在建立安全连接";
   if (status.value.phase === "active") return "联机通道已就绪";
@@ -91,16 +102,10 @@ async function toggleTheme() {
   }
 }
 
-async function minimizeWindow() {
-  await appWindow.minimize();
-}
-
-async function toggleMaximize() {
-  await appWindow.toggleMaximize();
-}
-
-async function closeWindow() {
-  await appWindow.close();
+function navigate(section: string) {
+  if (["create", "join", "personalize", "settings"].includes(section)) {
+    activeSection.value = section as SectionId;
+  }
 }
 
 function hideSplash() {
@@ -178,10 +183,6 @@ onMounted(async () => {
   applyTheme();
 
   try {
-    isMaximized.value = await appWindow.isMaximized();
-    unlistenResize = await appWindow.onResized(async () => {
-      isMaximized.value = await appWindow.isMaximized();
-    });
     status.value = await invoke<ConnectStatus>("get_status");
     unlisten = await listen<ConnectStatus>("connect-status", (event) => {
       status.value = event.payload;
@@ -193,7 +194,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   unlisten?.();
-  unlistenResize?.();
 });
 </script>
 
@@ -202,148 +202,134 @@ onUnmounted(() => {
     <SplashScreen v-if="showSplash" :loading="isInitializing" @ready="hideSplash" />
   </Transition>
 
-  <div v-if="!showSplash" class="app-shell">
-    <header class="titlebar" :class="{ 'macos-overlay': isMacOS }" data-tauri-drag-region>
-      <div class="brand" data-tauri-drag-region>
-        <img :src="logoUrl" alt="" />
-        <span>SeaLantern Connect</span>
-      </div>
-      <div class="titlebar-actions">
-        <button class="icon-button" type="button" title="切换明暗主题" @click="toggleTheme">
-          <Sun v-if="dark" :size="17" />
-          <Moon v-else :size="17" />
-        </button>
-        <div v-if="!isMacOS" class="window-controls">
-          <button class="window-button" type="button" title="最小化" @click="minimizeWindow">
-            <Minus :size="12" />
-          </button>
-          <button
-            class="window-button"
-            type="button"
-            :title="isMaximized ? '还原' : '最大化'"
-            @click="toggleMaximize"
-          >
-            <Copy v-if="isMaximized" :size="12" />
-            <Square v-else :size="12" />
-          </button>
-          <button
-            class="window-button window-button-close"
-            type="button"
-            title="关闭"
-            @click="closeWindow"
-          >
-            <X :size="12" />
-          </button>
-        </div>
-      </div>
-    </header>
+  <div v-if="!showSplash" class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <AppSidebar
+      :active="activeSection"
+      :connection-state="connectionState"
+      :collapsed="sidebarCollapsed"
+      @navigate="navigate"
+      @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
+    />
+    <AppHeader :title="pageTitle" :dark="dark" @toggle-theme="toggleTheme" />
 
-    <main class="workspace">
-      <section class="intro">
-        <div class="status-mark" :class="status.phase">
-          <Radio v-if="connected" :size="25" />
-          <LoaderCircle v-else-if="busy" class="spin" :size="25" />
-          <Link v-else :size="25" />
-        </div>
-        <div>
-          <h1>{{ phaseLabel }}</h1>
-          <p v-if="connected">打开 Minecraft Java 版多人游戏，房间会自动出现在局域网列表中。</p>
-          <p v-else>粘贴好友发送的分享链接，确认后即可加入 Minecraft 世界。</p>
-        </div>
-        <span class="phase-pill" :class="status.phase">
-          {{ connected ? "已连接" : busy ? "处理中" : "未连接" }}
-        </span>
-      </section>
+    <main class="app-content">
+      <div v-if="activeSection === 'join'" class="workspace">
+        <section class="intro">
+          <div class="status-mark" :class="status.phase">
+            <Radio v-if="connected" :size="25" />
+            <LoaderCircle v-else-if="busy" class="spin" :size="25" />
+            <Link v-else :size="25" />
+          </div>
+          <div>
+            <h1>{{ phaseLabel }}</h1>
+            <p v-if="connected">打开 Minecraft Java 版多人游戏，房间会自动出现在局域网列表中。</p>
+            <p v-else>粘贴好友发送的分享链接，确认后即可加入 Minecraft 世界。</p>
+          </div>
+          <span class="phase-pill" :class="status.phase">
+            {{ connected ? "已连接" : busy ? "处理中" : "未连接" }}
+          </span>
+        </section>
 
-      <section v-if="!connected && status.phase === 'idle'" class="join-panel">
-        <label for="invite">联机邀请</label>
-        <div class="invite-row" :class="{ invalid: validationError }">
-          <Link :size="18" />
-          <input
-            id="invite"
-            v-model="invite"
-            type="text"
-            spellcheck="false"
-            autocomplete="off"
-            placeholder="sculk://join/v1/..."
-            @keydown.enter="canPreview && previewInvite()"
-          />
-          <button
-            class="reset-invite-button"
-            type="button"
-            title="清空当前输入"
-            :disabled="invite.length === 0"
-            @click="resetInvite"
-          >
-            <RotateCcw :size="16" />
-          </button>
-        </div>
-        <p v-if="validationError" class="field-error">
-          <CircleAlert :size="14" />{{ validationError }}
+        <section v-if="!connected && status.phase === 'idle'" class="join-panel">
+          <label for="invite">联机邀请</label>
+          <div class="invite-row" :class="{ invalid: validationError }">
+            <Link :size="18" />
+            <input
+              id="invite"
+              v-model="invite"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="sculk://join/v1/..."
+              @keydown.enter="canPreview && previewInvite()"
+            />
+            <button
+              class="reset-invite-button"
+              type="button"
+              title="清空当前输入"
+              :disabled="invite.length === 0"
+              @click="resetInvite"
+            >
+              <RotateCcw :size="16" />
+            </button>
+          </div>
+          <p v-if="validationError" class="field-error">
+            <CircleAlert :size="14" />{{ validationError }}
+          </p>
+          <div class="join-actions">
+            <div class="privacy-note">
+              <Network :size="16" />
+              邀请凭证只用于连接房主，不会上传到 SeaLantern 服务。
+            </div>
+            <button
+              class="primary-button"
+              type="button"
+              :disabled="!canPreview"
+              @click="previewInvite"
+            >
+              继续
+              <ArrowRight :size="17" />
+            </button>
+          </div>
+        </section>
+
+        <section v-else class="connection-panel">
+          <div class="address-block">
+            <span>Minecraft 地址</span>
+            <strong>{{ status.localAddress ?? "正在分配本地端口..." }}</strong>
+            <button
+              class="copy-button"
+              type="button"
+              :disabled="!status.localAddress"
+              @click="copyAddress"
+            >
+              <Check v-if="copied" :size="16" />
+              <Copy v-else :size="16" />
+              {{ copied ? "已复制" : "复制地址" }}
+            </button>
+          </div>
+          <div class="metrics">
+            <div>
+              <span>连接路径</span
+              ><strong>{{
+                status.route === "direct"
+                  ? "P2P 直连"
+                  : status.route === "relay"
+                    ? "中继"
+                    : "检测中"
+              }}</strong>
+            </div>
+            <div>
+              <span>网络延迟</span
+              ><strong>{{ status.rttMs == null ? "--" : `${status.rttMs} ms` }}</strong>
+            </div>
+            <div>
+              <span>发送</span><strong>{{ formatBytes(status.txBytes) }}</strong>
+            </div>
+            <div>
+              <span>接收</span><strong>{{ formatBytes(status.rxBytes) }}</strong>
+            </div>
+          </div>
+          <div class="connection-footer">
+            <p>{{ status.message ?? "正在同步连接状态..." }}</p>
+            <button class="danger-button" type="button" :disabled="busy" @click="stop">
+              <Unplug :size="16" />断开
+            </button>
+          </div>
+        </section>
+
+        <p v-if="commandError || status.error" class="error-banner">
+          <CircleAlert :size="16" />连接未完成。{{
+            commandError || status.message || "请检查邀请和网络后重试。"
+          }}
         </p>
-        <div class="join-actions">
-          <div class="privacy-note">
-            <Network :size="16" />
-            邀请凭证只用于连接房主，不会上传到 SeaLantern 服务。
-          </div>
-          <button
-            class="primary-button"
-            type="button"
-            :disabled="!canPreview"
-            @click="previewInvite"
-          >
-            继续
-            <ArrowRight :size="17" />
-          </button>
-        </div>
-      </section>
+      </div>
 
-      <section v-else class="connection-panel">
-        <div class="address-block">
-          <span>Minecraft 地址</span>
-          <strong>{{ status.localAddress ?? "正在分配本地端口..." }}</strong>
-          <button
-            class="copy-button"
-            type="button"
-            :disabled="!status.localAddress"
-            @click="copyAddress"
-          >
-            <Check v-if="copied" :size="16" />
-            <Copy v-else :size="16" />
-            {{ copied ? "已复制" : "复制地址" }}
-          </button>
-        </div>
-        <div class="metrics">
-          <div>
-            <span>连接路径</span
-            ><strong>{{
-              status.route === "direct" ? "P2P 直连" : status.route === "relay" ? "中继" : "检测中"
-            }}</strong>
-          </div>
-          <div>
-            <span>网络延迟</span
-            ><strong>{{ status.rttMs == null ? "--" : `${status.rttMs} ms` }}</strong>
-          </div>
-          <div>
-            <span>发送</span><strong>{{ formatBytes(status.txBytes) }}</strong>
-          </div>
-          <div>
-            <span>接收</span><strong>{{ formatBytes(status.rxBytes) }}</strong>
-          </div>
-        </div>
-        <div class="connection-footer">
-          <p>{{ status.message ?? "正在同步连接状态..." }}</p>
-          <button class="danger-button" type="button" :disabled="busy" @click="stop">
-            <Unplug :size="16" />断开
-          </button>
-        </div>
+      <section v-else class="page-placeholder" :aria-label="pageTitle">
+        <HousePlus v-if="activeSection === 'create'" :size="34" />
+        <Palette v-else-if="activeSection === 'personalize'" :size="34" />
+        <SettingsIcon v-else :size="34" />
       </section>
-
-      <p v-if="commandError || status.error" class="error-banner">
-        <CircleAlert :size="16" />连接未完成。{{
-          commandError || status.message || "请检查邀请和网络后重试。"
-        }}
-      </p>
     </main>
 
     <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">

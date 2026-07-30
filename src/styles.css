@@ -57,43 +57,213 @@ button {
 .app-shell {
   height: 100%;
   display: grid;
-  grid-template-rows: 52px 1fr;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr);
+  background: var(--surface-soft);
+  transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 68px minmax(0, 1fr);
+}
+.sidebar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+.sidebar-brand {
+  height: 64px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  overflow: hidden;
+  color: var(--text);
+  white-space: nowrap;
+  transition:
+    grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-app-region: drag;
+}
+.sidebar-brand-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.16s ease,
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-brand-name strong {
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+}
+.sidebar-brand-name small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.sidebar-brand img {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+}
+.sidebar-nav {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 8px 10px;
+}
+.nav-group {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.nav-group-bottom {
+  margin-top: auto;
+}
+.nav-separator {
+  height: 1px;
+  margin: 8px;
+  background: var(--border);
+  opacity: 0.7;
+}
+.nav-item {
+  position: relative;
+  width: 100%;
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 8px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+.nav-item:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.nav-item.active {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  font-weight: 650;
+}
+.nav-item.active::before {
+  position: absolute;
+  left: -8px;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 999px 999px 0;
+  background: var(--primary);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 70%, transparent);
+  content: "";
+}
+.nav-icon {
+  justify-self: center;
+}
+.nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.16s ease,
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.collapse-button {
+  color: color-mix(in srgb, var(--muted) 82%, transparent);
+}
+.connection-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.connection-dot.busy {
+  background: var(--primary);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.connection-dot.active {
+  background: var(--success);
+}
+.sidebar.collapsed .sidebar-brand {
+  grid-template-columns: 28px 0;
+  justify-content: center;
+  gap: 0;
+  padding-inline: 0;
+}
+.sidebar.collapsed .sidebar-brand-name,
+.sidebar.collapsed .nav-label {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-8px);
+}
+.sidebar.collapsed .nav-item {
+  grid-template-columns: 24px 0 0;
+  gap: 0;
+  padding-inline: 14px;
+}
+.sidebar.collapsed .nav-item .connection-dot {
+  position: absolute;
+  margin: 0 0 19px 20px;
 }
 .titlebar {
+  grid-column: 2;
+  grid-row: 1;
   position: relative;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 14px 0 22px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: transparent;
   user-select: none;
   -webkit-app-region: drag;
 }
 .titlebar.macos-overlay {
   padding-left: 98px;
 }
-.titlebar.macos-overlay .brand {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
 .titlebar.macos-overlay .titlebar-actions {
   margin-left: auto;
 }
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 14px;
-  font-weight: 650;
+.page-title {
+  margin: 0;
+  overflow: hidden;
   color: var(--text);
-}
-.brand img {
-  width: 25px;
-  height: 25px;
-  border-radius: 7px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .titlebar-actions {
   display: flex;
@@ -142,6 +312,26 @@ button {
 .window-button-close:hover {
   color: #fff;
   background: var(--danger);
+}
+
+.app-content {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  overflow: auto;
+  padding: 32px 0;
+  margin: 0 12px 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.page-placeholder {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--muted) 60%, transparent);
 }
 
 .workspace {
@@ -474,6 +664,11 @@ button:disabled {
     transform: rotate(360deg);
   }
 }
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
 
 .splash-fade-leave-active {
   transition: opacity 0.25s ease;
@@ -483,6 +678,40 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  .app-shell,
+  .app-shell.sidebar-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .sidebar-brand {
+    grid-template-columns: 28px 0;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+  .sidebar-brand-name,
+  .nav-label {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  .sidebar-nav {
+    padding-inline: 8px;
+  }
+  .nav-item {
+    grid-template-columns: 24px 0 0;
+    gap: 0;
+    padding-inline: 12px;
+  }
+  .nav-item .connection-dot {
+    position: absolute;
+    margin: 0 0 19px 20px;
+  }
+  .titlebar {
+    padding-left: 16px;
+  }
+  .app-content {
+    padding: 24px 0;
+  }
   .workspace {
     width: calc(100% - 28px);
     gap: 16px;
