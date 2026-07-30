@@ -62,6 +62,22 @@ impl ConnectState {
         }
     }
 
+    fn stop_lan_scanner(&self) -> Result<(), String> {
+        let scanner = self
+            .scanner
+            .lock()
+            .map_err(|_| "LAN scan state is unavailable".to_owned())?
+            .take();
+        if let Some(scanner) = scanner {
+            scanner.stop().map_err(|error| error.to_string())?;
+        }
+        *self
+            .detected_port
+            .lock()
+            .map_err(|_| "LAN scan state is unavailable".to_owned())? = None;
+        Ok(())
+    }
+
     fn set_pending_join_uri(&self, uri: Option<String>) {
         if let Ok(mut pending) = self.pending_join_uri.lock() {
             *pending = uri;
@@ -208,15 +224,13 @@ pub fn get_lan_scan(state: State<'_, ConnectState>) -> Result<LanScanSnapshot, S
 
 #[tauri::command]
 pub fn restart_lan_scan(state: State<'_, ConnectState>) -> Result<LanScanSnapshot, String> {
-    if let Ok(mut scanner) = state.scanner.lock()
-        && let Some(current) = scanner.take()
-    {
-        current.stop().map_err(|error| error.to_string())?;
-    }
-    if let Ok(mut detected) = state.detected_port.lock() {
-        *detected = None;
-    }
+    state.stop_lan_scanner()?;
     start_lan_scan(state)
+}
+
+#[tauri::command]
+pub fn stop_lan_scan(state: State<'_, ConnectState>) -> Result<(), String> {
+    state.stop_lan_scanner()
 }
 
 #[tauri::command]
@@ -241,11 +255,7 @@ pub async fn start_host(
     if let Ok(mut current_port) = state.host_port.lock() {
         *current_port = Some(port);
     }
-    if let Ok(mut scanner) = state.scanner.lock()
-        && let Some(current) = scanner.take()
-    {
-        current.stop().map_err(|error| error.to_string())?;
-    }
+    state.stop_lan_scanner()?;
     let config = HostConfig::new()
         .event_delay(Duration::from_secs(1))
         .max_players(max_players);

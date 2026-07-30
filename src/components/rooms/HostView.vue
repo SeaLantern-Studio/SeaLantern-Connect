@@ -59,7 +59,8 @@ const canCreate = computed(
 function setPortMode(value: string | null) {
   if (value !== "auto" && value !== "manual") return;
   portMode.value = value;
-  if (value === "auto") void beginScan();
+  if (value === "auto") void beginScan(true);
+  else void stopScan();
 }
 
 async function beginScan(restart = false) {
@@ -89,6 +90,16 @@ function stopPolling() {
   if (scanTimer != null) {
     window.clearInterval(scanTimer);
     scanTimer = null;
+  }
+}
+
+async function stopScan() {
+  stopPolling();
+  scan.value = { scanning: false, port: null };
+  try {
+    await invoke("stop_lan_scan");
+  } catch (error) {
+    scanError.value = String(error);
   }
 }
 
@@ -136,11 +147,18 @@ watch(
   (phase, previous) => {
     if (phase === "idle" && previous !== "idle" && portMode.value === "auto") {
       void beginScan(true);
+    } else if (phase !== "idle") {
+      void stopScan();
     }
   },
 );
 
-onUnmounted(stopPolling);
+onUnmounted(() => {
+  stopPolling();
+  void invoke("stop_lan_scan").catch((error) => {
+    console.error("Failed to stop LAN scan", error);
+  });
+});
 </script>
 
 <template>
