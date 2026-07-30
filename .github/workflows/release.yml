@@ -104,7 +104,7 @@ jobs:
           echo "release_body<<EOF" >> "$GITHUB_OUTPUT"
           echo "## 下载说明" >> "$GITHUB_OUTPUT"
           echo "" >> "$GITHUB_OUTPUT"
-          echo "- Windows：选择 \`.msi\` 或 \`.exe\` 安装包。" >> "$GITHUB_OUTPUT"
+          echo "- Windows：选择 \`.exe\` 安装包。" >> "$GITHUB_OUTPUT"
           echo "- macOS：根据处理器架构选择对应的 \`.dmg\`。" >> "$GITHUB_OUTPUT"
           echo "- Linux：选择 \`.AppImage\`、\`.deb\` 或 \`.rpm\`。" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"

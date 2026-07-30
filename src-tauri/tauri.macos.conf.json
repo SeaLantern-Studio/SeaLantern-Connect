@@ -19,5 +19,8 @@
         }
       }
     ]
+  },
+  "bundle": {
+    "targets": ["dmg"]
   }
 }
