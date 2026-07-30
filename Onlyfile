@@ -34,7 +34,7 @@ test() ? @has("cargo-nextest"):
     cargo nextest run
 
 test():
-    cargo test
+    cargo test --all-targets --workspace
 
 # 运行本地 CI
 ci() & check & test:

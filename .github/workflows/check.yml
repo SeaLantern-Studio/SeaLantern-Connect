@@ -76,7 +76,7 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: 运行测试
-        run: cargo test --workspace
+        run: cargo test --all-targets --workspace
 
   frontend:
     name: 前端检查 (Node)
