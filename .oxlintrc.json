@@ -35,7 +35,6 @@
       "@typescript-eslint/parser": [".ts", ".tsx", ".vue"]
     },
     "jsx-a11y": {
-      "polymorphicPropName": null,
       "components": {},
       "attributes": {}
     },
@@ -45,7 +44,6 @@
     "react": {
       "formComponents": [],
       "linkComponents": [],
-      "version": null,
       "componentWrapperFunctions": []
     },
     "jsdoc": {
