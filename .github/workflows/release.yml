@@ -109,6 +109,43 @@ jobs:
           echo "- Linux：选择 \`.AppImage\`、\`.deb\` 或 \`.rpm\`。" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
+      - name: 创建发布草稿
+        uses: actions/github-script@v8
+        env:
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_NAME: ${{ steps.meta.outputs.release_name }}
+          RELEASE_BODY: ${{ steps.meta.outputs.release_body }}
+          RELEASE_PRERELEASE: ${{ steps.meta.outputs.prerelease }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = process.env.RELEASE_TAG;
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+            const existing = releases.find((release) =>
+              release.draft && release.tag_name === tag
+            );
+
+            if (existing) {
+              core.info(`发布草稿 ${tag} 已存在（${existing.id}）`);
+              return;
+            }
+
+            const release = await github.rest.repos.createRelease({
+              owner,
+              repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: process.env.RELEASE_NAME,
+              body: process.env.RELEASE_BODY,
+              draft: true,
+              prerelease: process.env.RELEASE_PRERELEASE === 'true',
+            });
+            core.info(`已创建发布草稿 ${tag}（${release.data.id}）`);
+
   publish-tauri:
     name: 构建并发布桌面端
     needs: validate-tag
