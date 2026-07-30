@@ -140,19 +140,23 @@ onUnmounted(() => {
     <AppHeader :title="pageTitle" :dark="dark" @toggle-theme="toggleTheme" />
 
     <main class="app-content">
-      <HostView v-if="activeSection === 'create'" :status="status" />
-      <JoinView
-        v-else-if="activeSection === 'join'"
-        :status="status"
-        :saved-invite="preferences.joinUri"
-        :saved-port="preferences.joinPort"
-      />
-      <PersonalizationView
-        v-else-if="activeSection === 'personalize'"
-        :preferences="preferences"
-        @saved="applyPersonalization"
-      />
-      <SettingsView v-else :preferences="preferences" @saved="applyConnectionSettings" />
+      <Transition name="page" mode="out-in">
+        <div :key="activeSection" class="page-transition-frame">
+          <HostView v-if="activeSection === 'create'" :status="status" />
+          <JoinView
+            v-else-if="activeSection === 'join'"
+            :status="status"
+            :saved-invite="preferences.joinUri"
+            :saved-port="preferences.joinPort"
+          />
+          <PersonalizationView
+            v-else-if="activeSection === 'personalize'"
+            :preferences="preferences"
+            @saved="applyPersonalization"
+          />
+          <SettingsView v-else :preferences="preferences" @saved="applyConnectionSettings" />
+        </div>
+      </Transition>
     </main>
   </div>
 </template>

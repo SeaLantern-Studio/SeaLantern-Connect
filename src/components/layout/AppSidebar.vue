@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   HousePlus,
   LogIn,
@@ -17,12 +17,16 @@ interface NavItem {
   icon: typeof HousePlus;
 }
 
-defineProps<{
+const props = defineProps<{
   active: string;
   connectionState: "idle" | "busy" | "active";
   tunnelMode: "host" | "join" | null;
   collapsed: boolean;
 }>();
+
+const sidebarNav = ref<HTMLElement | null>(null);
+const navIndicator = ref<HTMLElement | null>(null);
+let indicatorFrame: number | null = null;
 
 const emit = defineEmits<{
   navigate: [id: string];
@@ -38,6 +42,49 @@ const utilityItems = computed<NavItem[]>(() => [
   { id: "personalize", label: t("navigation.personalization"), icon: Palette },
   { id: "settings", label: t("navigation.settings"), icon: Settings },
 ]);
+
+function updateNavIndicator() {
+  if (indicatorFrame != null) cancelAnimationFrame(indicatorFrame);
+  indicatorFrame = requestAnimationFrame(() => {
+    indicatorFrame = null;
+    const nav = sidebarNav.value;
+    const indicator = navIndicator.value;
+    const activeItem = nav?.querySelector<HTMLElement>(".nav-item.active");
+    if (!nav || !indicator || !activeItem) return;
+
+    const itemRect = activeItem.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const top = itemRect.top - navRect.top + nav.scrollTop + (itemRect.height - 20) / 2;
+    indicator.style.opacity = "1";
+    indicator.style.transform = `translate3d(0, ${top}px, 0)`;
+  });
+}
+
+watch(
+  () => props.active,
+  async () => {
+    await nextTick();
+    updateNavIndicator();
+  },
+  { flush: "post" },
+);
+
+watch(
+  () => props.collapsed,
+  () => window.setTimeout(updateNavIndicator, 250),
+);
+
+onMounted(() => {
+  updateNavIndicator();
+  sidebarNav.value?.addEventListener("scroll", updateNavIndicator);
+  window.addEventListener("resize", updateNavIndicator);
+});
+
+onUnmounted(() => {
+  if (indicatorFrame != null) cancelAnimationFrame(indicatorFrame);
+  sidebarNav.value?.removeEventListener("scroll", updateNavIndicator);
+  window.removeEventListener("resize", updateNavIndicator);
+});
 </script>
 
 <template>
@@ -50,7 +97,8 @@ const utilityItems = computed<NavItem[]>(() => [
       </div>
     </div>
 
-    <nav class="sidebar-nav" :aria-label="t('navigation.main')">
+    <nav ref="sidebarNav" class="sidebar-nav" :aria-label="t('navigation.main')">
+      <div ref="navIndicator" class="nav-active-indicator" aria-hidden="true"></div>
       <div class="nav-group">
         <button
           v-for="item in primaryItems"

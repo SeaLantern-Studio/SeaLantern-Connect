@@ -96,7 +96,7 @@ button {
   flex: 0 0 auto;
   align-items: center;
   gap: 10px;
-  padding: 0 16px;
+  padding: 0 22px;
   overflow: hidden;
   color: var(--text);
   white-space: nowrap;
@@ -137,6 +137,7 @@ button {
   border-radius: 6px;
 }
 .sidebar-nav {
+  position: relative;
   min-height: 0;
   display: flex;
   flex: 1;
@@ -190,18 +191,29 @@ button {
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   font-weight: 650;
 }
-.nav-item.active::before {
+.nav-active-indicator {
   position: absolute;
-  left: -8px;
+  z-index: 2;
+  top: 0;
+  left: 0;
   width: 3px;
   height: 20px;
   border-radius: 0 999px 999px 0;
   background: var(--primary);
   box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 70%, transparent);
-  content: "";
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.12s ease;
 }
 .nav-icon {
   justify-self: center;
+  transition: transform 0.25s ease;
+}
+.nav-item:active .nav-icon {
+  transform: scale(0.9);
 }
 .nav-label {
   min-width: 0;
@@ -233,9 +245,9 @@ button {
 }
 .sidebar.collapsed .sidebar-brand {
   grid-template-columns: 28px 0;
-  justify-content: center;
+  justify-content: start;
   gap: 0;
-  padding-inline: 0;
+  padding-inline: 22px;
 }
 .sidebar.collapsed .sidebar-brand-name,
 .sidebar.collapsed .nav-label {
@@ -342,6 +354,29 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+}
+.page-transition-frame {
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+}
+.page-enter-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-leave-active {
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 .page-placeholder {
   min-height: 100%;
@@ -1151,5 +1186,12 @@ button:disabled {
   }
   .metrics div:nth-child(-n + 2) {
     border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
   }
 }
