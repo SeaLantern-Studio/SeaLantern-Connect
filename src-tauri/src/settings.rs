@@ -1,9 +1,15 @@
+use sculk::persist::{self, HostState};
+use sculk::tunnel::{AccessToken, SecretKey, ServiceId, TokenState};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::time::SystemTime;
 use tauri::{AppHandle, Manager, State};
 
+const APP_DIR_NAME: &str = "sealantern-connect";
 const PREFERENCES_FILE: &str = "preferences.conf";
+const KEY_FILE: &str = "secret.key";
+const HOST_STATE_FILE: &str = "host.state";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,28 +28,63 @@ impl Default for Preferences {
 }
 
 pub struct SettingsState {
+    data_dir: PathBuf,
     path: PathBuf,
+    secret_key: SecretKey,
     preferences: Mutex<Preferences>,
+}
+
+pub struct HostIdentity {
+    pub secret_key: SecretKey,
+    pub service_id: ServiceId,
+    pub token: AccessToken,
 }
 
 impl SettingsState {
     pub fn load(app: &AppHandle) -> Result<Self, String> {
-        let path = app
+        let data_dir = app
             .path()
-            .app_data_dir()
+            .data_dir()
             .map_err(|error| error.to_string())?
-            .join(PREFERENCES_FILE);
+            .join(APP_DIR_NAME);
+        std::fs::create_dir_all(&data_dir).map_err(|error| error.to_string())?;
+        let path = data_dir.join(PREFERENCES_FILE);
+        migrate_legacy_preferences(app, &path)?;
         let preferences = std::fs::read_to_string(&path)
             .map(|content| parse_preferences(&content))
             .unwrap_or_default();
+        let secret_key = persist::load_or_generate_key(&data_dir.join(KEY_FILE))
+            .map_err(|error| error.to_string())?;
         Ok(Self {
+            data_dir,
             path,
+            secret_key,
             preferences: Mutex::new(preferences),
         })
     }
 
     pub fn remember_join_uri(&self, join_uri: String) -> Result<(), String> {
         self.update(|preferences| preferences.join_uri = join_uri)
+    }
+
+    pub fn host_identity(&self) -> Result<HostIdentity, String> {
+        let path = self.data_dir.join(HOST_STATE_FILE);
+        let state = match persist::load_host_state(&path).map_err(|error| error.to_string())? {
+            Some(state) => state,
+            None => {
+                let state = HostState {
+                    service_id: ServiceId::generate(),
+                    token_state: TokenState::new(AccessToken::generate(), SystemTime::now()),
+                };
+                persist::save_host_state(&path, &state).map_err(|error| error.to_string())?;
+                state
+            }
+        };
+        Ok(HostIdentity {
+            secret_key: self.secret_key.clone(),
+            service_id: state.service_id,
+            token: state.token_state.token().clone(),
+        })
     }
 
     fn update(&self, apply: impl FnOnce(&mut Preferences)) -> Result<(), String> {
@@ -54,6 +95,21 @@ impl SettingsState {
         apply(&mut preferences);
         save_preferences(&self.path, &preferences)
     }
+}
+
+fn migrate_legacy_preferences(app: &AppHandle, destination: &PathBuf) -> Result<(), String> {
+    if destination.exists() {
+        return Ok(());
+    }
+    let source = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?
+        .join(PREFERENCES_FILE);
+    if source.exists() {
+        std::fs::copy(source, destination).map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]

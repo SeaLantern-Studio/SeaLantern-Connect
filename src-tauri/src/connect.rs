@@ -234,6 +234,7 @@ pub async fn start_host(
             "端口 {port} 没有可用的 Minecraft 世界，请确认已开放局域网联机"
         ));
     }
+    let identity = app.state::<SettingsState>().host_identity()?;
     state.stop_broadcast();
     state.set_message(None);
     if let Ok(mut current_port) = state.host_port.lock() {
@@ -247,11 +248,12 @@ pub async fn start_host(
     let config = HostConfig::new()
         .event_delay(Duration::from_secs(1))
         .max_players(max_players);
-    if let Err(error) = state
-        .service
-        .start_host(HostOptions::new(port).config(config))
-        .await
-    {
+    let options = HostOptions::new(port)
+        .secret_key(Some(identity.secret_key))
+        .service_id(identity.service_id)
+        .token(identity.token)
+        .config(config);
+    if let Err(error) = state.service.start_host(options).await {
         if let Ok(mut current_port) = state.host_port.lock() {
             *current_port = None;
         }
