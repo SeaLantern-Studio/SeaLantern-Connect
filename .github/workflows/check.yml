@@ -65,5 +65,11 @@ jobs:
       - name: 安装前端依赖
         run: pnpm install --frozen-lockfile
 
+      - name: 检查前端格式
+        run: pnpm fmt:check
+
+      - name: 运行前端 Lint
+        run: pnpm lint
+
       - name: 检查类型并构建前端
         run: pnpm build
