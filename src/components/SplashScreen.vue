@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import logoUrl from "../assets/logo.svg";
+import logoUrl from "../assets/logo.png";
 import { t } from "../i18n";
 
 const props = defineProps<{

@@ -8,7 +8,7 @@ import {
   PanelLeftOpen,
   Settings,
 } from "lucide-vue-next";
-import logoUrl from "../../assets/logo.svg";
+import logoUrl from "../../assets/logo.png";
 import { t } from "../../i18n";
 
 interface NavItem {
