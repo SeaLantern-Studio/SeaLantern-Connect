@@ -1,0 +1,170 @@
+name: "发布"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  validate-tag:
+    name: 校验 Tag 来源并提取版本
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+      release_body: ${{ steps.meta.outputs.release_body }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 校验 Tag 指向 main 分支提交
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "当前 tag (${GITHUB_REF_NAME}) 对应提交不在 main 分支上"
+            exit 1
+          fi
+
+      - name: 校验主检查已通过
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const headSha = process.env.GITHUB_SHA;
+            const requiredWorkflowName = '代码质量检查';
+
+            const response = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              head_sha: headSha,
+              per_page: 20,
+            });
+
+            const passed = response.data.workflow_runs.some((run) =>
+              run.name === requiredWorkflowName &&
+              run.head_sha === headSha &&
+              run.event === 'push' &&
+              run.head_branch === 'main' &&
+              run.status === 'completed' &&
+              run.conclusion === 'success'
+            );
+
+            if (!passed) {
+              core.setFailed(
+                `提交 ${headSha} 尚未通过 main 分支上的 ${requiredWorkflowName}`
+              );
+              return;
+            }
+
+            core.info(`提交 ${headSha} 已通过 ${requiredWorkflowName}`);
+
+      - name: 提取版本信息
+        id: meta
+        run: |
+          set -euo pipefail
+          TAG="$GITHUB_REF_NAME"
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "当前 tag 不符合 vX.Y.Z 版本格式: $TAG"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          PRERELEASE=false
+          if echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-'; then
+            PRERELEASE=true
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "release_name=SeaLantern Connect v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release_body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "## 下载说明" >> "$GITHUB_OUTPUT"
+          echo "" >> "$GITHUB_OUTPUT"
+          echo "- Windows：选择 \`.msi\` 或 \`.exe\` 安装包。" >> "$GITHUB_OUTPUT"
+          echo "- macOS：根据处理器架构选择对应的 \`.dmg\`。" >> "$GITHUB_OUTPUT"
+          echo "- Linux：选择 \`.AppImage\`、\`.deb\` 或 \`.rpm\`。" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  publish-tauri:
+    name: 构建并发布桌面端
+    needs: validate-tag
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+          - platform: macos-latest
+            args: "--target x86_64-apple-darwin"
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: ubuntu-22.04-arm
+            args: ""
+          - platform: windows-latest
+            args: ""
+          - platform: windows-11-arm
+            args: ""
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装系统依赖 (Ubuntu 专用)
+        if: startsWith(matrix.platform, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils nasm
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: 安装 pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
+
+      - name: 安装 Rust 工具链 (默认目标)
+        if: matrix.args == ''
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 安装 Rust 工具链 (macOS 目标)
+        if: matrix.args != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: 缓存 Rust 编译产物
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: 安装前端依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建并发布
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ needs.validate-tag.outputs.tag }}
+          releaseName: ${{ needs.validate-tag.outputs.release_name }}
+          releaseBody: ${{ needs.validate-tag.outputs.release_body }}
+          releaseDraft: true
+          prerelease: ${{ needs.validate-tag.outputs.prerelease }}
+          args: ${{ matrix.args }} -c src-tauri/tauri.conf.json
