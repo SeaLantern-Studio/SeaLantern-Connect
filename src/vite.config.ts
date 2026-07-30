@@ -12,6 +12,7 @@ export default defineConfig(async () => ({
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+    assetsInlineLimit: 0,
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
