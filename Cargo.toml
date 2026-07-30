@@ -6,7 +6,7 @@ resolver = "3"
 version = "0.1.0"
 description = "A lightweight Minecraft Java Edition join client powered by sculk"
 repository = "https://github.com/SeaLantern-Studio/SeaLantern-Connect"
-authors = ["KercyDing"]
+authors = ["SeaLantern-Studio"]
 edition = "2024"
 
 [workspace.dependencies]
