@@ -1,32 +1,26 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Cmz_Button,
-  Cmz_Input,
-  Cmz_Select,
-  Cmz_TabBar,
-  type SelectOption,
-  type TabBarItem,
-} from "cmzya-modern-ui";
-import { CircleAlert, Network, RefreshCw, Save } from "lucide-vue-next";
+import { Cmz_Input, Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import { t } from "../../i18n";
 import type { ConnectionSettingsUpdate, Preferences } from "../../preferences";
+import { useUiStore } from "../../stores/ui";
 import { toast } from "../../toast";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{ saved: [update: ConnectionSettingsUpdate] }>();
+const uiStore = useUiStore();
 
 const form = ref<ConnectionSettingsUpdate>(pickSettings(props.preferences));
 const reconnectUnlimited = ref(props.preferences.reconnectTimeoutSecs == null);
 const saving = ref(false);
-const relayTabs = computed<TabBarItem[]>(() => [
-  { key: "default", label: t("connectionSettings.defaultRelay") },
-  { key: "custom", label: t("connectionSettings.customRelay") },
+const relayOptions = computed<SelectOption[]>(() => [
+  { label: t("connectionSettings.defaultRelay"), value: "default" },
+  { label: t("connectionSettings.customRelay"), value: "custom" },
 ]);
-const reconnectTabs = computed<TabBarItem[]>(() => [
-  { key: "unlimited", label: t("connectionSettings.unlimited") },
-  { key: "limited", label: t("connectionSettings.limited") },
+const reconnectOptions = computed<SelectOption[]>(() => [
+  { label: t("connectionSettings.unlimited"), value: "unlimited" },
+  { label: t("connectionSettings.limited"), value: "limited" },
 ]);
 const timeoutOptions = computed<SelectOption[]>(() =>
   [10, 15, 20, 30, 60].map((seconds) => ({
@@ -47,11 +41,11 @@ function setReconnectTimeout(value: string | number) {
   form.value.reconnectTimeoutSecs = Number(value);
 }
 
-function setRelayMode(value: string | null) {
+function setRelayMode(value: string | number) {
   if (value === "default" || value === "custom") form.value.relayCustom = value === "custom";
 }
 
-function setReconnectMode(value: string | null) {
+function setReconnectMode(value: string | number) {
   if (value === "unlimited" || value === "limited") {
     reconnectUnlimited.value = value === "unlimited";
   }
@@ -75,15 +69,25 @@ const validRelay = computed(() => {
     return false;
   }
 });
+const pendingUpdate = computed<ConnectionSettingsUpdate>(() => ({
+  relayCustom: form.value.relayCustom,
+  relayUrl: form.value.relayUrl.trim(),
+  reconnectTimeoutSecs: reconnectUnlimited.value ? null : form.value.reconnectTimeoutSecs,
+}));
+const hasChanges = computed(() => {
+  const current = props.preferences;
+  const update = pendingUpdate.value;
+  return (
+    update.relayCustom !== current.relayCustom ||
+    update.relayUrl !== current.relayUrl ||
+    update.reconnectTimeoutSecs !== current.reconnectTimeoutSecs
+  );
+});
 
 async function save() {
-  if (!validRelay.value || saving.value) return;
+  if (!validRelay.value || !hasChanges.value || saving.value) return;
   saving.value = true;
-  const update: ConnectionSettingsUpdate = {
-    relayCustom: form.value.relayCustom,
-    relayUrl: form.value.relayUrl.trim(),
-    reconnectTimeoutSecs: reconnectUnlimited.value ? null : form.value.reconnectTimeoutSecs,
-  };
+  const update = pendingUpdate.value;
   try {
     await invoke("set_connection_settings", { update });
     emit("saved", update);
@@ -95,78 +99,79 @@ async function save() {
     saving.value = false;
   }
 }
+
+const saveAction = () => save();
+
+watchEffect(() => {
+  uiStore.setSaveState(
+    "settings",
+    !saving.value && validRelay.value && hasChanges.value,
+    saving.value,
+  );
+});
+
+onMounted(() => uiStore.registerSaveAction("settings", saveAction));
+onUnmounted(() => uiStore.unregisterSaveAction("settings", saveAction));
 </script>
 
 <template>
   <div class="workspace settings-workspace">
     <section class="settings-section">
       <div class="settings-section-heading">
-        <Network :size="20" />
         <div>
-          <h2>{{ t("connectionSettings.relayNode") }}</h2>
-          <p>{{ t("connectionSettings.hint") }}</p>
+          <h2>{{ t("connectionSettings.relaySection") }}</h2>
+          <p>{{ t("connectionSettings.relayHint") }}</p>
         </div>
       </div>
       <div class="preference-row">
         <span>{{ t("connectionSettings.relayNode") }}</span>
-        <Cmz_TabBar
-          class="mode-tabs settings-segment"
+        <Cmz_Select
+          class="settings-select"
           :model-value="form.relayCustom ? 'custom' : 'default'"
-          :tabs="relayTabs"
-          :level="2"
+          :options="relayOptions"
           @update:model-value="setRelayMode"
         />
       </div>
-      <div class="settings-detail-slot">
-        <label v-if="form.relayCustom" class="preference-row settings-input-row">
-          <span>{{ t("connectionSettings.customRelayUrl") }}</span>
-          <Cmz_Input
-            v-model="form.relayUrl"
-            type="url"
-            :placeholder="t('connectionSettings.relayPlaceholder')"
-          />
-        </label>
-      </div>
+      <label v-if="form.relayCustom" class="preference-row settings-input-row">
+        <span>{{ t("connectionSettings.customRelayUrl") }}</span>
+        <Cmz_Input
+          class="settings-input"
+          v-model="form.relayUrl"
+          type="url"
+          :placeholder="t('connectionSettings.relayPlaceholder')"
+        />
+      </label>
       <p v-if="form.relayCustom && !validRelay" class="field-error relay-error">
-        <CircleAlert :size="14" />{{ t("connectionSettings.invalidRelay") }}
+        {{ t("connectionSettings.invalidRelay") }}
       </p>
     </section>
 
     <section class="settings-section">
       <div class="settings-section-heading">
-        <RefreshCw :size="20" />
         <div>
-          <h2>{{ t("connectionSettings.reconnectPolicy") }}</h2>
-          <p>{{ t("connectionSettings.hint") }}</p>
+          <h2>{{ t("connectionSettings.reconnectSection") }}</h2>
+          <p>{{ t("connectionSettings.reconnectHint") }}</p>
         </div>
       </div>
       <div class="preference-row">
         <span>{{ t("connectionSettings.reconnectPolicy") }}</span>
-        <Cmz_TabBar
-          class="mode-tabs settings-segment"
+        <Cmz_Select
+          class="settings-select"
           :model-value="reconnectUnlimited ? 'unlimited' : 'limited'"
-          :tabs="reconnectTabs"
-          :level="2"
+          :options="reconnectOptions"
           @update:model-value="setReconnectMode"
         />
       </div>
-      <div class="settings-detail-slot">
-        <label v-if="!reconnectUnlimited" class="preference-row settings-input-row">
-          <span>{{ t("connectionSettings.timeout") }}</span>
-          <Cmz_Select
-            :model-value="form.reconnectTimeoutSecs ?? 30"
-            :options="timeoutOptions"
-            dropdown-width="100%"
-            @update:model-value="setReconnectTimeout"
-          />
-        </label>
-      </div>
+      <label v-if="!reconnectUnlimited" class="preference-row settings-input-row">
+        <span>{{ t("connectionSettings.timeout") }}</span>
+        <Cmz_Select
+          class="settings-select"
+          :model-value="form.reconnectTimeoutSecs ?? 30"
+          :options="timeoutOptions"
+          dropdown-width="100%"
+          @update:model-value="setReconnectTimeout"
+        />
+      </label>
     </section>
-
-    <div class="settings-actions">
-      <Cmz_Button size="sm" :loading="saving" :disabled="!validRelay" @click="save">
-        <Save :size="15" />{{ t("connectionSettings.save") }}
-      </Cmz_Button>
-    </div>
   </div>
 </template>

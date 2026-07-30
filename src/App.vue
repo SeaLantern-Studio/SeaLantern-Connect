@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { storeToRefs } from "pinia";
+import { LoaderCircle, Save } from "lucide-vue-next";
 import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
@@ -10,42 +12,23 @@ import HostView from "./components/rooms/HostView.vue";
 import JoinView from "./components/rooms/JoinView.vue";
 import PersonalizationView from "./components/settings/PersonalizationView.vue";
 import SettingsView from "./components/settings/SettingsView.vue";
-import { emptyConnectStatus, type ConnectStatus } from "./connect";
-import { setLocale, t } from "./i18n";
-import type {
-  ConnectionSettingsUpdate,
-  PersonalizationUpdate,
-  Preferences,
-  Locale,
-  ThemePreference,
-} from "./preferences";
+import { t } from "./i18n";
+import type { CloseAction } from "./preferences";
+import { useConnectionStore } from "./stores/connection";
+import { usePreferencesStore } from "./stores/preferences";
+import { useUiStore } from "./stores/ui";
 
-type SectionId = "create" | "join" | "personalize" | "settings";
-
-const status = ref<ConnectStatus>(emptyConnectStatus);
+const connectionStore = useConnectionStore();
+const preferencesStore = usePreferencesStore();
+const uiStore = useUiStore();
+const { status, state: connectionState } = storeToRefs(connectionStore);
+const { preferences } = storeToRefs(preferencesStore);
+const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
 const isInitializing = ref(true);
-const themePreference = ref<ThemePreference>("system");
-const preferences = ref<Preferences>({
-  theme: "system",
-  locale: "zh-CN",
-  rememberWindowState: true,
-  closeAction: "hide_to_tray",
-  joinUri: "",
-  joinPort: 25565,
-  reconnectTimeoutSecs: null,
-  relayCustom: false,
-  relayUrl: "",
-});
-const activeSection = ref<SectionId>("join");
-const sidebarCollapsed = ref(false);
-const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
-let unlisten: UnlistenFn | null = null;
-let themeSaveQueue = Promise.resolve();
-let localeSaveQueue = Promise.resolve();
+const choosingCloseAction = ref(false);
+let unlistenCloseAction: UnlistenFn | null = null;
 
-const busy = computed(() => status.value.phase === "starting" || status.value.phase === "stopping");
-const connected = computed(() => status.value.phase === "active");
 const pageTitle = computed(
   () =>
     ({
@@ -55,108 +38,35 @@ const pageTitle = computed(
       settings: t("navigation.settings"),
     })[activeSection.value],
 );
-const connectionState = computed(() => {
-  if (connected.value) return "active";
-  if (busy.value) return "busy";
-  return "idle";
-});
 
-function applyTheme() {
-  const dark =
-    themePreference.value === "system" ? systemTheme.matches : themePreference.value === "dark";
-  document.documentElement.dataset.theme = dark ? "dark" : "light";
-}
-
-async function saveTheme(theme: ThemePreference, fallbackTheme: ThemePreference): Promise<void> {
+async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Promise<void> {
+  if (choosingCloseAction.value) return;
+  choosingCloseAction.value = true;
   try {
-    await invoke("set_theme", { theme });
-  } catch (error) {
-    if (themePreference.value === theme) {
-      themePreference.value = fallbackTheme;
-      preferences.value.theme = fallbackTheme;
-      applyTheme();
-    }
-    console.error("Failed to save theme preference", error);
-  }
-}
-
-function setTheme(theme: ThemePreference) {
-  if (themePreference.value === theme) return;
-
-  const previousTheme = themePreference.value;
-  themePreference.value = theme;
-  preferences.value.theme = theme;
-  applyTheme();
-
-  themeSaveQueue = themeSaveQueue.then(() => saveTheme(theme, previousTheme));
-}
-
-async function saveLocale(locale: Locale, fallbackLocale: Locale): Promise<void> {
-  try {
-    await invoke("set_locale", { locale });
-  } catch (error) {
-    if (preferences.value.locale === locale) {
-      preferences.value.locale = fallbackLocale;
-      setLocale(fallbackLocale);
-    }
-    console.error("Failed to save locale preference", error);
-  }
-}
-
-function changeLocale(locale: Locale) {
-  if (preferences.value.locale === locale) return;
-
-  const previousLocale = preferences.value.locale;
-  preferences.value.locale = locale;
-  setLocale(locale);
-  localeSaveQueue = localeSaveQueue.then(() => saveLocale(locale, previousLocale));
-}
-
-function applyPersonalization(update: PersonalizationUpdate) {
-  Object.assign(preferences.value, update);
-  themePreference.value = update.theme;
-  setLocale(update.locale);
-  applyTheme();
-}
-
-function applyConnectionSettings(update: ConnectionSettingsUpdate) {
-  Object.assign(preferences.value, update);
-}
-
-function handleSystemThemeChange() {
-  if (themePreference.value === "system") applyTheme();
-}
-
-function navigate(section: string) {
-  if (["create", "join", "personalize", "settings"].includes(section)) {
-    activeSection.value = section as SectionId;
+    const saved = await preferencesStore.setCloseAction(closeAction);
+    if (!saved) return;
+    uiStore.closeClosePrompt();
+    await getCurrentWindow().close();
+  } finally {
+    choosingCloseAction.value = false;
   }
 }
 
 onMounted(async () => {
+  unlistenCloseAction = await listen("close-action-requested", uiStore.openClosePrompt);
+  await preferencesStore.load();
+  preferencesStore.startSystemThemeListener();
   try {
-    preferences.value = await invoke<Preferences>("get_preferences");
-    themePreference.value = preferences.value.theme;
-    setLocale(preferences.value.locale);
-  } catch (error) {
-    console.error("Failed to load preferences", error);
-  }
-  applyTheme();
-  systemTheme.addEventListener("change", handleSystemThemeChange);
-
-  try {
-    status.value = await invoke<ConnectStatus>("get_status");
-    unlisten = await listen<ConnectStatus>("connect-status", (event) => {
-      status.value = event.payload;
-    });
+    await connectionStore.initialize();
   } finally {
     isInitializing.value = false;
   }
 });
 
 onUnmounted(() => {
-  unlisten?.();
-  systemTheme.removeEventListener("change", handleSystemThemeChange);
+  unlistenCloseAction?.();
+  connectionStore.dispose();
+  preferencesStore.stopSystemThemeListener();
 });
 </script>
 
@@ -164,7 +74,12 @@ onUnmounted(() => {
   <AppToast />
 
   <Transition name="splash-fade">
-    <SplashScreen v-if="showSplash" :loading="isInitializing" @ready="showSplash = false" />
+    <SplashScreen
+      v-if="showSplash"
+      :loading="isInitializing"
+      :duration-ms="preferences.splashDurationMs"
+      @ready="showSplash = false"
+    />
   </Transition>
 
   <div v-if="!showSplash" class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
@@ -173,15 +88,15 @@ onUnmounted(() => {
       :connection-state="connectionState"
       :tunnel-mode="status.mode"
       :collapsed="sidebarCollapsed"
-      @navigate="navigate"
-      @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
+      @navigate="uiStore.navigate"
+      @toggle-collapse="uiStore.toggleSidebar"
     />
     <AppHeader
       :title="pageTitle"
-      :theme="themePreference"
+      :theme="preferences.theme"
       :locale="preferences.locale"
-      @change-locale="changeLocale"
-      @change-theme="setTheme"
+      @change-locale="preferencesStore.changeLocale"
+      @change-theme="preferencesStore.setTheme"
     />
 
     <main class="app-content">
@@ -197,12 +112,61 @@ onUnmounted(() => {
           <PersonalizationView
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
-            @change-theme="setTheme"
-            @saved="applyPersonalization"
+            @change-color-theme="preferencesStore.setColorTheme"
+            @change-theme="preferencesStore.setTheme"
+            @saved="preferencesStore.applyPersonalization"
           />
-          <SettingsView v-else :preferences="preferences" @saved="applyConnectionSettings" />
+          <SettingsView
+            v-else
+            :preferences="preferences"
+            @saved="preferencesStore.applyConnectionSettings"
+          />
         </div>
       </Transition>
     </main>
+
+    <button
+      v-if="uiStore.showsSaveButton"
+      class="floating-save-button"
+      type="button"
+      :title="t('connectionSettings.save')"
+      :aria-label="t('connectionSettings.save')"
+      :disabled="!uiStore.activeSaveState.enabled"
+      @click="uiStore.saveActiveSection"
+    >
+      <LoaderCircle v-if="uiStore.activeSaveState.saving" class="spin" :size="17" />
+      <Save v-else :size="17" />
+    </button>
+  </div>
+
+  <div v-if="uiStore.closePromptOpen" class="modal-backdrop close-action-backdrop">
+    <section
+      class="confirm-dialog close-action-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="close-action-title"
+      aria-describedby="close-action-hint"
+    >
+      <h2 id="close-action-title">{{ t("window.closePromptTitle") }}</h2>
+      <p id="close-action-hint">{{ t("window.closePromptHint") }}</p>
+      <div class="dialog-actions">
+        <button
+          class="danger-button"
+          type="button"
+          :disabled="choosingCloseAction"
+          @click="chooseCloseAction('exit')"
+        >
+          {{ t("personalization.exitApplication") }}
+        </button>
+        <button
+          class="primary-button"
+          type="button"
+          :disabled="choosingCloseAction"
+          @click="chooseCloseAction('hide_to_tray')"
+        >
+          {{ t("personalization.hideToTray") }}
+        </button>
+      </div>
+    </section>
   </div>
 </template>

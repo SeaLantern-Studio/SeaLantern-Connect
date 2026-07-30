@@ -1,9 +1,14 @@
+import type { ColorThemeId } from "./themes";
+
 export type ThemePreference = "system" | "light" | "dark";
+export type SplashDurationMs = 0 | 500 | 1000 | 1500 | 2000;
 export type Locale = "zh-CN" | "en";
-export type CloseAction = "exit" | "hide_to_tray";
+export type CloseAction = "ask" | "exit" | "hide_to_tray";
 
 export interface Preferences {
   theme: ThemePreference;
+  colorTheme: ColorThemeId;
+  splashDurationMs: SplashDurationMs;
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;
@@ -16,6 +21,8 @@ export interface Preferences {
 
 export interface PersonalizationUpdate {
   theme: ThemePreference;
+  colorTheme: ColorThemeId;
+  splashDurationMs: SplashDurationMs;
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;

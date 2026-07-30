@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import logoUrl from "../assets/logo.png";
 import { t } from "../i18n";
 
 const props = defineProps<{
   loading: boolean;
+  durationMs: number;
 }>();
 
 const emit = defineEmits<{
@@ -14,11 +15,23 @@ const emit = defineEmits<{
 const logoScale = ref(0);
 const contentVisible = ref(false);
 const animationComplete = ref(false);
+const startedAt = performance.now();
+let completionTimer: number | null = null;
 
 function finishWhenReady() {
   if (animationComplete.value && !props.loading) {
     emit("ready");
   }
+}
+
+function scheduleCompletion() {
+  if (completionTimer != null) window.clearTimeout(completionTimer);
+  const elapsedMs = performance.now() - startedAt;
+  const remainingMs = Math.max(0, props.durationMs - elapsedMs);
+  completionTimer = window.setTimeout(() => {
+    animationComplete.value = true;
+    finishWhenReady();
+  }, remainingMs);
 }
 
 onMounted(() => {
@@ -30,13 +43,15 @@ onMounted(() => {
     contentVisible.value = true;
   }, 200);
 
-  window.setTimeout(() => {
-    animationComplete.value = true;
-    finishWhenReady();
-  }, 600);
+  scheduleCompletion();
 });
 
 watch(() => props.loading, finishWhenReady);
+watch(() => props.durationMs, scheduleCompletion);
+
+onUnmounted(() => {
+  if (completionTimer != null) window.clearTimeout(completionTimer);
+});
 </script>
 
 <template>
@@ -86,7 +101,7 @@ watch(() => props.loading, finishWhenReady);
   width: 96px;
   height: 96px;
   border-radius: 20px;
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--primary) 23%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .splash-text,

@@ -1,24 +1,27 @@
 :root {
   font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #122033;
-  background: #f4f7fa;
+  color: var(--text);
+  background: var(--background);
   font-synthesis: none;
-  --primary: #0b8fd3;
-  --primary-hover: #0879b5;
+  --background: #f8fafc;
+  --primary: #0ea5e9;
+  --primary-hover: #0369a1;
   --surface: #ffffff;
-  --surface-soft: #f7fafc;
-  --border: #dce5ec;
-  --text: #122033;
-  --muted: #64748b;
-  --success: #159866;
-  --danger: #dc4c4c;
+  --surface-soft: #f1f5f9;
+  --surface-strong: #e2e8f0;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #475569;
+  --success: #22c55e;
+  --danger: #ef4444;
   --shadow: 0 16px 44px rgba(30, 55, 75, 0.11);
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
   --cmz-primary: var(--primary);
   --cmz-primary-dark: var(--primary-hover);
   --cmz-primary-bg: color-mix(in srgb, var(--primary) 11%, transparent);
   --cmz-surface: var(--surface);
   --cmz-bg-secondary: var(--surface-soft);
-  --cmz-bg-tertiary: var(--surface-soft);
+  --cmz-bg-tertiary: var(--surface-strong);
   --cmz-border: var(--border);
   --cmz-border-light: var(--border);
   --cmz-text-primary: var(--text);
@@ -29,21 +32,26 @@
   --cmz-radius-md: 7px;
   --cmz-radius-lg: 8px;
   --cmz-shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+  --cmz-glass-bg: rgba(255, 255, 255, 0.72);
+  --cmz-acrylic-bg: rgba(255, 255, 255, 0.65);
 }
 
 :root[data-theme="dark"] {
-  color: #e5edf5;
-  background: #15191f;
-  --primary: #55b9ed;
-  --primary-hover: #78c8ef;
-  --surface: #20262e;
-  --surface-soft: #191e25;
-  --border: #343d48;
-  --text: #e5edf5;
-  --muted: #98a7b7;
-  --success: #55c994;
-  --danger: #f47777;
-  --shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
+  --background: #0c1222;
+  --primary: #38bdf8;
+  --primary-hover: #3b82f6;
+  --surface: #151d2e;
+  --surface-soft: #151d2e;
+  --surface-strong: #1e293b;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --success: #34d399;
+  --danger: #f87171;
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --cmz-glass-bg: rgba(0, 0, 0, 0.72);
+  --cmz-acrylic-bg: rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -74,7 +82,7 @@ button {
   height: 100%;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr);
   background: var(--surface-soft);
   transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -90,7 +98,7 @@ button {
   background: transparent;
 }
 .sidebar-brand {
-  height: 64px;
+  height: 48px;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   flex: 0 0 auto;
@@ -272,7 +280,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px 0 22px;
+  padding: 0 10px 0 22px;
   background: transparent;
   user-select: none;
   -webkit-app-region: drag;
@@ -551,27 +559,23 @@ button {
 
 .settings-workspace {
   width: min(760px, calc(100% - 48px));
-  align-content: center;
-  gap: 0;
+  min-height: 100%;
+  margin: 0 auto;
+  padding-bottom: 32px;
+  align-content: start;
+  gap: 16px;
 }
 .settings-section {
   display: grid;
   gap: 18px;
-  padding: 22px 4px;
-  border-bottom: 1px solid var(--border);
-}
-.settings-section:first-child {
-  padding-top: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
 }
 .settings-section-heading {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: start;
-  gap: 12px;
   color: var(--primary);
-}
-.settings-section-heading > svg {
-  margin-top: 2px;
 }
 .settings-section-heading h2 {
   margin: 0 0 4px;
@@ -599,14 +603,18 @@ button {
 .settings-segment {
   width: 100%;
 }
+.settings-select,
+.settings-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 200px;
+  justify-self: end;
+}
 .switch-row {
   cursor: default;
 }
 .switch-row .cmz-toggle {
   justify-self: end;
-}
-.settings-detail-slot {
-  min-height: 38px;
 }
 .settings-input-row > input,
 .settings-input-row > select {
@@ -637,32 +645,51 @@ button {
 .settings-input-row .cmz-select-trigger {
   min-height: 38px;
   border-radius: 7px;
-  background: var(--surface-soft);
 }
 .settings-input-row .cmz-select-dropdown {
   border-radius: 7px;
-  background: var(--surface);
 }
 .settings-input-row .cmz-select-option {
   min-height: 36px;
   font-size: 13px;
 }
-.settings-input-row .cmz-select-option.selected {
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 11%, var(--surface));
-}
 .relay-error {
   justify-self: end;
-  width: min(390px, 100%);
+  width: min(200px, 100%);
   margin-top: -10px;
 }
-.settings-actions {
-  min-height: 62px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 16px;
-  padding-top: 20px;
+.floating-save-button {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 110;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(30, 55, 75, 0.1);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+.floating-save-button:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--surface-soft);
+}
+.floating-save-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  outline-offset: 2px;
+}
+.floating-save-button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .workspace {
@@ -673,24 +700,9 @@ button {
 }
 .intro {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-}
-.status-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 11%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
-}
-.status-mark.active {
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 11%, var(--surface));
-  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
 }
 h1 {
   margin: 0 0 5px;
@@ -777,9 +789,6 @@ h1 {
 }
 .discovery-state {
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 11px;
   color: var(--primary);
 }
 .discovery-state.detected {
@@ -992,9 +1001,6 @@ button:disabled {
   border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
 }
 .field-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin: 8px 0 0;
   color: var(--danger);
   font-size: 12px;
@@ -1010,9 +1016,6 @@ button:disabled {
   min-width: 104px;
 }
 .privacy-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   color: var(--muted);
   font-size: 12px;
 }
@@ -1088,9 +1091,6 @@ button:disabled {
   white-space: nowrap;
 }
 .error-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin: 0;
   padding: 11px 14px;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
@@ -1103,11 +1103,15 @@ button:disabled {
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 1000;
   display: grid;
   place-items: center;
   padding: 20px;
   background: rgba(7, 15, 24, 0.48);
   backdrop-filter: blur(4px);
+}
+.close-action-dialog {
+  width: min(380px, 100%);
 }
 .confirm-dialog {
   width: min(420px, 100%);
@@ -1116,16 +1120,6 @@ button:disabled {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
-}
-.dialog-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 17px;
-  border-radius: 8px;
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
 }
 .confirm-dialog h2 {
   margin: 0 0 9px;
@@ -1278,18 +1272,16 @@ button:disabled {
     grid-template-columns: 1fr;
     gap: 8px;
   }
+  .settings-select,
+  .settings-input {
+    max-width: none;
+    justify-self: stretch;
+  }
   .switch-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .settings-detail-slot {
-    min-height: 68px;
-  }
   .intro {
-    grid-template-columns: 42px 1fr;
-  }
-  .status-mark {
-    width: 42px;
-    height: 42px;
+    grid-template-columns: 1fr;
   }
   .phase-pill {
     display: none;

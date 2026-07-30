@@ -1,7 +1,7 @@
-use crate::settings::SettingsState;
+use crate::settings::{CloseAction, SettingsState};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{App, AppHandle, Manager, Window, WindowEvent};
+use tauri::{App, AppHandle, Emitter, Manager, Window, WindowEvent};
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const SHOW_MENU_ID: &str = "tray-show";
@@ -53,9 +53,16 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
     let settings = window.state::<SettingsState>();
     if let WindowEvent::CloseRequested { api, .. } = event {
         let _ = settings.persist();
-        if settings.should_hide_on_close() {
-            api.prevent_close();
-            let _ = window.hide();
+        match settings.close_action() {
+            CloseAction::HideToTray => {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+            CloseAction::Ask => {
+                api.prevent_close();
+                let _ = window.emit("close-action-requested", ());
+            }
+            CloseAction::Exit => {}
         }
     }
 }
