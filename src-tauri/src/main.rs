@@ -6,14 +6,30 @@ mod settings;
 mod tray;
 
 use tauri::Manager;
+use tauri_plugin_window_state::{StateFlags, WindowExt};
+
+fn window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
+}
 
 fn main() {
     tauri::Builder::default()
         .manage(connect::ConnectState::new())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(window_state_flags())
+                .skip_initial_state("main")
+                .build(),
+        )
         .setup(|app| {
             connect::setup(app)?;
-            app.state::<settings::SettingsState>()
-                .restore_window(app.handle());
+            if app
+                .state::<settings::SettingsState>()
+                .remembers_window_state()
+                && let Some(window) = app.get_webview_window("main")
+            {
+                window.restore_state(window_state_flags())?;
+            }
             tray::setup(app)?;
             Ok(())
         })

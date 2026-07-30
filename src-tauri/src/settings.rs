@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, State, Window, WindowEvent};
+use tauri::{AppHandle, Manager, State};
 
 const APP_DIR_NAME: &str = "sealantern-connect";
 const PREFERENCES_FILE: &str = "preferences.conf";
@@ -25,11 +25,6 @@ pub struct Preferences {
     reconnect_timeout_secs: Option<u64>,
     relay_custom: bool,
     relay_url: String,
-    window_x: Option<i32>,
-    window_y: Option<i32>,
-    window_width: Option<u32>,
-    window_height: Option<u32>,
-    window_maximized: bool,
 }
 
 impl Default for Preferences {
@@ -44,11 +39,6 @@ impl Default for Preferences {
             reconnect_timeout_secs: None,
             relay_custom: false,
             relay_url: String::new(),
-            window_x: None,
-            window_y: None,
-            window_width: None,
-            window_height: None,
-            window_maximized: false,
         }
     }
 }
@@ -166,27 +156,10 @@ impl SettingsState {
             .is_ok_and(|preferences| preferences.close_action == "hide_to_tray")
     }
 
-    pub fn record_window_event(&self, window: &Window, event: &WindowEvent) {
-        let Ok(mut preferences) = self.preferences.lock() else {
-            return;
-        };
-        if !preferences.remember_window_state {
-            return;
-        }
-        match event {
-            WindowEvent::Moved(position) => {
-                preferences.window_x = Some(position.x);
-                preferences.window_y = Some(position.y);
-            }
-            WindowEvent::Resized(size) => {
-                if !window.is_maximized().unwrap_or(false) {
-                    preferences.window_width = Some(size.width);
-                    preferences.window_height = Some(size.height);
-                }
-                preferences.window_maximized = window.is_maximized().unwrap_or(false);
-            }
-            _ => {}
-        }
+    pub fn remembers_window_state(&self) -> bool {
+        self.preferences
+            .lock()
+            .is_ok_and(|preferences| preferences.remember_window_state)
     }
 
     pub fn persist(&self) -> Result<(), String> {
@@ -195,30 +168,6 @@ impl SettingsState {
             .lock()
             .map_err(|_| "settings state is unavailable".to_owned())?;
         save_preferences(&self.path, &preferences)
-    }
-
-    pub fn restore_window(&self, app: &AppHandle) {
-        let Ok(preferences) = self.preferences.lock() else {
-            return;
-        };
-        if !preferences.remember_window_state {
-            return;
-        }
-        let Some(window) = app.get_webview_window("main") else {
-            return;
-        };
-        if let (Some(width), Some(height)) = (preferences.window_width, preferences.window_height)
-            && width >= 640
-            && height >= 480
-        {
-            let _ = window.set_size(PhysicalSize::new(width, height));
-        }
-        if let (Some(x), Some(y)) = (preferences.window_x, preferences.window_y) {
-            let _ = window.set_position(PhysicalPosition::new(x, y));
-        }
-        if preferences.window_maximized {
-            let _ = window.maximize();
-        }
     }
 
     fn update(&self, apply: impl FnOnce(&mut Preferences)) -> Result<(), String> {
@@ -290,13 +239,6 @@ pub fn set_personalization(
         preferences.locale = update.locale;
         preferences.remember_window_state = update.remember_window_state;
         preferences.close_action = update.close_action;
-        if !preferences.remember_window_state {
-            preferences.window_x = None;
-            preferences.window_y = None;
-            preferences.window_width = None;
-            preferences.window_height = None;
-            preferences.window_maximized = false;
-        }
     })
 }
 
@@ -334,7 +276,7 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\nlocale={}\nremember_window_state={}\nclose_action={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\nwindow_x={}\nwindow_y={}\nwindow_width={}\nwindow_height={}\nwindow_maximized={}\n",
+        "theme={}\nlocale={}\nremember_window_state={}\nclose_action={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.locale,
         preferences.remember_window_state,
@@ -346,11 +288,6 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
             .map_or_else(|| "unlimited".to_owned(), |value| value.to_string()),
         preferences.relay_custom,
         preferences.relay_url,
-        format_option(preferences.window_x),
-        format_option(preferences.window_y),
-        format_option(preferences.window_width),
-        format_option(preferences.window_height),
-        preferences.window_maximized,
     );
     std::fs::write(path, content).map_err(|error| error.to_string())
 }
@@ -392,23 +329,9 @@ fn parse_preferences(content: &str) -> Preferences {
             preferences.relay_custom = value.trim() == "true";
         } else if let Some(value) = line.strip_prefix("relay_url=") {
             preferences.relay_url = value.trim().to_owned();
-        } else if let Some(value) = line.strip_prefix("window_x=") {
-            preferences.window_x = value.trim().parse().ok();
-        } else if let Some(value) = line.strip_prefix("window_y=") {
-            preferences.window_y = value.trim().parse().ok();
-        } else if let Some(value) = line.strip_prefix("window_width=") {
-            preferences.window_width = value.trim().parse().ok();
-        } else if let Some(value) = line.strip_prefix("window_height=") {
-            preferences.window_height = value.trim().parse().ok();
-        } else if let Some(value) = line.strip_prefix("window_maximized=") {
-            preferences.window_maximized = value.trim() == "true";
         }
     }
     preferences
-}
-
-fn format_option(value: Option<impl ToString>) -> String {
-    value.map_or_else(String::new, |value| value.to_string())
 }
 
 #[cfg(test)]
@@ -437,11 +360,6 @@ mod tests {
         assert_eq!(preferences.reconnect_timeout_secs, Some(30));
         assert!(preferences.relay_custom);
         assert_eq!(preferences.relay_url, "https://relay.example.com");
-        assert_eq!(preferences.window_x, Some(100));
-        assert_eq!(preferences.window_y, Some(200));
-        assert_eq!(preferences.window_width, Some(960));
-        assert_eq!(preferences.window_height, Some(640));
-        assert!(preferences.window_maximized);
     }
 
     #[test]

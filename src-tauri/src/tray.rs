@@ -51,7 +51,6 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
         return;
     }
     let settings = window.state::<SettingsState>();
-    settings.record_window_event(window, event);
     if let WindowEvent::CloseRequested { api, .. } = event {
         let _ = settings.persist();
         if settings.should_hide_on_close() {

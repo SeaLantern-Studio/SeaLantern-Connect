@@ -15,4 +15,5 @@ sculk.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri.workspace = true
+tauri-plugin-window-state.workspace = true
 tokio.workspace = true
