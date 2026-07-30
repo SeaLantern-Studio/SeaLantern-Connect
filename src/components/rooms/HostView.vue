@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
+import type { ConnectStatus } from "../../connect";
+import { t } from "../../i18n";
 import {
   Check,
   CircleAlert,
@@ -11,16 +14,6 @@ import {
   RefreshCw,
   Square,
 } from "lucide-vue-next";
-
-interface ConnectStatus {
-  phase: "idle" | "starting" | "active" | "stopping";
-  mode: "host" | "join" | null;
-  shareUri: string | null;
-  playerCount: number;
-  hostPort: number | null;
-  message: string | null;
-  error: string | null;
-}
 
 interface LanScanSnapshot {
   scanning: boolean;
@@ -40,6 +33,10 @@ const commandError = ref("");
 const pending = ref(false);
 const copied = ref(false);
 let scanTimer: number | null = null;
+const portModeTabs = computed<TabBarItem[]>(() => [
+  { key: "auto", label: t("create.automaticDiscovery") },
+  { key: "manual", label: t("create.manual") },
+]);
 
 const hosting = computed(() => props.status.mode === "host" && props.status.phase !== "idle");
 const occupied = computed(() => props.status.phase !== "idle" && props.status.mode !== "host");
@@ -58,6 +55,12 @@ const validMaxPlayers = computed(() => {
 const canCreate = computed(
   () => !pending.value && !occupied.value && validPort.value && validMaxPlayers.value,
 );
+
+function setPortMode(value: string | null) {
+  if (value !== "auto" && value !== "manual") return;
+  portMode.value = value;
+  if (value === "auto") void beginScan();
+}
 
 async function beginScan(restart = false) {
   scanError.value = "";
@@ -149,65 +152,59 @@ onUnmounted(stopPolling);
         <HousePlus v-else :size="25" />
       </div>
       <div>
-        <h1>{{ hosting ? "房间正在运行" : "共享 Minecraft 世界" }}</h1>
-        <p v-if="hosting">复制邀请并发送给好友，对方即可通过 SeaLantern Connect 加入。</p>
-        <p v-else>打开单人世界的局域网联机，SeaLantern Connect 会自动寻找开放端口。</p>
+        <h1>{{ hosting ? t("create.running") : t("create.title") }}</h1>
+        <p v-if="hosting">{{ t("create.runningHint") }}</p>
+        <p v-else>{{ t("create.idleHint") }}</p>
       </div>
       <span class="phase-pill" :class="status.phase">
-        {{ hosting ? (status.phase === "active" ? "已创建" : "处理中") : "未创建" }}
+        {{
+          hosting
+            ? status.phase === "active"
+              ? t("create.created")
+              : t("create.processing")
+            : t("create.notCreated")
+        }}
       </span>
     </section>
 
     <section v-if="hosting" class="connection-panel host-panel">
       <div class="share-block">
-        <span>房间邀请</span>
-        <strong>{{ status.shareUri ?? "正在生成邀请..." }}</strong>
+        <span>{{ t("create.invite") }}</span>
+        <strong>{{ status.shareUri ?? t("create.generatingInvite") }}</strong>
         <button class="copy-button" type="button" :disabled="!status.shareUri" @click="copyInvite">
           <Check v-if="copied" :size="16" />
           <Copy v-else :size="16" />
-          {{ copied ? "已复制" : "复制邀请" }}
+          {{ copied ? t("create.copied") : t("create.copyInvite") }}
         </button>
       </div>
       <div class="host-summary">
         <div>
-          <span>当前玩家</span>
+          <span>{{ t("create.players") }}</span>
           <strong>{{ status.playerCount }}</strong>
         </div>
         <div>
-          <span>目标端口</span>
+          <span>{{ t("create.targetPort") }}</span>
           <strong>{{ status.hostPort ?? "--" }}</strong>
         </div>
       </div>
       <div class="connection-footer">
-        <p>{{ status.message ?? "房间已准备好，等待玩家加入。" }}</p>
+        <p>{{ status.message ?? t("create.ready") }}</p>
         <button class="danger-button" type="button" :disabled="pending" @click="stopRoom">
-          <Square :size="15" />停止房间
+          <Square :size="15" />{{ t("create.stop") }}
         </button>
       </div>
     </section>
 
     <section v-else class="create-panel">
       <div class="form-field">
-        <span class="field-label">Minecraft 端口</span>
-        <div class="segmented-control" aria-label="端口选择方式">
-          <button
-            type="button"
-            :class="{ active: portMode === 'auto' }"
-            @click="
-              portMode = 'auto';
-              beginScan();
-            "
-          >
-            自动发现
-          </button>
-          <button
-            type="button"
-            :class="{ active: portMode === 'manual' }"
-            @click="portMode = 'manual'"
-          >
-            手动填写
-          </button>
-        </div>
+        <span class="field-label">{{ t("create.minecraftPort") }}</span>
+        <Cmz_TabBar
+          class="mode-tabs"
+          :model-value="portMode"
+          :tabs="portModeTabs"
+          :level="2"
+          @update:model-value="setPortMode"
+        />
       </div>
 
       <div v-if="portMode === 'auto'" class="discovery-row">
@@ -218,23 +215,28 @@ onUnmounted(stopPolling);
           <div>
             <strong>{{
               scan.port != null
-                ? `已发现端口 ${scan.port}`
+                ? t("create.portFound", { port: scan.port })
                 : scanError
-                  ? "无法自动发现"
-                  : "正在寻找局域网世界"
+                  ? t("create.discoveryFailed")
+                  : t("create.discovering")
             }}</strong>
             <span>{{
-              scan.port != null ? "Minecraft 世界可以创建房间" : "等待 Minecraft 广播局域网端口"
+              scan.port != null ? t("create.worldReady") : t("create.waitingBroadcast")
             }}</span>
           </div>
         </div>
-        <button class="icon-button" type="button" title="重新扫描" @click="beginScan(true)">
+        <button
+          class="icon-button"
+          type="button"
+          :title="t('create.rescan')"
+          @click="beginScan(true)"
+        >
           <RefreshCw :size="16" />
         </button>
       </div>
 
       <div v-else class="form-field manual-port-field">
-        <label for="host-port" class="field-label">端口号</label>
+        <label for="host-port" class="field-label">{{ t("create.port") }}</label>
         <input
           id="host-port"
           v-model="manualPort"
@@ -246,7 +248,7 @@ onUnmounted(stopPolling);
       </div>
 
       <div class="form-field settings-field">
-        <label for="max-players" class="field-label">最大玩家数</label>
+        <label for="max-players" class="field-label">{{ t("create.maxPlayers") }}</label>
         <input
           id="max-players"
           v-model="maxPlayers"
@@ -254,20 +256,20 @@ onUnmounted(stopPolling);
           min="1"
           max="1000"
           inputmode="numeric"
-          placeholder="不限制"
+          :placeholder="t('create.unlimited')"
         />
       </div>
 
       <div class="create-actions">
         <p v-if="commandError || occupied || status.message" class="field-error">
           <CircleAlert :size="14" />{{
-            occupied ? "请先停止当前连接。" : commandError || status.message
+            occupied ? t("create.occupied") : commandError || status.message
           }}
         </p>
         <button class="primary-button" type="button" :disabled="!canCreate" @click="createRoom">
           <LoaderCircle v-if="pending" class="spin" :size="17" />
           <HousePlus v-else :size="17" />
-          创建房间
+          {{ t("create.create") }}
         </button>
       </div>
     </section>

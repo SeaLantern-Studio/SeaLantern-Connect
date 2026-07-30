@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   HousePlus,
   LogIn,
@@ -8,6 +9,7 @@ import {
   Settings,
 } from "lucide-vue-next";
 import logoUrl from "../../assets/logo.svg";
+import { t } from "../../i18n";
 
 interface NavItem {
   id: string;
@@ -27,15 +29,15 @@ const emit = defineEmits<{
   toggleCollapse: [];
 }>();
 
-const primaryItems: NavItem[] = [
-  { id: "create", label: "创建房间", icon: HousePlus },
-  { id: "join", label: "加入房间", icon: LogIn },
-];
+const primaryItems = computed<NavItem[]>(() => [
+  { id: "join", label: t("navigation.joinRoom"), icon: LogIn },
+  { id: "create", label: t("navigation.createRoom"), icon: HousePlus },
+]);
 
-const utilityItems: NavItem[] = [
-  { id: "personalize", label: "个性化", icon: Palette },
-  { id: "settings", label: "设置", icon: Settings },
-];
+const utilityItems = computed<NavItem[]>(() => [
+  { id: "personalize", label: t("navigation.personalization"), icon: Palette },
+  { id: "settings", label: t("navigation.settings"), icon: Settings },
+]);
 </script>
 
 <template>
@@ -48,7 +50,7 @@ const utilityItems: NavItem[] = [
       </div>
     </div>
 
-    <nav class="sidebar-nav" aria-label="主导航">
+    <nav class="sidebar-nav" :aria-label="t('navigation.main')">
       <div class="nav-group">
         <button
           v-for="item in primaryItems"
@@ -69,7 +71,7 @@ const utilityItems: NavItem[] = [
             "
             class="connection-dot"
             :class="connectionState"
-            aria-label="连接正在运行"
+            :aria-label="t('navigation.connectionRunning')"
           ></span>
         </button>
       </div>
@@ -91,13 +93,13 @@ const utilityItems: NavItem[] = [
         <button
           class="nav-item collapse-button"
           type="button"
-          :title="collapsed ? '展开侧栏' : '收起侧栏'"
-          :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
+          :title="collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')"
+          :aria-label="collapsed ? t('navigation.expandSidebar') : t('navigation.collapseSidebar')"
           @click="emit('toggleCollapse')"
         >
           <PanelLeftOpen v-if="collapsed" class="nav-icon" :size="19" />
           <PanelLeftClose v-else class="nav-icon" :size="19" />
-          <span class="nav-label">收起侧栏</span>
+          <span class="nav-label">{{ t("navigation.collapseSidebar") }}</span>
         </button>
       </div>
     </nav>

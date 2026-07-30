@@ -13,6 +13,22 @@
   --success: #159866;
   --danger: #dc4c4c;
   --shadow: 0 16px 44px rgba(30, 55, 75, 0.11);
+  --cmz-primary: var(--primary);
+  --cmz-primary-dark: var(--primary-hover);
+  --cmz-primary-bg: color-mix(in srgb, var(--primary) 11%, transparent);
+  --cmz-surface: var(--surface);
+  --cmz-bg-secondary: var(--surface-soft);
+  --cmz-bg-tertiary: var(--surface-soft);
+  --cmz-border: var(--border);
+  --cmz-border-light: var(--border);
+  --cmz-text-primary: var(--text);
+  --cmz-text-secondary: var(--muted);
+  --cmz-text-tertiary: var(--muted);
+  --cmz-text-inverse: #ffffff;
+  --cmz-radius-sm: 5px;
+  --cmz-radius-md: 7px;
+  --cmz-radius-lg: 8px;
+  --cmz-shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
 :root[data-theme="dark"] {
@@ -334,6 +350,136 @@ button {
   color: color-mix(in srgb, var(--muted) 60%, transparent);
 }
 
+.settings-workspace {
+  width: min(760px, calc(100% - 48px));
+  align-content: center;
+  gap: 0;
+}
+.settings-section {
+  display: grid;
+  gap: 18px;
+  padding: 22px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-section:first-child {
+  padding-top: 0;
+}
+.settings-section-heading {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  color: var(--primary);
+}
+.settings-section-heading > svg {
+  margin-top: 2px;
+}
+.settings-section-heading h2 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
+}
+.settings-section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.preference-row {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(280px, 390px);
+  align-items: center;
+  gap: 20px;
+  font-size: 13px;
+}
+.preference-row > span:first-child {
+  font-weight: 600;
+}
+.settings-segment {
+  width: 100%;
+}
+.switch-row {
+  cursor: default;
+}
+.switch-row .cmz-toggle {
+  justify-self: end;
+}
+.settings-detail-slot {
+  min-height: 38px;
+}
+.settings-input-row > input,
+.settings-input-row > select {
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface-soft);
+  user-select: text;
+}
+.settings-input-row > input:focus,
+.settings-input-row > select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.settings-input-row > select {
+  cursor: pointer;
+}
+.settings-input-row > .cmz-input-wrapper,
+.settings-input-row > .cmz-select {
+  width: 100%;
+  min-width: 0;
+}
+.settings-input-row .cmz-input-container,
+.settings-input-row .cmz-select-trigger {
+  min-height: 38px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.settings-input-row .cmz-select-dropdown {
+  border-radius: 7px;
+  background: var(--surface);
+}
+.settings-input-row .cmz-select-option {
+  min-height: 36px;
+  font-size: 13px;
+}
+.settings-input-row .cmz-select-option.selected {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 11%, var(--surface));
+}
+.relay-error {
+  justify-self: end;
+  width: min(390px, 100%);
+  margin-top: -10px;
+}
+.settings-actions {
+  min-height: 62px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 16px;
+  padding-top: 20px;
+}
+.settings-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.settings-result.saved {
+  color: var(--success);
+}
+.settings-result.error {
+  color: var(--danger);
+}
+
 .workspace {
   width: min(760px, calc(100% - 48px));
   margin: auto;
@@ -412,37 +558,23 @@ h1 {
   font-size: 13px;
   font-weight: 650;
 }
-.segmented-control {
-  height: 38px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-soft);
-}
-.segmented-control button {
+.mode-tabs {
+  width: 100%;
   min-width: 0;
-  padding: 0 12px;
+  margin-bottom: 0;
+}
+.mode-tabs .cmz-tab-bar__tabs {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+.mode-tabs .cmz-tab-bar__btn {
+  min-width: 0;
+  flex: 1;
+  justify-content: center;
   overflow: hidden;
-  border: 0;
-  border-radius: 5px;
-  color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.segmented-control button:hover {
-  color: var(--text);
-}
-.segmented-control button.active {
-  color: var(--primary);
-  background: var(--surface);
-  box-shadow: 0 1px 4px rgba(30, 55, 75, 0.1);
 }
 .discovery-row {
   height: 62px;
@@ -846,7 +978,7 @@ button:disabled {
   font-size: 12px;
   font-weight: 650;
 }
-.join-port-heading .segmented-control {
+.join-port-heading .mode-tabs {
   height: 34px;
 }
 .join-port-detail {
@@ -953,6 +1085,19 @@ button:disabled {
   .workspace {
     width: calc(100% - 28px);
     gap: 16px;
+  }
+  .settings-workspace {
+    align-content: start;
+  }
+  .preference-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .switch-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .settings-detail-slot {
+    min-height: 68px;
   }
   .intro {
     grid-template-columns: 42px 1fr;

@@ -1,3 +1,4 @@
+use crate::settings::SettingsState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{App, AppHandle, Manager, Window, WindowEvent};
@@ -22,7 +23,10 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             SHOW_MENU_ID => show_main_window(app),
-            QUIT_MENU_ID => app.exit(0),
+            QUIT_MENU_ID => {
+                let _ = app.state::<SettingsState>().persist();
+                app.exit(0);
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -43,11 +47,17 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn handle_window_event(window: &Window, event: &WindowEvent) {
-    if window.label() == MAIN_WINDOW_LABEL
-        && let WindowEvent::CloseRequested { api, .. } = event
-    {
-        api.prevent_close();
-        let _ = window.hide();
+    if window.label() != MAIN_WINDOW_LABEL {
+        return;
+    }
+    let settings = window.state::<SettingsState>();
+    settings.record_window_event(window, event);
+    if let WindowEvent::CloseRequested { api, .. } = event {
+        let _ = settings.persist();
+        if settings.should_hide_on_close() {
+            api.prevent_close();
+            let _ = window.hide();
+        }
     }
 }
 

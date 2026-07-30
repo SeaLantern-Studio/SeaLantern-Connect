@@ -235,6 +235,7 @@ pub async fn start_host(
         ));
     }
     let identity = app.state::<SettingsState>().host_identity()?;
+    let relay_url = app.state::<SettingsState>().relay_url()?;
     state.stop_broadcast();
     state.set_message(None);
     if let Ok(mut current_port) = state.host_port.lock() {
@@ -250,6 +251,7 @@ pub async fn start_host(
         .max_players(max_players);
     let options = HostOptions::new(port)
         .secret_key(Some(identity.secret_key))
+        .relay_url(relay_url)
         .service_id(identity.service_id)
         .token(identity.token)
         .config(config);
@@ -271,6 +273,7 @@ pub async fn start_host(
 pub async fn start_join(
     uri: String,
     local_port: Option<u16>,
+    settings: State<'_, SettingsState>,
     state: State<'_, ConnectState>,
 ) -> Result<(), String> {
     let uri = uri.trim().to_owned();
@@ -285,7 +288,7 @@ pub async fn start_join(
     }
     let config = JoinConfig::new()
         .event_delay(Duration::from_secs(1))
-        .reconnect_timeout(None);
+        .reconnect_timeout(settings.reconnect_timeout()?);
     let local_port = match local_port {
         Some(port) => LocalPort::Fixed(
             NonZeroU16::new(port).ok_or_else(|| "本地端口必须在 1 到 65535 之间".to_owned())?,

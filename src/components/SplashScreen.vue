@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import logoUrl from "../assets/logo.svg";
+import { t } from "../i18n";
 
 const props = defineProps<{
   loading: boolean;
@@ -46,9 +47,13 @@ watch(() => props.loading, finishWhenReady);
       </div>
       <div class="splash-text" :class="{ visible: contentVisible }">
         <h1>SeaLantern Connect</h1>
-        <p>Minecraft Java Edition 联机客户端</p>
+        <p>{{ t("splash.subtitle") }}</p>
       </div>
-      <div class="splash-loader" :class="{ visible: contentVisible }" aria-label="正在启动">
+      <div
+        class="splash-loader"
+        :class="{ visible: contentVisible }"
+        :aria-label="t('splash.starting')"
+      >
         <span></span><span></span><span></span>
       </div>
     </div>
