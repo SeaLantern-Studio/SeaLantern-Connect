@@ -96,7 +96,10 @@ onUnmounted(() => {
             type="button"
             role="menuitemradio"
             :aria-checked="locale === option.key"
-            @click="$emit('changeLocale', option.key); closeLanguageMenu()"
+            @click="
+              $emit('changeLocale', option.key);
+              closeLanguageMenu();
+            "
           >
             <span class="header-language-label">{{ option.label }}</span>
             <Check v-if="locale === option.key" :size="16" aria-hidden="true" />
