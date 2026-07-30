@@ -31,6 +31,7 @@ fn main() {
             connect::stop_tunnel,
             settings::get_preferences,
             settings::set_theme,
+            settings::set_locale,
             settings::set_join_port,
             settings::set_personalization,
             settings::set_connection_settings,

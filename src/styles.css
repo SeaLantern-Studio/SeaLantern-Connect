@@ -299,6 +299,170 @@ button {
   gap: 10px;
   -webkit-app-region: no-drag;
 }
+.header-language-selector {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+.titlebar-actions .header-language-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  appearance: none;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+.titlebar-actions .header-language-button:hover,
+.titlebar-actions .header-language-button[aria-expanded="true"] {
+  background: var(--surface-soft);
+}
+.header-language-menu {
+  position: absolute;
+  z-index: 9999;
+  top: 100%;
+  right: 0;
+  width: 220px;
+  max-height: 320px;
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backface-visibility: hidden;
+  animation: header-language-menu-enter 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: top right;
+  will-change: backdrop-filter;
+}
+:root[data-theme="dark"] .header-language-menu {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 17, 23, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.header-language-item {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  text-align: left;
+  white-space: nowrap;
+  animation: header-language-item-enter 0.2s ease backwards;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.header-language-item:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.header-language-item:nth-child(2) {
+  animation-delay: 0.04s;
+}
+.header-language-label {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-language-item:hover,
+.header-language-item.active {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
+  transform: translateX(2px);
+}
+.header-language-item:active {
+  transform: translateX(2px) scale(0.98);
+}
+@keyframes header-language-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes header-language-item-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.theme-switcher {
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(30, 55, 75, 0.06);
+  -webkit-app-region: no-drag;
+}
+.theme-indicator {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.theme-button {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.theme-button:hover {
+  color: var(--text);
+}
+.theme-button.active {
+  color: var(--primary);
+}
 .icon-button {
   width: 32px;
   height: 32px;

@@ -18,8 +18,8 @@
     "close": "关闭"
   },
   "personalization": {
-    "appearanceLanguage": "外观与语言",
-    "appearanceLanguageHint": "调整界面语言和显示主题。",
+    "appearance": "外观",
+    "appearanceHint": "调整界面显示主题。",
     "language": "界面语言",
     "simplifiedChinese": "简体中文",
     "english": "English",

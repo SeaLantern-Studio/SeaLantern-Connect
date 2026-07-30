@@ -264,6 +264,14 @@ pub fn set_theme(theme: String, state: State<'_, SettingsState>) -> Result<(), S
 }
 
 #[tauri::command]
+pub fn set_locale(locale: String, state: State<'_, SettingsState>) -> Result<(), String> {
+    if !matches!(locale.as_str(), "zh-CN" | "en") {
+        return Err("invalid locale preference".to_owned());
+    }
+    state.update(|preferences| preferences.locale = locale)
+}
+
+#[tauri::command]
 pub fn set_personalization(
     update: PersonalizationUpdate,
     state: State<'_, SettingsState>,

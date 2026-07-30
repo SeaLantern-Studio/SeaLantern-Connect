@@ -18,8 +18,8 @@
     "close": "Close"
   },
   "personalization": {
-    "appearanceLanguage": "Appearance & Language",
-    "appearanceLanguageHint": "Choose the interface language and color theme.",
+    "appearance": "Appearance",
+    "appearanceHint": "Choose the interface color theme.",
     "language": "Language",
     "simplifiedChinese": "简体中文",
     "english": "English",

@@ -16,6 +16,7 @@ import type {
   ConnectionSettingsUpdate,
   PersonalizationUpdate,
   Preferences,
+  Locale,
   ThemePreference,
 } from "./preferences";
 
@@ -24,7 +25,6 @@ type SectionId = "create" | "join" | "personalize" | "settings";
 const status = ref<ConnectStatus>(emptyConnectStatus);
 const showSplash = ref(true);
 const isInitializing = ref(true);
-const dark = ref(window.matchMedia("(prefers-color-scheme: dark)").matches);
 const themePreference = ref<ThemePreference>("system");
 const preferences = ref<Preferences>({
   theme: "system",
@@ -41,6 +41,8 @@ const activeSection = ref<SectionId>("join");
 const sidebarCollapsed = ref(false);
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 let unlisten: UnlistenFn | null = null;
+let themeSaveQueue = Promise.resolve();
+let localeSaveQueue = Promise.resolve();
 
 const busy = computed(() => status.value.phase === "starting" || status.value.phase === "stopping");
 const connected = computed(() => status.value.phase === "active");
@@ -60,20 +62,54 @@ const connectionState = computed(() => {
 });
 
 function applyTheme() {
-  dark.value =
+  const dark =
     themePreference.value === "system" ? systemTheme.matches : themePreference.value === "dark";
-  document.documentElement.dataset.theme = dark.value ? "dark" : "light";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
 }
 
-async function toggleTheme() {
-  themePreference.value = dark.value ? "light" : "dark";
-  applyTheme();
+async function saveTheme(theme: ThemePreference, fallbackTheme: ThemePreference): Promise<void> {
   try {
-    await invoke("set_theme", { theme: themePreference.value });
-    preferences.value.theme = themePreference.value;
+    await invoke("set_theme", { theme });
   } catch (error) {
+    if (themePreference.value === theme) {
+      themePreference.value = fallbackTheme;
+      preferences.value.theme = fallbackTheme;
+      applyTheme();
+    }
     console.error("Failed to save theme preference", error);
   }
+}
+
+function setTheme(theme: ThemePreference) {
+  if (themePreference.value === theme) return;
+
+  const previousTheme = themePreference.value;
+  themePreference.value = theme;
+  preferences.value.theme = theme;
+  applyTheme();
+
+  themeSaveQueue = themeSaveQueue.then(() => saveTheme(theme, previousTheme));
+}
+
+async function saveLocale(locale: Locale, fallbackLocale: Locale): Promise<void> {
+  try {
+    await invoke("set_locale", { locale });
+  } catch (error) {
+    if (preferences.value.locale === locale) {
+      preferences.value.locale = fallbackLocale;
+      setLocale(fallbackLocale);
+    }
+    console.error("Failed to save locale preference", error);
+  }
+}
+
+function changeLocale(locale: Locale) {
+  if (preferences.value.locale === locale) return;
+
+  const previousLocale = preferences.value.locale;
+  preferences.value.locale = locale;
+  setLocale(locale);
+  localeSaveQueue = localeSaveQueue.then(() => saveLocale(locale, previousLocale));
 }
 
 function applyPersonalization(update: PersonalizationUpdate) {
@@ -140,7 +176,13 @@ onUnmounted(() => {
       @navigate="navigate"
       @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
     />
-    <AppHeader :title="pageTitle" :dark="dark" @toggle-theme="toggleTheme" />
+    <AppHeader
+      :title="pageTitle"
+      :theme="themePreference"
+      :locale="preferences.locale"
+      @change-locale="changeLocale"
+      @change-theme="setTheme"
+    />
 
     <main class="app-content">
       <Transition name="page" mode="out-in">
@@ -155,6 +197,7 @@ onUnmounted(() => {
           <PersonalizationView
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
+            @change-theme="setTheme"
             @saved="applyPersonalization"
           />
           <SettingsView v-else :preferences="preferences" @saved="applyConnectionSettings" />

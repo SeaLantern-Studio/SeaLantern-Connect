@@ -2,20 +2,19 @@
 import { computed, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cmz_Button, Cmz_TabBar, Cmz_Toggle, type TabBarItem } from "cmzya-modern-ui";
-import { AppWindow, Languages, Save } from "lucide-vue-next";
+import { AppWindow, Palette, Save } from "lucide-vue-next";
 import { t } from "../../i18n";
 import type { PersonalizationUpdate, Preferences } from "../../preferences";
 import { toast } from "../../toast";
 
 const props = defineProps<{ preferences: Preferences }>();
-const emit = defineEmits<{ saved: [update: PersonalizationUpdate] }>();
+const emit = defineEmits<{
+  changeTheme: [theme: PersonalizationUpdate["theme"]];
+  saved: [update: PersonalizationUpdate];
+}>();
 
 const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const saving = ref(false);
-const languageTabs = computed<TabBarItem[]>(() => [
-  { key: "zh-CN", label: t("personalization.simplifiedChinese") },
-  { key: "en", label: t("personalization.english") },
-]);
 const themeTabs = computed<TabBarItem[]>(() => [
   { key: "system", label: t("personalization.followSystem") },
   { key: "light", label: t("personalization.light") },
@@ -36,9 +35,20 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
 }
 
 watch(
-  () => props.preferences,
-  (preferences) => (form.value = pickPreferences(preferences)),
-  { deep: true },
+  () => props.preferences.theme,
+  (theme) => (form.value.theme = theme),
+);
+watch(
+  () => props.preferences.locale,
+  (locale) => (form.value.locale = locale),
+);
+watch(
+  () => props.preferences.rememberWindowState,
+  (rememberWindowState) => (form.value.rememberWindowState = rememberWindowState),
+);
+watch(
+  () => props.preferences.closeAction,
+  (closeAction) => (form.value.closeAction = closeAction),
 );
 
 async function save() {
@@ -60,14 +70,10 @@ function updateRememberWindowState(value: boolean) {
   form.value.rememberWindowState = value;
 }
 
-function setLocale(value: string | null) {
-  if (value !== "zh-CN" && value !== "en") return;
-  form.value.locale = value;
-}
-
 function setTheme(value: string | null) {
   if (value !== "system" && value !== "light" && value !== "dark") return;
   form.value.theme = value;
+  emit("changeTheme", value);
 }
 
 function setCloseAction(value: string | null) {
@@ -80,22 +86,11 @@ function setCloseAction(value: string | null) {
   <div class="workspace settings-workspace">
     <section class="settings-section">
       <div class="settings-section-heading">
-        <Languages :size="20" />
+        <Palette :size="20" />
         <div>
-          <h2>{{ t("personalization.appearanceLanguage") }}</h2>
-          <p>{{ t("personalization.appearanceLanguageHint") }}</p>
+          <h2>{{ t("personalization.appearance") }}</h2>
+          <p>{{ t("personalization.appearanceHint") }}</p>
         </div>
-      </div>
-
-      <div class="preference-row">
-        <span>{{ t("personalization.language") }}</span>
-        <Cmz_TabBar
-          class="mode-tabs settings-segment"
-          :model-value="form.locale"
-          :tabs="languageTabs"
-          :level="2"
-          @update:model-value="setLocale"
-        />
       </div>
 
       <div class="preference-row">
