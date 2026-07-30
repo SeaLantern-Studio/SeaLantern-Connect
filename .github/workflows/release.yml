@@ -147,7 +147,7 @@ jobs:
             core.info(`已创建发布草稿 ${tag}（${release.data.id}）`);
 
   publish-tauri:
-    name: 构建并发布桌面端
+    name: 构建 ${{ matrix.label }}
     needs: validate-tag
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 90
@@ -155,17 +155,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - label: macOS ARM64
+            platform: macos-latest
             args: "--target aarch64-apple-darwin"
-          - platform: macos-latest
+          - label: macOS x64
+            platform: macos-latest
             args: "--target x86_64-apple-darwin"
-          - platform: ubuntu-22.04
+          - label: Linux x64
+            platform: ubuntu-22.04
             args: ""
-          - platform: ubuntu-22.04-arm
+          - label: Linux ARM64
+            platform: ubuntu-22.04-arm
             args: ""
-          - platform: windows-latest
+          - label: Windows x64
+            platform: windows-latest
             args: ""
-          - platform: windows-11-arm
+          - label: Windows ARM64
+            platform: windows-11-arm
             args: ""
     steps:
       - name: 检出代码
