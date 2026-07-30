@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "dev": "vite --config src/vite.config.ts",
+    "build": "vue-tsc --project src/tsconfig.json --noEmit && vite build --config src/vite.config.ts",
+    "preview": "vite preview --config src/vite.config.ts",
     "tauri": "tauri",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "lint": "oxlint --config src/.oxlintrc.json src",
+    "lint:fix": "oxlint --config src/.oxlintrc.json --fix src",
+    "fmt": "oxfmt --config src/.oxfmtrc.json src package.json pnpm-workspace.yaml README.md",
+    "fmt:check": "oxfmt --config src/.oxfmtrc.json --check src package.json pnpm-workspace.yaml README.md"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

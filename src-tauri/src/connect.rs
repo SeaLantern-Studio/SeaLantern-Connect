@@ -206,7 +206,9 @@ fn event_message(event: TunnelEvent) -> Option<String> {
         TunnelEvent::Disconnected { reason } => Some(format!("连接已断开：{reason}")),
         TunnelEvent::Reconnecting { attempt } => Some(format!("正在进行第 {attempt} 次重连")),
         TunnelEvent::Reconnected => Some("已恢复连接".to_owned()),
-        TunnelEvent::PathChanged { is_relay, rtt_ms, .. } => Some(format!(
+        TunnelEvent::PathChanged {
+            is_relay, rtt_ms, ..
+        } => Some(format!(
             "当前使用{}，延迟 {rtt_ms} ms",
             if is_relay { "中继连接" } else { "直连" }
         )),

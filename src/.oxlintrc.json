@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
   "plugins": ["vue", "typescript", "import", "promise", "unicorn"],
   "categories": {
     "correctness": "error",
@@ -24,7 +24,7 @@
       },
       "typescript": {
         "alwaysTryTypes": true,
-        "project": "./tsconfig.json"
+        "project": "./src/tsconfig.json"
       },
       "alias": {
         "map": [["@", "./src"]],
@@ -71,6 +71,5 @@
       "files": ["**/*.ts", "**/*.tsx", "**/*.vue"]
     }
   ],
-  "globals": {},
-  "ignorePatterns": ["dist", "node_modules", "src-tauri/**"]
+  "globals": {}
 }

@@ -39,15 +39,9 @@ jobs:
               - '.github/workflows/check.yml'
             frontend:
               - 'src/**'
-              - 'public/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
-              - 'vite.config.ts'
-              - 'tsconfig*.json'
-              - 'index.html'
-              - '.oxlintrc.json'
-              - '.oxfmtrc.json'
               - '.github/workflows/check.yml'
 
   backend:

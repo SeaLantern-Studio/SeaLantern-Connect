@@ -78,7 +78,10 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
         .parent()
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-    let content = format!("theme={}\njoin_uri={}\n", preferences.theme, preferences.join_uri);
+    let content = format!(
+        "theme={}\njoin_uri={}\n",
+        preferences.theme, preferences.join_uri
+    );
     std::fs::write(path, content).map_err(|error| error.to_string())
 }
 

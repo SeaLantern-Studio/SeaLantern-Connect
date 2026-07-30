@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import SplashScreen from "./components/SplashScreen.vue";
+import logoUrl from "./assets/logo.svg";
 import {
   ArrowRight,
   Check,
@@ -204,7 +205,7 @@ onUnmounted(() => {
   <div v-if="!showSplash" class="app-shell">
     <header class="titlebar" :class="{ 'macos-overlay': isMacOS }" data-tauri-drag-region>
       <div class="brand" data-tauri-drag-region>
-        <img src="/logo.svg" alt="" />
+        <img :src="logoUrl" alt="" />
         <span>SeaLantern Connect</span>
       </div>
       <div class="titlebar-actions">
