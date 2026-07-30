@@ -34,6 +34,4 @@ only ci
 
 ## 许可证
 
-Copyright © 2026 SeaLantern-Studio。
-
-本项目采用 [GNU Affero General Public License v3.0 only](LICENSE)（`AGPL-3.0-only`）许可。
+[GNU Affero General Public License v3.0](LICENSE)
