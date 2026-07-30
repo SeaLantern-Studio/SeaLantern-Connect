@@ -47,8 +47,8 @@ function iconFor(tone: ToastTone) {
 <style scoped>
 .toast-region {
   position: fixed;
+  top: 58px;
   right: 18px;
-  bottom: 18px;
   z-index: 1200;
   width: min(320px, calc(100vw - 36px));
   display: flex;
