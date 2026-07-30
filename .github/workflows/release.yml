@@ -213,6 +213,7 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
         with:
           tagName: ${{ needs.validate-tag.outputs.tag }}
           releaseName: ${{ needs.validate-tag.outputs.release_name }}
@@ -220,3 +221,21 @@ jobs:
           releaseDraft: true
           prerelease: ${{ needs.validate-tag.outputs.prerelease }}
           args: ${{ matrix.args }} -c src-tauri/tauri.conf.json
+
+      - name: 修正 macOS DMG 布局
+        if: runner.os == 'macOS'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.validate-tag.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dmg_path="$(find target -type f -path '*/bundle/dmg/*.dmg' -print -quit)"
+          if [[ -z "${dmg_path}" ]]; then
+            echo "未找到 macOS DMG 产物" >&2
+            exit 1
+          fi
+
+          bash scripts/makedmg.sh "${dmg_path}"
+          gh release upload "${RELEASE_TAG}" "${dmg_path}" --clobber

@@ -21,6 +21,23 @@
     ]
   },
   "bundle": {
-    "targets": ["dmg"]
+    "targets": ["dmg"],
+    "macOS": {
+      "dmg": {
+        "background": "icons/dmg-background.png",
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        },
+        "appPosition": {
+          "x": 180,
+          "y": 198
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 198
+        }
+      }
+    }
   }
 }

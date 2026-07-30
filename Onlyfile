@@ -10,7 +10,11 @@ dev():
     pnpm tauri dev
 
 # 构建应用
-build() & ci:
+build() ? @os("macos"):
+    pnpm tauri build
+    bash scripts/makedmg.sh
+
+build():
     pnpm tauri build
 
 # 格式化并检查前端
@@ -43,4 +47,6 @@ ci() & check & test:
 # 清理构建产物
 clean():
     rm -rf node_modules dist
+    echo "前端已清除"
     cargo clean
+    echo "后端已清除"
