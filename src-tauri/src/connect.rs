@@ -1,3 +1,4 @@
+use crate::settings::SettingsState;
 use sculk::ErrorCategory;
 use sculk::minecraft::lan::LanBroadcaster;
 use sculk::tunnel::{
@@ -17,6 +18,7 @@ pub struct ConnectState {
     service: TunnelService,
     broadcaster: Mutex<Option<LanBroadcaster>>,
     last_message: Mutex<Option<String>>,
+    pending_join_uri: Mutex<Option<String>>,
 }
 
 impl ConnectState {
@@ -25,6 +27,7 @@ impl ConnectState {
             service: TunnelService::new(),
             broadcaster: Mutex::new(None),
             last_message: Mutex::new(None),
+            pending_join_uri: Mutex::new(None),
         }
     }
 
@@ -42,6 +45,19 @@ impl ConnectState {
         if let Ok(mut current) = self.last_message.lock() {
             *current = message;
         }
+    }
+
+    fn set_pending_join_uri(&self, uri: Option<String>) {
+        if let Ok(mut pending) = self.pending_join_uri.lock() {
+            *pending = uri;
+        }
+    }
+
+    fn take_pending_join_uri(&self) -> Option<String> {
+        self.pending_join_uri
+            .lock()
+            .ok()
+            .and_then(|mut pending| pending.take())
     }
 
     fn sync_broadcast(&self, status: &TunnelStatus) -> Result<(), String> {
@@ -121,25 +137,29 @@ pub fn get_status(state: State<'_, ConnectState>) -> ConnectSnapshot {
 
 #[tauri::command]
 pub async fn start_join(uri: String, state: State<'_, ConnectState>) -> Result<(), String> {
-    let join_uri = uri
-        .trim()
-        .parse::<JoinUri>()
-        .map_err(|error| error.to_string())?;
+    let uri = uri.trim().to_owned();
+    let join_uri = uri.parse::<JoinUri>().map_err(|error| error.to_string())?;
     state.set_message(None);
+    state.set_pending_join_uri(Some(uri));
     let config = JoinConfig::new()
         .event_delay(Duration::from_secs(1))
         .reconnect_timeout(None);
-    state
+    if let Err(error) = state
         .service
         .start_join(JoinOptions::new(join_uri).config(config))
         .await
-        .map_err(|error| error.to_string())
+    {
+        state.set_pending_join_uri(None);
+        return Err(error.to_string());
+    }
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_join(state: State<'_, ConnectState>) -> Result<(), String> {
     state.stop_broadcast();
     state.set_message(None);
+    state.set_pending_join_uri(None);
     state
         .service
         .shutdown()
@@ -148,6 +168,7 @@ pub async fn stop_join(state: State<'_, ConnectState>) -> Result<(), String> {
 }
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+    app.manage(SettingsState::load(app.handle())?);
     let handle = app.handle().clone();
     let service = app.state::<ConnectState>().service.clone();
     tauri::async_runtime::spawn(async move {
@@ -165,6 +186,12 @@ fn apply_update(app: &AppHandle, update: TunnelUpdate) {
         TunnelUpdate::Status(status) => {
             if let Err(error) = state.sync_broadcast(&status) {
                 state.set_message(Some(format!("LAN broadcast failed: {error}")));
+            }
+            if status.state.phase == TunnelPhase::Active
+                && let Some(uri) = state.take_pending_join_uri()
+                && let Err(error) = app.state::<SettingsState>().remember_join_uri(uri)
+            {
+                state.set_message(Some(format!("保存偏好失败：{error}")));
             }
         }
         TunnelUpdate::Event(event) => state.set_message(event_message(event)),

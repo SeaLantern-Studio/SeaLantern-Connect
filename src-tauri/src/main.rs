@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod connect;
+mod settings;
 
 fn main() {
     tauri::Builder::default()
@@ -12,6 +13,8 @@ fn main() {
             connect::get_status,
             connect::start_join,
             connect::stop_join,
+            settings::get_preferences,
+            settings::set_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

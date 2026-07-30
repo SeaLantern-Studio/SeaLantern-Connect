@@ -4074,13 +4074,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64da0526c690934179d75c366a3356f6395a34d6e4ddc6297551db70388c80fd"
 dependencies = [
  "base64 0.23.0",
+ "dirs",
  "futures-util",
  "iroh",
  "rand",
+ "serde",
  "socket2",
  "subtle",
  "thiserror 2.0.19",
  "tokio",
+ "toml 1.1.4+spec-1.1.0",
  "tracing",
  "url",
 ]

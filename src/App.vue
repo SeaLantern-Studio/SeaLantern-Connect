@@ -15,6 +15,7 @@ import {
   Moon,
   Network,
   Radio,
+  RotateCcw,
   Square,
   Sun,
   Unplug,
@@ -32,6 +33,11 @@ interface ConnectStatus {
   rxBytes: number;
   error: string | null;
   message: string | null;
+}
+
+interface Preferences {
+  theme: "system" | "light" | "dark";
+  joinUri: string;
 }
 
 const emptyStatus: ConnectStatus = {
@@ -74,9 +80,14 @@ function applyTheme() {
   document.documentElement.dataset.theme = dark.value ? "dark" : "light";
 }
 
-function toggleTheme() {
+async function toggleTheme() {
   dark.value = !dark.value;
   applyTheme();
+  try {
+    await invoke("set_theme", { theme: dark.value ? "dark" : "light" });
+  } catch (error) {
+    console.error("Failed to save theme preference", error);
+  }
 }
 
 async function minimizeWindow() {
@@ -99,6 +110,12 @@ function normalizeInvite(value: string) {
   const trimmed = value.trim();
   const fragment = trimmed.match(/^https?:\/\/[^#]+\/#\/join\/v1\/([^/?#\s]+)$/i);
   return fragment ? `sculk://join/v1/${fragment[1]}` : trimmed;
+}
+
+function resetInvite() {
+  invite.value = "";
+  validationError.value = "";
+  commandError.value = "";
 }
 
 async function previewInvite() {
@@ -148,7 +165,17 @@ function formatBytes(value: number) {
 }
 
 onMounted(async () => {
+  try {
+    const preferences = await invoke<Preferences>("get_preferences");
+    if (preferences.theme !== "system") {
+      dark.value = preferences.theme === "dark";
+    }
+    invite.value = preferences.joinUri;
+  } catch (error) {
+    console.error("Failed to load preferences", error);
+  }
   applyTheme();
+
   try {
     isMaximized.value = await appWindow.isMaximized();
     unlistenResize = await appWindow.onResized(async () => {
@@ -198,7 +225,12 @@ onUnmounted(() => {
             <Copy v-if="isMaximized" :size="12" />
             <Square v-else :size="12" />
           </button>
-          <button class="window-button window-button-close" type="button" title="关闭" @click="closeWindow">
+          <button
+            class="window-button window-button-close"
+            type="button"
+            title="关闭"
+            @click="closeWindow"
+          >
             <X :size="12" />
           </button>
         </div>
@@ -235,15 +267,33 @@ onUnmounted(() => {
             placeholder="sculk://join/v1/..."
             @keydown.enter="canPreview && previewInvite()"
           />
-          <button class="primary-button" type="button" :disabled="!canPreview" @click="previewInvite">
+          <button
+            class="reset-invite-button"
+            type="button"
+            title="清空当前输入"
+            :disabled="invite.length === 0"
+            @click="resetInvite"
+          >
+            <RotateCcw :size="16" />
+          </button>
+        </div>
+        <p v-if="validationError" class="field-error">
+          <CircleAlert :size="14" />{{ validationError }}
+        </p>
+        <div class="join-actions">
+          <div class="privacy-note">
+            <Network :size="16" />
+            邀请凭证只用于连接房主，不会上传到 SeaLantern 服务。
+          </div>
+          <button
+            class="primary-button"
+            type="button"
+            :disabled="!canPreview"
+            @click="previewInvite"
+          >
             继续
             <ArrowRight :size="17" />
           </button>
-        </div>
-        <p v-if="validationError" class="field-error"><CircleAlert :size="14" />{{ validationError }}</p>
-        <div class="privacy-note">
-          <Network :size="16" />
-          邀请凭证只用于连接房主，不会上传到 SeaLantern 服务。
         </div>
       </section>
 
@@ -251,17 +301,34 @@ onUnmounted(() => {
         <div class="address-block">
           <span>Minecraft 地址</span>
           <strong>{{ status.localAddress ?? "正在分配本地端口..." }}</strong>
-          <button class="copy-button" type="button" :disabled="!status.localAddress" @click="copyAddress">
+          <button
+            class="copy-button"
+            type="button"
+            :disabled="!status.localAddress"
+            @click="copyAddress"
+          >
             <Check v-if="copied" :size="16" />
             <Copy v-else :size="16" />
             {{ copied ? "已复制" : "复制地址" }}
           </button>
         </div>
         <div class="metrics">
-          <div><span>连接路径</span><strong>{{ status.route === "direct" ? "P2P 直连" : status.route === "relay" ? "中继" : "检测中" }}</strong></div>
-          <div><span>网络延迟</span><strong>{{ status.rttMs == null ? "--" : `${status.rttMs} ms` }}</strong></div>
-          <div><span>发送</span><strong>{{ formatBytes(status.txBytes) }}</strong></div>
-          <div><span>接收</span><strong>{{ formatBytes(status.rxBytes) }}</strong></div>
+          <div>
+            <span>连接路径</span
+            ><strong>{{
+              status.route === "direct" ? "P2P 直连" : status.route === "relay" ? "中继" : "检测中"
+            }}</strong>
+          </div>
+          <div>
+            <span>网络延迟</span
+            ><strong>{{ status.rttMs == null ? "--" : `${status.rttMs} ms` }}</strong>
+          </div>
+          <div>
+            <span>发送</span><strong>{{ formatBytes(status.txBytes) }}</strong>
+          </div>
+          <div>
+            <span>接收</span><strong>{{ formatBytes(status.rxBytes) }}</strong>
+          </div>
         </div>
         <div class="connection-footer">
           <p>{{ status.message ?? "正在同步连接状态..." }}</p>
@@ -272,19 +339,28 @@ onUnmounted(() => {
       </section>
 
       <p v-if="commandError || status.error" class="error-banner">
-        <CircleAlert :size="16" />连接未完成。{{ commandError || status.message || "请检查邀请和网络后重试。" }}
+        <CircleAlert :size="16" />连接未完成。{{
+          commandError || status.message || "请检查邀请和网络后重试。"
+        }}
       </p>
     </main>
 
     <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">
-      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <section
+        class="confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+      >
         <div class="dialog-icon"><Link :size="23" /></div>
         <h2 id="confirm-title">加入这个 Minecraft 世界？</h2>
         <p>连接后，SeaLantern Connect 会在本机创建一个临时地址，并在多人游戏列表中广播房间。</p>
         <div class="invite-summary"><span>邀请协议</span><strong>sculk / v1</strong></div>
         <div class="dialog-actions">
           <button class="secondary-button" type="button" @click="confirming = false">取消</button>
-          <button class="primary-button" type="button" @click="join"><Radio :size="17" />确认加入</button>
+          <button class="primary-button" type="button" @click="join">
+            <Radio :size="17" />确认加入
+          </button>
         </div>
       </section>
     </div>
