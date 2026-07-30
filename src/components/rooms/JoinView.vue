@@ -2,18 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
-import {
-  ArrowRight,
-  Check,
-  CircleAlert,
-  Copy,
-  Link,
-  LoaderCircle,
-  Network,
-  Radio,
-  RotateCcw,
-  Unplug,
-} from "lucide-vue-next";
+import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
 import type { ConnectStatus } from "../../connect";
 import { t } from "../../i18n";
 
@@ -142,11 +131,6 @@ function formatBytes(value: number) {
 <template>
   <div class="workspace">
     <section class="intro">
-      <div class="status-mark" :class="status.phase">
-        <Radio v-if="connected" :size="25" />
-        <LoaderCircle v-else-if="busy" class="spin" :size="25" />
-        <Link v-else :size="25" />
-      </div>
       <div>
         <h1>{{ phaseLabel }}</h1>
         <p v-if="connected">{{ t("join.activeHint") }}</p>
@@ -181,10 +165,10 @@ function formatBytes(value: number) {
         </button>
       </div>
       <p v-if="validationError" class="field-error">
-        <CircleAlert :size="14" />{{ validationError }}
+        {{ validationError }}
       </p>
       <div class="join-actions">
-        <div class="privacy-note"><Network :size="16" />{{ t("join.privacy") }}</div>
+        <div class="privacy-note">{{ t("join.privacy") }}</div>
         <button class="primary-button" type="button" :disabled="!canPreview" @click="previewInvite">
           {{ t("join.continue") }}<ArrowRight :size="17" />
         </button>
@@ -239,14 +223,13 @@ function formatBytes(value: number) {
     </section>
 
     <p v-if="commandError || status.error || occupied" class="error-banner">
-      <CircleAlert :size="16" />{{ t("join.connectionFailed")
+      {{ t("join.connectionFailed")
       }}{{ occupied ? t("join.occupied") : commandError || status.message || t("join.retryHint") }}
     </p>
   </div>
 
   <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">
     <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-      <div class="dialog-icon"><Link :size="23" /></div>
       <h2 id="confirm-title">{{ t("join.confirmTitle") }}</h2>
       <p>{{ t("join.confirmHint") }}</p>
       <div class="invite-summary">

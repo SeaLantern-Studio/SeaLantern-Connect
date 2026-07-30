@@ -1,19 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
+import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import type { ConnectStatus } from "../../connect";
 import { t } from "../../i18n";
-import {
-  Check,
-  CircleAlert,
-  Copy,
-  HousePlus,
-  LoaderCircle,
-  Radio,
-  RefreshCw,
-  Square,
-} from "lucide-vue-next";
+import { Check, Copy, HousePlus, LoaderCircle, RefreshCw, Square } from "lucide-vue-next";
 
 interface LanScanSnapshot {
   scanning: boolean;
@@ -33,9 +24,9 @@ const commandError = ref("");
 const pending = ref(false);
 const copied = ref(false);
 let scanTimer: number | null = null;
-const portModeTabs = computed<TabBarItem[]>(() => [
-  { key: "auto", label: t("create.automaticDiscovery") },
-  { key: "manual", label: t("create.manual") },
+const portModeOptions = computed<SelectOption[]>(() => [
+  { label: t("create.automaticDiscovery"), value: "auto" },
+  { label: t("create.manual"), value: "manual" },
 ]);
 
 const hosting = computed(() => props.status.mode === "host" && props.status.phase !== "idle");
@@ -56,7 +47,7 @@ const canCreate = computed(
   () => !pending.value && !occupied.value && validPort.value && validMaxPlayers.value,
 );
 
-function setPortMode(value: string | null) {
+function setPortMode(value: string | number) {
   if (value !== "auto" && value !== "manual") return;
   portMode.value = value;
   if (value === "auto") void beginScan(true);
@@ -164,11 +155,6 @@ onUnmounted(() => {
 <template>
   <div class="workspace create-workspace">
     <section class="intro">
-      <div class="status-mark" :class="status.phase">
-        <Radio v-if="hosting && status.phase === 'active'" :size="25" />
-        <LoaderCircle v-else-if="hosting" class="spin" :size="25" />
-        <HousePlus v-else :size="25" />
-      </div>
       <div>
         <h1>{{ hosting ? t("create.running") : t("create.title") }}</h1>
         <p v-if="hosting">{{ t("create.runningHint") }}</p>
@@ -216,20 +202,16 @@ onUnmounted(() => {
     <section v-else class="create-panel">
       <div class="form-field">
         <span class="field-label">{{ t("create.minecraftPort") }}</span>
-        <Cmz_TabBar
-          class="mode-tabs"
+        <Cmz_Select
+          class="settings-select"
           :model-value="portMode"
-          :tabs="portModeTabs"
-          :level="2"
+          :options="portModeOptions"
           @update:model-value="setPortMode"
         />
       </div>
 
       <div v-if="portMode === 'auto'" class="discovery-row">
         <div class="discovery-state" :class="{ detected: scan.port != null, failed: scanError }">
-          <Check v-if="scan.port != null" :size="18" />
-          <CircleAlert v-else-if="scanError" :size="18" />
-          <LoaderCircle v-else class="spin" :size="18" />
           <div>
             <strong>{{
               scan.port != null
@@ -280,9 +262,7 @@ onUnmounted(() => {
 
       <div class="create-actions">
         <p v-if="commandError || occupied || status.message" class="field-error">
-          <CircleAlert :size="14" />{{
-            occupied ? t("create.occupied") : commandError || status.message
-          }}
+          {{ occupied ? t("create.occupied") : commandError || status.message }}
         </p>
         <button class="primary-button" type="button" :disabled="!canCreate" @click="createRoom">
           <LoaderCircle v-if="pending" class="spin" :size="17" />
