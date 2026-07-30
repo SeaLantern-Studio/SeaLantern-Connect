@@ -26,6 +26,7 @@ fn main() {
             connect::stop_tunnel,
             settings::get_preferences,
             settings::set_theme,
+            settings::set_join_port,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

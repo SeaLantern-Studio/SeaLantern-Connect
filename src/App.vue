@@ -42,6 +42,7 @@ interface ConnectStatus {
 interface Preferences {
   theme: "system" | "light" | "dark";
   joinUri: string;
+  joinPort: number;
 }
 
 const emptyStatus: ConnectStatus = {
@@ -64,6 +65,8 @@ const status = ref<ConnectStatus>(emptyStatus);
 const validationError = ref("");
 const commandError = ref("");
 const confirming = ref(false);
+const joinPortMode = ref<"auto" | "manual">("auto");
+const manualJoinPort = ref("25565");
 const copied = ref(false);
 const showSplash = ref(true);
 const isInitializing = ref(true);
@@ -75,6 +78,10 @@ let unlisten: UnlistenFn | null = null;
 const busy = computed(() => status.value.phase === "starting" || status.value.phase === "stopping");
 const connected = computed(() => status.value.phase === "active");
 const canPreview = computed(() => invite.value.trim().length > 0 && status.value.phase === "idle");
+const validManualJoinPort = computed(() => {
+  const port = Number(manualJoinPort.value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
+});
 const pageTitle = computed(
   () =>
     ({
@@ -145,13 +152,26 @@ async function previewInvite() {
 }
 
 async function join() {
+  if (joinPortMode.value === "manual" && !validManualJoinPort.value) return;
   confirming.value = false;
   commandError.value = "";
   try {
-    await invoke("start_join", { uri: invite.value });
+    await invoke("start_join", {
+      uri: invite.value,
+      localPort: joinPortMode.value === "auto" ? null : Number(manualJoinPort.value),
+    });
     status.value = await invoke<ConnectStatus>("get_status");
   } catch (error) {
     commandError.value = String(error);
+  }
+}
+
+async function saveJoinPort() {
+  if (!validManualJoinPort.value) return;
+  try {
+    await invoke("set_join_port", { port: Number(manualJoinPort.value) });
+  } catch (error) {
+    console.error("Failed to save join port", error);
   }
 }
 
@@ -185,6 +205,7 @@ onMounted(async () => {
       dark.value = preferences.theme === "dark";
     }
     invite.value = preferences.joinUri;
+    manualJoinPort.value = String(preferences.joinPort);
   } catch (error) {
     console.error("Failed to load preferences", error);
   }
@@ -353,9 +374,49 @@ onUnmounted(() => {
         <h2 id="confirm-title">加入这个 Minecraft 世界？</h2>
         <p>连接后，SeaLantern Connect 会在本机创建一个临时地址，并在多人游戏列表中广播房间。</p>
         <div class="invite-summary"><span>邀请协议</span><strong>sculk / v1</strong></div>
+        <div class="join-port-setting">
+          <div class="join-port-heading">
+            <span>本地端口</span>
+            <div class="segmented-control" aria-label="本地端口选择方式">
+              <button
+                type="button"
+                :class="{ active: joinPortMode === 'auto' }"
+                @click="joinPortMode = 'auto'"
+              >
+                自动
+              </button>
+              <button
+                type="button"
+                :class="{ active: joinPortMode === 'manual' }"
+                @click="joinPortMode = 'manual'"
+              >
+                手动
+              </button>
+            </div>
+          </div>
+          <div class="join-port-detail">
+            <span v-if="joinPortMode === 'auto'">自动选择可用端口</span>
+            <input
+              v-else
+              v-model="manualJoinPort"
+              :class="{ invalid: !validManualJoinPort }"
+              type="number"
+              min="1"
+              max="65535"
+              inputmode="numeric"
+              aria-label="本地端口号"
+              @change="saveJoinPort"
+            />
+          </div>
+        </div>
         <div class="dialog-actions">
           <button class="secondary-button" type="button" @click="confirming = false">取消</button>
-          <button class="primary-button" type="button" @click="join">
+          <button
+            class="primary-button"
+            type="button"
+            :disabled="joinPortMode === 'manual' && !validManualJoinPort"
+            @click="join"
+          >
             <Radio :size="17" />确认加入
           </button>
         </div>

@@ -3,7 +3,7 @@ use sculk::ErrorCategory;
 use sculk::minecraft::lan::{LanBroadcaster, LanScanner};
 use sculk::minecraft::probe_server;
 use sculk::tunnel::{
-    HostConfig, HostOptions, JoinConfig, JoinOptions, JoinUri, TunnelEvent, TunnelMode,
+    HostConfig, HostOptions, JoinConfig, JoinOptions, JoinUri, LocalPort, TunnelEvent, TunnelMode,
     TunnelPhase, TunnelService, TunnelStatus, TunnelUpdate,
 };
 use serde::Serialize;
@@ -268,7 +268,11 @@ pub async fn start_host(
 }
 
 #[tauri::command]
-pub async fn start_join(uri: String, state: State<'_, ConnectState>) -> Result<(), String> {
+pub async fn start_join(
+    uri: String,
+    local_port: Option<u16>,
+    state: State<'_, ConnectState>,
+) -> Result<(), String> {
     let uri = uri.trim().to_owned();
     let join_uri = uri.parse::<JoinUri>().map_err(|error| error.to_string())?;
     state.set_message(None);
@@ -282,9 +286,19 @@ pub async fn start_join(uri: String, state: State<'_, ConnectState>) -> Result<(
     let config = JoinConfig::new()
         .event_delay(Duration::from_secs(1))
         .reconnect_timeout(None);
+    let local_port = match local_port {
+        Some(port) => LocalPort::Fixed(
+            NonZeroU16::new(port).ok_or_else(|| "本地端口必须在 1 到 65535 之间".to_owned())?,
+        ),
+        None => LocalPort::Auto,
+    };
     if let Err(error) = state
         .service
-        .start_join(JoinOptions::new(join_uri).config(config))
+        .start_join(
+            JoinOptions::new(join_uri)
+                .local_port(local_port)
+                .config(config),
+        )
         .await
     {
         state.set_pending_join_uri(None);

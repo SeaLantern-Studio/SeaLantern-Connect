@@ -10,12 +10,14 @@ const APP_DIR_NAME: &str = "sealantern-connect";
 const PREFERENCES_FILE: &str = "preferences.conf";
 const KEY_FILE: &str = "secret.key";
 const HOST_STATE_FILE: &str = "host.state";
+const DEFAULT_JOIN_PORT: u16 = 25_565;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Preferences {
     theme: String,
     join_uri: String,
+    join_port: u16,
 }
 
 impl Default for Preferences {
@@ -23,6 +25,7 @@ impl Default for Preferences {
         Self {
             theme: "system".to_owned(),
             join_uri: String::new(),
+            join_port: DEFAULT_JOIN_PORT,
         }
     }
 }
@@ -65,6 +68,13 @@ impl SettingsState {
 
     pub fn remember_join_uri(&self, join_uri: String) -> Result<(), String> {
         self.update(|preferences| preferences.join_uri = join_uri)
+    }
+
+    pub fn set_join_port(&self, port: u16) -> Result<(), String> {
+        if port == 0 {
+            return Err("本地端口必须在 1 到 65535 之间".to_owned());
+        }
+        self.update(|preferences| preferences.join_port = port)
     }
 
     pub fn host_identity(&self) -> Result<HostIdentity, String> {
@@ -129,14 +139,19 @@ pub fn set_theme(theme: String, state: State<'_, SettingsState>) -> Result<(), S
     state.update(|preferences| preferences.theme = theme)
 }
 
+#[tauri::command]
+pub fn set_join_port(port: u16, state: State<'_, SettingsState>) -> Result<(), String> {
+    state.set_join_port(port)
+}
+
 fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\njoin_uri={}\n",
-        preferences.theme, preferences.join_uri
+        "theme={}\njoin_uri={}\njoin_port={}\n",
+        preferences.theme, preferences.join_uri, preferences.join_port
     );
     std::fs::write(path, content).map_err(|error| error.to_string())
 }
@@ -151,6 +166,11 @@ fn parse_preferences(content: &str) -> Preferences {
             }
         } else if let Some(value) = line.strip_prefix("join_uri=") {
             preferences.join_uri = value.trim().to_owned();
+        } else if let Some(value) = line.strip_prefix("join_port=")
+            && let Ok(port) = value.trim().parse::<u16>()
+            && port != 0
+        {
+            preferences.join_port = port;
         }
     }
     preferences
@@ -169,10 +189,12 @@ mod tests {
 
     #[test]
     fn parses_saved_preferences() {
-        let preferences = parse_preferences("theme=dark\njoin_uri=sculk://join/v1/example\n");
+        let preferences =
+            parse_preferences("theme=dark\njoin_uri=sculk://join/v1/example\njoin_port=25566\n");
 
         assert_eq!(preferences.theme, "dark");
         assert_eq!(preferences.join_uri, "sculk://join/v1/example");
+        assert_eq!(preferences.join_port, 25_566);
     }
 
     #[test]
