@@ -389,12 +389,195 @@ h1 {
 }
 
 .join-panel,
-.connection-panel {
+.connection-panel,
+.create-panel {
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+.create-panel {
+  display: grid;
+  gap: 20px;
+}
+.form-field {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+.field-label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+.segmented-control {
+  height: 38px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.segmented-control button {
+  min-width: 0;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.segmented-control button:hover {
+  color: var(--text);
+}
+.segmented-control button.active {
+  color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(30, 55, 75, 0.1);
+}
+.discovery-row {
+  height: 62px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.manual-port-field {
+  height: 62px;
+}
+.discovery-state {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--primary);
+}
+.discovery-state.detected {
+  color: var(--success);
+}
+.discovery-state.failed {
+  color: var(--danger);
+}
+.discovery-state > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.discovery-state strong,
+.discovery-state span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discovery-state strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.discovery-state span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.manual-port-field input,
+.settings-field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface-soft);
+  user-select: text;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.manual-port-field input::-webkit-inner-spin-button,
+.manual-port-field input::-webkit-outer-spin-button,
+.settings-field input::-webkit-inner-spin-button,
+.settings-field input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.manual-port-field input:focus,
+.settings-field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.create-actions {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding-top: 2px;
+}
+.create-actions .field-error {
+  margin: 0 auto 0 0;
+}
+.share-block {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 14px;
+}
+.share-block > span {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.share-block strong {
+  grid-column: 1;
+  overflow: hidden;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+.share-block button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+.host-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.host-summary > div {
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 14px;
+  background: var(--surface-soft);
+}
+.host-summary > div + div {
+  border-left: 1px solid var(--border);
+}
+.host-summary span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.host-summary strong {
+  font-size: 15px;
 }
 .join-panel label {
   display: block;
@@ -727,8 +910,31 @@ button:disabled {
     display: none;
   }
   .join-panel,
-  .connection-panel {
+  .connection-panel,
+  .create-panel {
     padding: 18px;
+  }
+  .form-field {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .discovery-state span {
+    white-space: normal;
+  }
+  .create-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .create-actions .primary-button {
+    align-self: flex-end;
+  }
+  .share-block {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .share-block button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: flex-end;
   }
   .join-actions {
     align-items: stretch;

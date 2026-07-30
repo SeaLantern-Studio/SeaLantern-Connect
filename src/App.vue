@@ -5,12 +5,12 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppSidebar from "./components/layout/AppSidebar.vue";
+import CreateRoomView from "./components/rooms/CreateRoomView.vue";
 import {
   ArrowRight,
   Check,
   CircleAlert,
   Copy,
-  HousePlus,
   Link,
   LoaderCircle,
   Network,
@@ -26,7 +26,11 @@ type SectionId = "create" | "join" | "personalize" | "settings";
 
 interface ConnectStatus {
   phase: Phase;
+  mode: "host" | "join" | null;
   localAddress: string | null;
+  shareUri: string | null;
+  playerCount: number;
+  hostPort: number | null;
   route: "direct" | "relay" | null;
   rttMs: number | null;
   txBytes: number;
@@ -42,7 +46,11 @@ interface Preferences {
 
 const emptyStatus: ConnectStatus = {
   phase: "idle",
+  mode: null,
   localAddress: null,
+  shareUri: null,
+  playerCount: 0,
+  hostPort: null,
   route: null,
   rttMs: null,
   txBytes: 0,
@@ -206,6 +214,7 @@ onUnmounted(() => {
     <AppSidebar
       :active="activeSection"
       :connection-state="connectionState"
+      :tunnel-mode="status.mode"
       :collapsed="sidebarCollapsed"
       @navigate="navigate"
       @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
@@ -213,7 +222,9 @@ onUnmounted(() => {
     <AppHeader :title="pageTitle" :dark="dark" @toggle-theme="toggleTheme" />
 
     <main class="app-content">
-      <div v-if="activeSection === 'join'" class="workspace">
+      <CreateRoomView v-if="activeSection === 'create'" :status="status" />
+
+      <div v-else-if="activeSection === 'join'" class="workspace">
         <section class="intro">
           <div class="status-mark" :class="status.phase">
             <Radio v-if="connected" :size="25" />
@@ -326,8 +337,7 @@ onUnmounted(() => {
       </div>
 
       <section v-else class="page-placeholder" :aria-label="pageTitle">
-        <HousePlus v-if="activeSection === 'create'" :size="34" />
-        <Palette v-else-if="activeSection === 'personalize'" :size="34" />
+        <Palette v-if="activeSection === 'personalize'" :size="34" />
         <SettingsIcon v-else :size="34" />
       </section>
     </main>

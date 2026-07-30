@@ -18,6 +18,7 @@ interface NavItem {
 defineProps<{
   active: string;
   connectionState: "idle" | "busy" | "active";
+  tunnelMode: "host" | "join" | null;
   collapsed: boolean;
 }>();
 
@@ -61,7 +62,11 @@ const utilityItems: NavItem[] = [
           <component :is="item.icon" class="nav-icon" :size="19" />
           <span class="nav-label">{{ item.label }}</span>
           <span
-            v-if="item.id === 'join' && connectionState !== 'idle'"
+            v-if="
+              connectionState !== 'idle' &&
+              ((item.id === 'join' && tunnelMode === 'join') ||
+                (item.id === 'create' && tunnelMode === 'host'))
+            "
             class="connection-dot"
             :class="connectionState"
             aria-label="连接正在运行"
@@ -86,13 +91,13 @@ const utilityItems: NavItem[] = [
         <button
           class="nav-item collapse-button"
           type="button"
-          :title="collapsed ? '展开侧边栏' : '收起侧边栏'"
-          :aria-label="collapsed ? '展开侧边栏' : '收起侧边栏'"
+          :title="collapsed ? '展开侧栏' : '收起侧栏'"
+          :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
           @click="emit('toggleCollapse')"
         >
           <PanelLeftOpen v-if="collapsed" class="nav-icon" :size="19" />
           <PanelLeftClose v-else class="nav-icon" :size="19" />
-          <span class="nav-label">收起侧边栏</span>
+          <span class="nav-label">收起侧栏</span>
         </button>
       </div>
     </nav>

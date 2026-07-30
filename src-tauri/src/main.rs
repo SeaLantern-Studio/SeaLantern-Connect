@@ -17,8 +17,13 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             connect::validate_invite,
             connect::get_status,
+            connect::start_lan_scan,
+            connect::get_lan_scan,
+            connect::restart_lan_scan,
+            connect::start_host,
             connect::start_join,
             connect::stop_join,
+            connect::stop_tunnel,
             settings::get_preferences,
             settings::set_theme,
         ])
