@@ -2,6 +2,8 @@
   "name": "sealantern-connect",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/SeaLantern-Studio/SeaLantern-Connect",
   "type": "module",
   "scripts": {
     "dev": "vite --config src/vite.config.ts",

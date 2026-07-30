@@ -8,8 +8,32 @@ SeaLantern Connect 是与 [SeaLantern](https://github.com/SeaLantern-Studio/SeaL
 
 ## 开发
 
-根目录：
+本项目由 [only](https://github.com/SeaLantern-Studio/SeaLantern-Connect) 提供开发便捷命令，安装详见 [这里](https://github.com/KercyDing/only#install)。
+
+### 常用命令
+
+启动开发模式：
 
 ```bash
-pnpm tauri dev
+only dev
 ```
+
+构建应用：
+
+```bash
+only build
+```
+
+### 本地 CI 测试
+
+注意，commit 之前请运行本地 CI 测试：
+
+```bash
+only ci
+```
+
+## 许可证
+
+Copyright © 2026 SeaLantern-Studio。
+
+本项目采用 [GNU Affero General Public License v3.0 only](LICENSE)（`AGPL-3.0-only`）许可。

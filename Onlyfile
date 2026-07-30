@@ -1,10 +1,9 @@
 // Onlyfile (Version: 0.0.7)
 //
 // 详情请见：https://github.com/KercyDing/only
-// 下载：`cargo install only`
 // vscode 插件：kercyding.onlyfile
 //
-// 项目内执行 `only` 来查看所有命令
+// 项目终端执行 `only` 来查看所有命令
 
 # 启动开发模式
 dev():
