@@ -500,20 +500,6 @@ button {
   gap: 16px;
   padding-top: 20px;
 }
-.settings-result {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 auto 0 4px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.settings-result.saved {
-  color: var(--success);
-}
-.settings-result.error {
-  color: var(--danger);
-}
 
 .workspace {
   width: min(760px, calc(100% - 48px));

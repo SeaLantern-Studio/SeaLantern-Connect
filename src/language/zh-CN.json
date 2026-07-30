@@ -131,6 +131,7 @@
     "starting": "正在启动"
   },
   "common": {
-    "saveFailed": "保存失败"
+    "saveFailed": "保存失败",
+    "dismiss": "关闭提示"
   }
 }

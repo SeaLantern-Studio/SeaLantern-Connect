@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppSidebar from "./components/layout/AppSidebar.vue";
@@ -124,6 +125,8 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <AppToast />
+
   <Transition name="splash-fade">
     <SplashScreen v-if="showSplash" :loading="isInitializing" @ready="showSplash = false" />
   </Transition>

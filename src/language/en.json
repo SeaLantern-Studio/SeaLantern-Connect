@@ -131,6 +131,7 @@
     "starting": "Starting"
   },
   "common": {
-    "saveFailed": "Could not save settings"
+    "saveFailed": "Could not save settings",
+    "dismiss": "Dismiss notification"
   }
 }

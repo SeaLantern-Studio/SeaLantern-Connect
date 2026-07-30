@@ -9,9 +9,10 @@ import {
   type SelectOption,
   type TabBarItem,
 } from "cmzya-modern-ui";
-import { Check, CircleAlert, Network, RefreshCw, Save } from "lucide-vue-next";
+import { CircleAlert, Network, RefreshCw, Save } from "lucide-vue-next";
 import { t } from "../../i18n";
 import type { ConnectionSettingsUpdate, Preferences } from "../../preferences";
+import { toast } from "../../toast";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{ saved: [update: ConnectionSettingsUpdate] }>();
@@ -19,7 +20,6 @@ const emit = defineEmits<{ saved: [update: ConnectionSettingsUpdate] }>();
 const form = ref<ConnectionSettingsUpdate>(pickSettings(props.preferences));
 const reconnectUnlimited = ref(props.preferences.reconnectTimeoutSecs == null);
 const saving = ref(false);
-const result = ref<"saved" | "error" | null>(null);
 const relayTabs = computed<TabBarItem[]>(() => [
   { key: "default", label: t("connectionSettings.defaultRelay") },
   { key: "custom", label: t("connectionSettings.customRelay") },
@@ -79,7 +79,6 @@ const validRelay = computed(() => {
 async function save() {
   if (!validRelay.value || saving.value) return;
   saving.value = true;
-  result.value = null;
   const update: ConnectionSettingsUpdate = {
     relayCustom: form.value.relayCustom,
     relayUrl: form.value.relayUrl.trim(),
@@ -88,10 +87,10 @@ async function save() {
   try {
     await invoke("set_connection_settings", { update });
     emit("saved", update);
-    result.value = "saved";
+    toast.success(t("connectionSettings.saved"));
   } catch (error) {
     console.error("Failed to save connection settings", error);
-    result.value = "error";
+    toast.error(t("common.saveFailed"));
   } finally {
     saving.value = false;
   }
@@ -165,11 +164,6 @@ async function save() {
     </section>
 
     <div class="settings-actions">
-      <p v-if="result" class="settings-result" :class="result">
-        <Check v-if="result === 'saved'" :size="15" />
-        <CircleAlert v-else :size="15" />
-        {{ result === "saved" ? t("connectionSettings.saved") : t("common.saveFailed") }}
-      </p>
       <Cmz_Button size="sm" :loading="saving" :disabled="!validRelay" @click="save">
         <Save :size="15" />{{ t("connectionSettings.save") }}
       </Cmz_Button>

@@ -5,6 +5,7 @@ import { Cmz_Button, Cmz_TabBar, Cmz_Toggle, type TabBarItem } from "cmzya-moder
 import { AppWindow, Languages, Save } from "lucide-vue-next";
 import { t } from "../../i18n";
 import type { PersonalizationUpdate, Preferences } from "../../preferences";
+import { toast } from "../../toast";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{ saved: [update: PersonalizationUpdate] }>();
@@ -46,8 +47,10 @@ async function save() {
   try {
     await invoke("set_personalization", { update });
     emit("saved", update);
+    toast.success(t("personalization.saved"));
   } catch (error) {
     console.error("Failed to save personalization", error);
+    toast.error(t("common.saveFailed"));
   } finally {
     saving.value = false;
   }
