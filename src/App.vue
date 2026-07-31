@@ -102,7 +102,12 @@ onUnmounted(() => {
     <main class="app-content">
       <Transition name="page" mode="out-in">
         <div :key="activeSection" class="page-transition-frame">
-          <HostView v-if="activeSection === 'create'" :status="status" />
+          <HostView
+            v-if="activeSection === 'create'"
+            :status="status"
+            :uri-lifetime="preferences.hostUriLifetime"
+            @change-uri-lifetime="preferencesStore.setHostUriLifetime"
+          />
           <JoinView
             v-else-if="activeSection === 'join'"
             :status="status"

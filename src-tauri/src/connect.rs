@@ -1,10 +1,11 @@
+use crate::host::{self, HostStart, HostTask, HostUpdate};
 use crate::settings::SettingsState;
 use sculk::ErrorCategory;
 use sculk::minecraft::lan::{LanBroadcaster, LanScanner};
 use sculk::minecraft::probe_server;
 use sculk::tunnel::{
-    HostConfig, HostOptions, JoinConfig, JoinOptions, JoinUri, LocalPort, TunnelEvent, TunnelMode,
-    TunnelPhase, TunnelService, TunnelStatus, TunnelUpdate,
+    HostedServicePhase, HostedServiceStatus, JoinConfig, JoinOptions, JoinUri, LocalPort,
+    TunnelEvent, TunnelMode, TunnelPhase, TunnelService, TunnelStatus, TunnelUpdate,
 };
 use serde::Serialize;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -17,8 +18,6 @@ use tauri::{App, AppHandle, Emitter, Manager, State};
 const STATUS_EVENT: &str = "connect-status";
 const LAN_NAME: &str = "SeaLantern Connect";
 const MC_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
-const MC_HEALTH_INTERVAL: Duration = Duration::from_secs(5);
-const MC_HEALTH_FAILURES_MAX: u8 = 3;
 
 pub struct ConnectState {
     service: TunnelService,
@@ -28,7 +27,10 @@ pub struct ConnectState {
     host_port: Mutex<Option<u16>>,
     last_message: Mutex<Option<String>>,
     pending_join_uri: Mutex<Option<String>>,
-    host_monitor_generation: AtomicU64,
+    host_task: Mutex<Option<HostTask>>,
+    host_status: Mutex<Option<HostedServiceStatus>>,
+    host_uri: Mutex<Option<String>>,
+    host_generation: AtomicU64,
 }
 
 impl ConnectState {
@@ -41,11 +43,29 @@ impl ConnectState {
             host_port: Mutex::new(None),
             last_message: Mutex::new(None),
             pending_join_uri: Mutex::new(None),
-            host_monitor_generation: AtomicU64::new(0),
+            host_task: Mutex::new(None),
+            host_status: Mutex::new(None),
+            host_uri: Mutex::new(None),
+            host_generation: AtomicU64::new(0),
         }
     }
 
     fn snapshot(&self) -> ConnectSnapshot {
+        let hosting = self.host_task.lock().is_ok_and(|task| task.is_some());
+        if hosting {
+            return snapshot_from_host(
+                self.host_status
+                    .lock()
+                    .ok()
+                    .and_then(|status| status.clone()),
+                self.host_uri.lock().ok().and_then(|uri| uri.clone()),
+                self.last_message
+                    .lock()
+                    .ok()
+                    .and_then(|value| value.clone()),
+                self.host_port.lock().ok().and_then(|value| *value),
+            );
+        }
         snapshot_from_status(
             self.service.status(),
             self.last_message
@@ -237,9 +257,15 @@ pub fn stop_lan_scan(state: State<'_, ConnectState>) -> Result<(), String> {
 pub async fn start_host(
     port: u16,
     max_players: Option<u32>,
+    uri_lifetime: String,
     app: AppHandle,
     state: State<'_, ConnectState>,
 ) -> Result<(), String> {
+    if state.host_task.lock().is_ok_and(|task| task.is_some())
+        || state.service.status().state.phase != TunnelPhase::Idle
+    {
+        return Err("请先停止当前房间或连接".to_owned());
+    }
     if port == 0 {
         return Err("Minecraft 端口必须在 1 到 65535 之间".to_owned());
     }
@@ -248,34 +274,44 @@ pub async fn start_host(
             "端口 {port} 没有可用的 Minecraft 世界，请确认已开放局域网联机"
         ));
     }
-    let identity = app.state::<SettingsState>().host_identity()?;
-    let relay_url = app.state::<SettingsState>().relay_url()?;
+    let token_refresh = host::token_refresh_policy(&uri_lifetime)
+        .ok_or_else(|| "无效的房间链接有效期".to_owned())?;
+    let settings = app.state::<SettingsState>();
+    let secret_key = settings.host_secret_key();
+    let state_path = settings.host_state_path();
+    let relay_url = settings.relay_url()?;
     state.stop_broadcast();
     state.set_message(None);
     if let Ok(mut current_port) = state.host_port.lock() {
         *current_port = Some(port);
     }
     state.stop_lan_scanner()?;
-    let config = HostConfig::new()
-        .event_delay(Duration::from_secs(1))
-        .max_players(max_players);
-    let options = HostOptions::new(port)
-        .secret_key(Some(identity.secret_key))
-        .relay_url(relay_url)
-        .service_id(identity.service_id)
-        .token(identity.token)
-        .config(config);
-    if let Err(error) = state.service.start_host(options).await {
-        if let Ok(mut current_port) = state.host_port.lock() {
-            *current_port = None;
-        }
-        return Err(error.to_string());
+    if let Ok(mut status) = state.host_status.lock() {
+        *status = None;
+    }
+    if let Ok(mut uri) = state.host_uri.lock() {
+        *uri = None;
     }
     let generation = state
-        .host_monitor_generation
+        .host_generation
         .fetch_add(1, Ordering::Relaxed)
         .wrapping_add(1);
-    tauri::async_runtime::spawn(monitor_host(app, generation, port));
+    let task = HostTask::spawn(
+        HostStart {
+            mc_port: port,
+            max_players,
+            secret_key,
+            relay_url,
+            token_refresh,
+            state_path,
+        },
+        host_update_sender(&app, generation),
+    );
+    *state
+        .host_task
+        .lock()
+        .map_err(|_| "host state is unavailable".to_owned())? = Some(task);
+    let _ = app.emit(STATUS_EVENT, state.snapshot());
     Ok(())
 }
 
@@ -286,13 +322,14 @@ pub async fn start_join(
     settings: State<'_, SettingsState>,
     state: State<'_, ConnectState>,
 ) -> Result<(), String> {
+    if state.host_task.lock().is_ok_and(|task| task.is_some()) {
+        return Err("请先停止当前房间或连接".to_owned());
+    }
     let uri = uri.trim().to_owned();
     let join_uri = uri.parse::<JoinUri>().map_err(|error| error.to_string())?;
     state.set_message(None);
     state.set_pending_join_uri(Some(uri));
-    state
-        .host_monitor_generation
-        .fetch_add(1, Ordering::Relaxed);
+    state.host_generation.fetch_add(1, Ordering::Relaxed);
     if let Ok(mut current_port) = state.host_port.lock() {
         *current_port = None;
     }
@@ -325,9 +362,7 @@ pub async fn stop_join(state: State<'_, ConnectState>) -> Result<(), String> {
     state.stop_broadcast();
     state.set_message(None);
     state.set_pending_join_uri(None);
-    state
-        .host_monitor_generation
-        .fetch_add(1, Ordering::Relaxed);
+    state.host_generation.fetch_add(1, Ordering::Relaxed);
     state
         .service
         .shutdown()
@@ -342,55 +377,89 @@ async fn minecraft_available(port: u16) -> bool {
         .is_ok_and(|result| result.is_ok())
 }
 
-async fn monitor_host(app: AppHandle, generation: u64, port: u16) {
-    let mut failures = 0;
-    let mut interval = tokio::time::interval(MC_HEALTH_INTERVAL);
-    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-    interval.tick().await;
-
-    loop {
-        interval.tick().await;
-        {
-            let state = app.state::<ConnectState>();
-            if state.host_monitor_generation.load(Ordering::Relaxed) != generation {
-                return;
-            }
-            let status = state.service.status();
-            if status.state.mode != Some(TunnelMode::Host) {
-                return;
-            }
-        }
-        if !record_health_check(&mut failures, minecraft_available(port).await) {
-            continue;
-        }
-
-        let service = {
-            let state = app.state::<ConnectState>();
-            state.set_message(Some("Minecraft 世界已关闭，房间已自动停止。".to_owned()));
-            state
-                .host_monitor_generation
-                .fetch_add(1, Ordering::Relaxed);
-            state.service.clone()
-        };
-        let _ = service.shutdown().await;
-        let state = app.state::<ConnectState>();
-        let _ = app.emit(STATUS_EVENT, state.snapshot());
-        return;
-    }
-}
-
-fn record_health_check(failures: &mut u8, available: bool) -> bool {
-    if available {
-        *failures = 0;
-        return false;
-    }
-    *failures = failures.saturating_add(1);
-    *failures >= MC_HEALTH_FAILURES_MAX
-}
-
 #[tauri::command]
 pub async fn stop_tunnel(state: State<'_, ConnectState>) -> Result<(), String> {
+    if let Ok(task) = state.host_task.lock()
+        && let Some(task) = task.as_ref()
+    {
+        if !task.stop() {
+            return Err("房间停止任务不可用".to_owned());
+        }
+        if let Ok(mut status) = state.host_status.lock()
+            && let Some(status) = status.as_mut()
+        {
+            status.phase = HostedServicePhase::Stopping;
+        }
+        return Ok(());
+    }
     stop_join(state).await
+}
+
+fn host_update_sender(
+    app: &AppHandle,
+    generation: u64,
+) -> tokio::sync::mpsc::UnboundedSender<HostUpdate> {
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        while let Some(update) = rx.recv().await {
+            let state = app.state::<ConnectState>();
+            if state.host_generation.load(Ordering::Relaxed) != generation {
+                return;
+            }
+            apply_host_update(&state, update);
+            let _ = app.emit(STATUS_EVENT, state.snapshot());
+        }
+    });
+    tx
+}
+
+fn apply_host_update(state: &ConnectState, update: HostUpdate) {
+    match update {
+        HostUpdate::Started { uri, status } | HostUpdate::UriChanged { uri, status } => {
+            if let Ok(mut current) = state.host_uri.lock() {
+                *current = Some(uri);
+            }
+            if let Ok(mut current) = state.host_status.lock() {
+                *current = Some(status);
+            }
+            state.set_message(None);
+        }
+        HostUpdate::Status(status) => {
+            if let Ok(mut current) = state.host_status.lock() {
+                *current = Some(status);
+            }
+        }
+        HostUpdate::Event(event) => state.set_message(event_message(event)),
+        HostUpdate::Error(error) => state.set_message(Some(error)),
+        HostUpdate::MinecraftUnavailable => {
+            finish_host(state);
+            state.set_message(Some("Minecraft 世界已关闭，房间已自动停止。".to_owned()));
+        }
+        HostUpdate::Failed(error) => {
+            finish_host(state);
+            state.set_message(Some(error));
+        }
+        HostUpdate::Stopped(result) => {
+            finish_host(state);
+            state.set_message(result.err());
+        }
+    }
+}
+
+fn finish_host(state: &ConnectState) {
+    if let Ok(mut task) = state.host_task.lock() {
+        *task = None;
+    }
+    if let Ok(mut status) = state.host_status.lock() {
+        *status = None;
+    }
+    if let Ok(mut uri) = state.host_uri.lock() {
+        *uri = None;
+    }
+    if let Ok(mut port) = state.host_port.lock() {
+        *port = None;
+    }
 }
 
 pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
@@ -491,6 +560,35 @@ fn snapshot_from_status(
     }
 }
 
+fn snapshot_from_host(
+    status: Option<HostedServiceStatus>,
+    share_uri: Option<String>,
+    message: Option<String>,
+    host_port: Option<u16>,
+) -> ConnectSnapshot {
+    ConnectSnapshot {
+        phase: match status.as_ref().map(|status| status.phase) {
+            None => "starting",
+            Some(HostedServicePhase::Active) => "active",
+            Some(HostedServicePhase::Stopping) => "stopping",
+            Some(HostedServicePhase::Stopped) => "idle",
+        },
+        mode: Some("host"),
+        local_address: None,
+        share_uri,
+        player_count: status.as_ref().map_or(0, |status| status.connection_count),
+        host_port,
+        route: None,
+        rtt_ms: None,
+        tx_bytes: 0,
+        rx_bytes: 0,
+        error: status
+            .and_then(|status| status.last_error)
+            .map(category_name),
+        message,
+    }
+}
+
 fn category_name(category: ErrorCategory) -> &'static str {
     match category {
         ErrorCategory::InvalidJoinUri => "invalid_join_uri",
@@ -505,26 +603,5 @@ fn category_name(category: ErrorCategory) -> &'static str {
         ErrorCategory::InvalidConfiguration => "invalid_configuration",
         ErrorCategory::Internal => "internal",
         _ => "unknown",
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn host_health_requires_three_consecutive_failures() {
-        let mut failures = 0;
-        assert!(!record_health_check(&mut failures, false));
-        assert!(!record_health_check(&mut failures, false));
-        assert!(record_health_check(&mut failures, false));
-    }
-
-    #[test]
-    fn successful_host_health_check_resets_failures() {
-        let mut failures = 2;
-        assert!(!record_health_check(&mut failures, true));
-        assert_eq!(failures, 0);
-        assert!(!record_health_check(&mut failures, false));
     }
 }

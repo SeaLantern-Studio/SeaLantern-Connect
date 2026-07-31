@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod connect;
+mod host;
 mod lightweight;
 mod settings;
 mod tray;
@@ -52,6 +53,7 @@ fn main() {
             settings::set_color_theme,
             settings::set_locale,
             settings::set_close_action,
+            settings::set_host_uri_lifetime,
             settings::set_join_port,
             settings::set_personalization,
             settings::set_connection_settings,

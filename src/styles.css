@@ -862,6 +862,11 @@ h1 {
   appearance: textfield;
   -moz-appearance: textfield;
 }
+.manual-port-field input,
+.settings-field input {
+  max-width: 200px;
+  justify-self: end;
+}
 .manual-port-field input::-webkit-inner-spin-button,
 .manual-port-field input::-webkit-outer-spin-button,
 .settings-field input::-webkit-inner-spin-button,
@@ -1307,6 +1312,11 @@ button:disabled {
   }
   .settings-select,
   .settings-input {
+    max-width: none;
+    justify-self: stretch;
+  }
+  .manual-port-field input,
+  .settings-field input {
     max-width: none;
     justify-self: stretch;
   }

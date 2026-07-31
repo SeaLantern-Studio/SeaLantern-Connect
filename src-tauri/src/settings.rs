@@ -1,9 +1,9 @@
-use sculk::persist::{self, HostState};
-use sculk::tunnel::{AccessToken, RelayUrl, SecretKey, ServiceId, TokenState};
+use sculk::persist;
+use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
 
 const APP_DIR_NAME: &str = "sealantern-connect";
@@ -30,6 +30,7 @@ pub struct Preferences {
     locale: String,
     remember_window_state: bool,
     close_action: String,
+    host_uri_lifetime: String,
     join_uri: String,
     join_port: u16,
     reconnect_timeout_secs: Option<u64>,
@@ -46,6 +47,7 @@ impl Default for Preferences {
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
             close_action: "ask".to_owned(),
+            host_uri_lifetime: "always".to_owned(),
             join_uri: String::new(),
             join_port: DEFAULT_JOIN_PORT,
             reconnect_timeout_secs: None,
@@ -60,12 +62,6 @@ pub struct SettingsState {
     path: PathBuf,
     secret_key: SecretKey,
     preferences: Mutex<Preferences>,
-}
-
-pub struct HostIdentity {
-    pub secret_key: SecretKey,
-    pub service_id: ServiceId,
-    pub token: AccessToken,
 }
 
 #[derive(Deserialize)]
@@ -121,24 +117,12 @@ impl SettingsState {
         self.update(|preferences| preferences.join_port = port)
     }
 
-    pub fn host_identity(&self) -> Result<HostIdentity, String> {
-        let path = self.data_dir.join(HOST_STATE_FILE);
-        let state = match persist::load_host_state(&path).map_err(|error| error.to_string())? {
-            Some(state) => state,
-            None => {
-                let state = HostState {
-                    service_id: ServiceId::generate(),
-                    token_state: TokenState::new(AccessToken::generate(), SystemTime::now()),
-                };
-                persist::save_host_state(&path, &state).map_err(|error| error.to_string())?;
-                state
-            }
-        };
-        Ok(HostIdentity {
-            secret_key: self.secret_key.clone(),
-            service_id: state.service_id,
-            token: state.token_state.token().clone(),
-        })
+    pub fn host_secret_key(&self) -> SecretKey {
+        self.secret_key.clone()
+    }
+
+    pub fn host_state_path(&self) -> PathBuf {
+        self.data_dir.join(HOST_STATE_FILE)
     }
 
     pub fn relay_url(&self) -> Result<Option<RelayUrl>, String> {
@@ -259,6 +243,17 @@ pub fn set_close_action(
 }
 
 #[tauri::command]
+pub fn set_host_uri_lifetime(
+    lifetime: String,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
+    if !is_host_uri_lifetime(&lifetime) {
+        return Err("invalid host URI lifetime".to_owned());
+    }
+    state.update(|preferences| preferences.host_uri_lifetime = lifetime)
+}
+
+#[tauri::command]
 pub fn set_personalization(
     update: PersonalizationUpdate,
     state: State<'_, SettingsState>,
@@ -325,13 +320,14 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
         preferences.splash_duration_ms,
         preferences.locale,
         preferences.remember_window_state,
         preferences.close_action,
+        preferences.host_uri_lifetime,
         preferences.join_uri,
         preferences.join_port,
         preferences
@@ -375,6 +371,11 @@ fn parse_preferences(content: &str) -> Preferences {
             if matches!(value, "ask" | "exit" | "hide_to_tray") {
                 preferences.close_action = value.to_owned();
             }
+        } else if let Some(value) = line.strip_prefix("host_uri_lifetime=") {
+            let value = value.trim();
+            if is_host_uri_lifetime(value) {
+                preferences.host_uri_lifetime = value.to_owned();
+            }
         } else if let Some(value) = line.strip_prefix("join_uri=") {
             preferences.join_uri = value.trim().to_owned();
         } else if let Some(value) = line.strip_prefix("join_port=")
@@ -399,6 +400,13 @@ fn parse_preferences(content: &str) -> Preferences {
 
 fn is_color_theme(value: &str) -> bool {
     matches!(value, "default" | "midnight" | "ocean" | "rose" | "sunset")
+}
+
+fn is_host_uri_lifetime(value: &str) -> bool {
+    matches!(
+        value,
+        "always" | "never" | "1h" | "3h" | "6h" | "12h" | "24h"
+    )
 }
 
 #[cfg(test)]

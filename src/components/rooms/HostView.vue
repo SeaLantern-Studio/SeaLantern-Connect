@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import type { ConnectStatus } from "../../connect";
+import type { HostUriLifetime } from "../../preferences";
 import { t } from "../../i18n";
 import { Check, Copy, HousePlus, LoaderCircle, RefreshCw, Square } from "lucide-vue-next";
 
@@ -13,6 +14,10 @@ interface LanScanSnapshot {
 
 const props = defineProps<{
   status: ConnectStatus;
+  uriLifetime: HostUriLifetime;
+}>();
+const emit = defineEmits<{
+  changeUriLifetime: [value: HostUriLifetime];
 }>();
 
 const portMode = ref<"auto" | "manual">("auto");
@@ -27,6 +32,15 @@ let scanTimer: number | null = null;
 const portModeOptions = computed<SelectOption[]>(() => [
   { label: t("create.automaticDiscovery"), value: "auto" },
   { label: t("create.manual"), value: "manual" },
+]);
+const uriLifetimeOptions = computed<SelectOption[]>(() => [
+  { label: t("create.lifetimeAlways"), value: "always" },
+  { label: t("create.lifetimeNever"), value: "never" },
+  { label: t("create.lifetime1h"), value: "1h" },
+  { label: t("create.lifetime3h"), value: "3h" },
+  { label: t("create.lifetime6h"), value: "6h" },
+  { label: t("create.lifetime12h"), value: "12h" },
+  { label: t("create.lifetime24h"), value: "24h" },
 ]);
 
 const hosting = computed(() => props.status.mode === "host" && props.status.phase !== "idle");
@@ -52,6 +66,11 @@ function setPortMode(value: string | number) {
   portMode.value = value;
   if (value === "auto") void beginScan(true);
   else void stopScan();
+}
+
+function setUriLifetime(value: string | number) {
+  if (!uriLifetimeOptions.value.some((option) => option.value === value)) return;
+  emit("changeUriLifetime", value as HostUriLifetime);
 }
 
 async function beginScan(restart = false) {
@@ -102,6 +121,7 @@ async function createRoom() {
     await invoke("start_host", {
       port: selectedPort.value,
       maxPlayers: maxPlayers.value.trim() === "" ? null : Number(maxPlayers.value),
+      uriLifetime: props.uriLifetime,
     });
   } catch (error) {
     commandError.value = String(error);
@@ -257,6 +277,16 @@ onUnmounted(() => {
           max="1000"
           inputmode="numeric"
           :placeholder="t('create.unlimited')"
+        />
+      </div>
+
+      <div class="form-field">
+        <span class="field-label">{{ t("create.uriLifetime") }}</span>
+        <Cmz_Select
+          class="settings-select"
+          :model-value="uriLifetime"
+          :options="uriLifetimeOptions"
+          @update:model-value="setUriLifetime"
         />
       </div>
 

@@ -5,6 +5,7 @@ import { setLocale } from "../i18n";
 import type {
   ConnectionSettingsUpdate,
   CloseAction,
+  HostUriLifetime,
   Locale,
   PersonalizationUpdate,
   Preferences,
@@ -20,6 +21,7 @@ const defaults: Preferences = {
   locale: "zh-CN",
   rememberWindowState: true,
   closeAction: "ask",
+  hostUriLifetime: "always",
   joinUri: "",
   joinPort: 25565,
   reconnectTimeoutSecs: null,
@@ -129,6 +131,22 @@ export const usePreferencesStore = defineStore("preferences", () => {
     }
   }
 
+  async function setHostUriLifetime(lifetime: HostUriLifetime): Promise<boolean> {
+    if (preferences.value.hostUriLifetime === lifetime) return true;
+    const fallback = preferences.value.hostUriLifetime;
+    preferences.value.hostUriLifetime = lifetime;
+    try {
+      await invoke("set_host_uri_lifetime", { lifetime });
+      return true;
+    } catch (error) {
+      if (preferences.value.hostUriLifetime === lifetime) {
+        preferences.value.hostUriLifetime = fallback;
+      }
+      console.error("Failed to save host URI lifetime", error);
+      return false;
+    }
+  }
+
   function handleSystemThemeChange(): void {
     if (preferences.value.theme === "system") applyTheme();
   }
@@ -150,6 +168,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     applyPersonalization,
     applyConnectionSettings,
     setCloseAction,
+    setHostUriLifetime,
     startSystemThemeListener,
     stopSystemThemeListener,
   };
