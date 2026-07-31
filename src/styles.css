@@ -683,6 +683,19 @@ button {
   color: var(--primary);
   background: var(--surface-soft);
 }
+.floating-save-button:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--danger);
+  opacity: 0.72;
+  box-shadow: 0 0 0 1px var(--surface);
+  pointer-events: none;
+}
 .floating-save-button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
   outline-offset: 2px;

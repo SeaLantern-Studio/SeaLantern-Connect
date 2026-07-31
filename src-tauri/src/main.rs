@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod connect;
+mod lightweight;
 mod settings;
 mod tray;
 
@@ -13,8 +14,9 @@ fn window_state_flags() -> StateFlags {
 }
 
 fn main() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(connect::ConnectState::new())
+        .manage(lightweight::LightweightState::new())
         .plugin(
             tauri_plugin_window_state::Builder::new()
                 .with_state_flags(window_state_flags())
@@ -54,6 +56,15 @@ fn main() {
             settings::set_personalization,
             settings::set_connection_settings,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app_handle, event| {
+        if let tauri::RunEvent::ExitRequested {
+            api, code: None, ..
+        } = event
+        {
+            api.prevent_exit();
+        }
+    });
 }
