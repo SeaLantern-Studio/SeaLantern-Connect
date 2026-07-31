@@ -21,9 +21,9 @@
 
 > 无需公网 IP，无需配置路由器端口转发。
 
-## 开发
+## 给开发者
 
-本项目使用 [only](https://github.com/KercyDing/only) 作为开发工具链，安装详见[这里](https://github.com/KercyDing/only#install)。
+本项目使用 [only](https://github.com/KercyDing/only) 作为开发工具链，安装详见 [这里](https://github.com/KercyDing/only#install)。
 
 ### 常用命令
 
