@@ -26,6 +26,10 @@
     "themeMode": "主题模式",
     "colorTheme": "颜色主题",
     "colorThemeHint": "选择应用使用的预设颜色方案",
+    "fontSize": "文字大小",
+    "fontFamily": "界面字体",
+    "systemFont": "系统默认",
+    "searchFont": "搜索字体",
     "colorThemes": {
       "default": "默认",
       "midnight": "午夜",

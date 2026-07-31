@@ -104,7 +104,7 @@ function iconFor(tone: ToastTone) {
 
 .toast-message {
   min-width: 0;
-  font-size: 13px;
+  font-size: 0.9286rem;
   font-weight: 600;
   line-height: 1.4;
   overflow-wrap: anywhere;

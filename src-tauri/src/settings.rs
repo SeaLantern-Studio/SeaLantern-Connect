@@ -1,8 +1,9 @@
 use sculk::persist;
 use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
 
@@ -12,7 +13,9 @@ const KEY_FILE: &str = "secret.key";
 const HOST_STATE_FILE: &str = "host.state";
 const DEFAULT_JOIN_PORT: u16 = 25_565;
 const SPLASH_DURATION_OPTIONS_MS: [u32; 5] = [0, 500, 1000, 1500, 2000];
+const FONT_SIZE_RANGE: std::ops::RangeInclusive<u32> = 12..=20;
 pub const RECONNECT_TIMEOUT_OPTIONS_SECS: [u64; 5] = [10, 15, 20, 30, 60];
+static SYSTEM_FONTS: OnceLock<Vec<String>> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CloseAction {
@@ -26,6 +29,8 @@ pub enum CloseAction {
 pub struct Preferences {
     theme: String,
     color_theme: String,
+    font_size: u32,
+    font_family: String,
     splash_duration_ms: u32,
     locale: String,
     remember_window_state: bool,
@@ -43,6 +48,8 @@ impl Default for Preferences {
         Self {
             theme: "system".to_owned(),
             color_theme: "default".to_owned(),
+            font_size: 14,
+            font_family: String::new(),
             splash_duration_ms: 1000,
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
@@ -69,6 +76,8 @@ pub struct SettingsState {
 pub struct PersonalizationUpdate {
     theme: String,
     color_theme: String,
+    font_size: u32,
+    font_family: String,
     splash_duration_ms: u32,
     locale: String,
     remember_window_state: bool,
@@ -208,6 +217,26 @@ pub fn get_preferences(state: State<'_, SettingsState>) -> Result<Preferences, S
 }
 
 #[tauri::command]
+pub async fn get_system_fonts() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        SYSTEM_FONTS
+            .get_or_init(|| {
+                let mut database = fontdb::Database::new();
+                database.load_system_fonts();
+                database
+                    .faces()
+                    .flat_map(|face| face.families.iter().map(|(name, _)| name.clone()))
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect()
+            })
+            .clone()
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn set_theme(theme: String, state: State<'_, SettingsState>) -> Result<(), String> {
     if !matches!(theme.as_str(), "system" | "light" | "dark") {
         return Err("invalid theme preference".to_owned());
@@ -264,6 +293,13 @@ pub fn set_personalization(
     if !is_color_theme(&update.color_theme) {
         return Err("invalid color theme".to_owned());
     }
+    if !FONT_SIZE_RANGE.contains(&update.font_size) {
+        return Err("invalid font size".to_owned());
+    }
+    let font_family = update.font_family.trim().to_owned();
+    if font_family.len() > 128 || font_family.chars().any(char::is_control) {
+        return Err("invalid font family".to_owned());
+    }
     if !SPLASH_DURATION_OPTIONS_MS.contains(&update.splash_duration_ms) {
         return Err("invalid splash duration".to_owned());
     }
@@ -279,6 +315,8 @@ pub fn set_personalization(
     state.update(|preferences| {
         preferences.theme = update.theme;
         preferences.color_theme = update.color_theme;
+        preferences.font_size = update.font_size;
+        preferences.font_family = font_family;
         preferences.splash_duration_ms = update.splash_duration_ms;
         preferences.locale = update.locale;
         preferences.remember_window_state = update.remember_window_state;
@@ -320,9 +358,11 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
+        preferences.font_size,
+        preferences.font_family,
         preferences.splash_duration_ms,
         preferences.locale,
         preferences.remember_window_state,
@@ -351,6 +391,18 @@ fn parse_preferences(content: &str) -> Preferences {
             let value = value.trim();
             if is_color_theme(value) {
                 preferences.color_theme = value.to_owned();
+            }
+        } else if let Some(value) = line.strip_prefix("font_size=") {
+            preferences.font_size = value
+                .trim()
+                .parse::<u32>()
+                .ok()
+                .filter(|size| FONT_SIZE_RANGE.contains(size))
+                .unwrap_or(14);
+        } else if let Some(value) = line.strip_prefix("font_family=") {
+            let value = value.trim();
+            if value.len() <= 128 && !value.chars().any(char::is_control) {
+                preferences.font_family = value.to_owned();
             }
         } else if let Some(value) = line.strip_prefix("splash_duration_ms=") {
             preferences.splash_duration_ms = value
@@ -423,11 +475,13 @@ mod tests {
     #[test]
     fn parses_saved_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=ocean\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=ocean\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
         assert_eq!(preferences.color_theme, "ocean");
+        assert_eq!(preferences.font_size, 17);
+        assert_eq!(preferences.font_family, "Microsoft YaHei");
         assert_eq!(preferences.splash_duration_ms, 2000);
         assert_eq!(preferences.locale, "en");
         assert!(!preferences.remember_window_state);
@@ -442,11 +496,12 @@ mod tests {
     #[test]
     fn ignores_unknown_theme() {
         let preferences = parse_preferences(
-            "theme=midnight\ncolor_theme=unknown\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nreconnect_timeout_secs=45\n",
+            "theme=midnight\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nreconnect_timeout_secs=45\n",
         );
 
         assert_eq!(preferences.theme, "system");
         assert_eq!(preferences.color_theme, "default");
+        assert_eq!(preferences.font_size, 14);
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
         assert_eq!(preferences.close_action, "ask");

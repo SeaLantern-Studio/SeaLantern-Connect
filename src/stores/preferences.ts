@@ -13,10 +13,13 @@ import type {
 } from "../preferences";
 import type { ColorThemeId } from "../themes";
 import { applyColorTheme } from "../themes/apply";
+import { applyTypography, DEFAULT_FONT_SIZE } from "../typography";
 
 const defaults: Preferences = {
   theme: "system",
   colorTheme: "default",
+  fontSize: DEFAULT_FONT_SIZE,
+  fontFamily: "",
   splashDurationMs: 1000,
   locale: "zh-CN",
   rememberWindowState: true,
@@ -40,6 +43,11 @@ export const usePreferencesStore = defineStore("preferences", () => {
     applyColorTheme(preferences.value.theme, preferences.value.colorTheme, systemTheme.matches);
   }
 
+  function applyPersonalizationStyles(): void {
+    applyTheme();
+    applyTypography(preferences.value.fontSize, preferences.value.fontFamily);
+  }
+
   async function load(): Promise<void> {
     try {
       preferences.value = await invoke<Preferences>("get_preferences");
@@ -47,7 +55,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     } catch (error) {
       console.error("Failed to load preferences", error);
     }
-    applyTheme();
+    applyPersonalizationStyles();
   }
 
   async function saveTheme(theme: ThemePreference, fallback: ThemePreference): Promise<void> {
@@ -113,7 +121,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
   function applyPersonalization(update: PersonalizationUpdate): void {
     Object.assign(preferences.value, update);
     setLocale(update.locale);
-    applyTheme();
+    applyPersonalizationStyles();
   }
 
   function applyConnectionSettings(update: ConnectionSettingsUpdate): void {

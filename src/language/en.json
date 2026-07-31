@@ -26,6 +26,10 @@
     "themeMode": "Theme Mode",
     "colorTheme": "Color Theme",
     "colorThemeHint": "Choose a preset color scheme for the app",
+    "fontSize": "Text Size",
+    "fontFamily": "Interface Font",
+    "systemFont": "System default",
+    "searchFont": "Search fonts",
     "colorThemes": {
       "default": "Default",
       "midnight": "Midnight",

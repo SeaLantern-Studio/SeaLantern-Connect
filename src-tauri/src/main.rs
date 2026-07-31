@@ -50,6 +50,7 @@ fn main() {
             connect::stop_join,
             connect::stop_tunnel,
             settings::get_preferences,
+            settings::get_system_fonts,
             settings::set_theme,
             settings::set_color_theme,
             settings::set_locale,

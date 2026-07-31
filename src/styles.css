@@ -1,5 +1,6 @@
 :root {
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--app-font-family);
+  font-size: 14px;
   color: var(--text);
   background: var(--background);
   font-synthesis: none;
@@ -16,6 +17,7 @@
   --danger: #ef4444;
   --shadow: 0 16px 44px rgba(30, 55, 75, 0.11);
   --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --app-font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
   --cmz-primary: var(--primary);
   --cmz-primary-dark: var(--primary-hover);
   --cmz-primary-bg: color-mix(in srgb, var(--primary) 11%, transparent);
@@ -28,12 +30,20 @@
   --cmz-text-secondary: var(--muted);
   --cmz-text-tertiary: var(--muted);
   --cmz-text-inverse: #ffffff;
+  --cmz-font-sans: var(--app-font-family);
+  --cmz-font-display: var(--app-font-family);
+  --cmz-font-size-xs: 0.7857rem;
+  --cmz-font-size-sm: 0.8571rem;
+  --cmz-font-size-base: 0.9286rem;
+  --cmz-font-size-lg: 1.0714rem;
   --cmz-radius-xs: 4px;
   --cmz-radius-sm: 6px;
   --cmz-radius-md: 10px;
   --cmz-radius-lg: 16px;
   --cmz-radius-xl: 24px;
   --cmz-radius-full: 9999px;
+  --scrollbar-thumb: var(--border);
+  --scrollbar-thumb-hover: var(--muted);
   --cmz-shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
   --cmz-glass-bg: rgba(255, 255, 255, 0.72);
   --cmz-acrylic-bg: rgba(255, 255, 255, 0.65);
@@ -59,6 +69,41 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+*::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:vertical:start:decrement,
+*::-webkit-scrollbar-button:vertical:end:increment,
+*::-webkit-scrollbar-button:horizontal:start:decrement,
+*::-webkit-scrollbar-button:horizontal:end:increment {
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  display: none !important;
+  border: 0;
+  background: transparent;
+  -webkit-appearance: none;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  border-radius: var(--cmz-radius-full);
+  background: transparent;
+}
+*.scrollbar-active::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+*.scrollbar-active::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 html,
 body,
@@ -133,13 +178,13 @@ button {
 }
 .sidebar-brand-name strong {
   overflow: hidden;
-  font-size: 15px;
+  font-size: 1.0714rem;
   line-height: 1.1;
   text-overflow: ellipsis;
 }
 .sidebar-brand-name small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.7143rem;
   font-weight: 600;
   line-height: 1.1;
 }
@@ -237,7 +282,7 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 0.9286rem;
   opacity: 1;
   transform: translateX(0);
   transition:
@@ -311,7 +356,7 @@ button {
   margin: 0;
   overflow: hidden;
   color: var(--text);
-  font-size: 18px;
+  font-size: 1.2857rem;
   font-weight: 700;
   line-height: 1;
   text-overflow: ellipsis;
@@ -363,6 +408,7 @@ button {
   gap: 2px;
   padding: 8px;
   overflow-y: auto;
+  clip-path: inset(0 round var(--cmz-radius-lg));
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--cmz-radius-lg);
   background: rgba(255, 255, 255, 0.92);
@@ -409,7 +455,7 @@ button {
 }
 .header-language-label {
   overflow: hidden;
-  font-size: 13px;
+  font-size: 0.9286rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -536,8 +582,7 @@ button {
   min-width: 0;
   min-height: 0;
   display: grid;
-  overflow: auto;
-  padding: 32px 0;
+  overflow: hidden;
   margin: 0 12px 12px 0;
   border: 1px solid var(--border);
   border-radius: var(--cmz-radius-lg);
@@ -545,8 +590,11 @@ button {
 }
 .page-transition-frame {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   display: grid;
+  overflow: auto;
+  padding: 32px 0;
 }
 .page-enter-active {
   transition:
@@ -596,13 +644,13 @@ button {
 .settings-section-heading h2 {
   margin: 0 0 4px;
   color: var(--text);
-  font-size: 15px;
+  font-size: 1.0714rem;
   line-height: 1.35;
 }
 .settings-section-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.8571rem;
   line-height: 1.55;
 }
 .preference-row {
@@ -611,7 +659,7 @@ button {
   grid-template-columns: minmax(150px, 1fr) minmax(280px, 390px);
   align-items: center;
   gap: 20px;
-  font-size: 13px;
+  font-size: 0.9286rem;
 }
 .preference-row > span:first-child {
   font-weight: 600;
@@ -663,14 +711,38 @@ button {
   border-radius: var(--cmz-radius-md);
 }
 .settings-select .cmz-select-trigger {
-  font-size: 13px;
+  font-size: 0.9286rem;
 }
 .cmz-select-dropdown {
   border-radius: var(--cmz-radius-md);
-  font-size: 13px;
+  font-size: 0.9286rem;
 }
 .cmz-select-dropdown .cmz-select-option {
   min-height: 36px;
+}
+.font-family-select {
+  max-width: 200px;
+}
+.font-size-control {
+  width: 100%;
+  max-width: 200px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  justify-self: end;
+  gap: 14px;
+}
+.font-size-control output {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.settings-slider {
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 .relay-error {
   justify-self: end;
@@ -738,14 +810,14 @@ button {
 }
 h1 {
   margin: 0 0 5px;
-  font-size: 22px;
+  font-size: 1.5714rem;
   line-height: 1.25;
   letter-spacing: 0;
 }
 .intro p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.9286rem;
   line-height: 1.55;
 }
 .phase-pill {
@@ -753,7 +825,7 @@ h1 {
   padding: 6px 10px;
   border-radius: var(--cmz-radius-full);
   text-align: center;
-  font-size: 12px;
+  font-size: 0.8571rem;
   color: var(--muted);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -784,7 +856,7 @@ h1 {
 }
 .field-label {
   color: var(--text);
-  font-size: 13px;
+  font-size: 0.9286rem;
   font-weight: 650;
 }
 .mode-tabs {
@@ -842,14 +914,14 @@ h1 {
 }
 .discovery-state strong {
   color: var(--text);
-  font-size: 13px;
+  font-size: 0.9286rem;
 }
 .detected-port {
   color: var(--success);
 }
 .discovery-state span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.7857rem;
 }
 .discovery-status-icon {
   width: 32px;
@@ -877,7 +949,7 @@ h1 {
   user-select: text;
   appearance: textfield;
   -moz-appearance: textfield;
-  font-size: 13px;
+  font-size: 0.9286rem;
 }
 .manual-port-field input,
 .settings-field input {
@@ -918,13 +990,13 @@ h1 {
 .share-block > span {
   grid-column: 1;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 .share-block strong {
   grid-column: 1;
   overflow: hidden;
   font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 13px;
+  font-size: 0.9286rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   user-select: text;
@@ -954,15 +1026,15 @@ h1 {
 }
 .host-summary span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.7857rem;
 }
 .host-summary strong {
-  font-size: 15px;
+  font-size: 1.0714rem;
 }
 .join-panel label {
   display: block;
   margin-bottom: 9px;
-  font-size: 13px;
+  font-size: 0.9286rem;
   font-weight: 650;
 }
 .invite-row {
@@ -1026,7 +1098,7 @@ h1 {
   border-radius: var(--cmz-radius-sm);
   cursor: pointer;
   font-weight: 650;
-  font-size: 13px;
+  font-size: 0.9286rem;
   white-space: nowrap;
 }
 .primary-button {
@@ -1057,7 +1129,7 @@ button:disabled {
 .field-error {
   margin: 8px 0 0;
   color: var(--danger);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 .join-actions {
   display: flex;
@@ -1071,7 +1143,7 @@ button:disabled {
 }
 .privacy-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 
 .connection-panel {
@@ -1087,12 +1159,12 @@ button:disabled {
 .address-block > span {
   grid-column: 1;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 .address-block strong {
   grid-column: 1;
   font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 20px;
+  font-size: 1.4286rem;
   user-select: text;
 }
 .address-block button {
@@ -1122,12 +1194,12 @@ button:disabled {
 }
 .metrics span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.7857rem;
 }
 .metrics strong {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 1rem;
 }
 .connection-footer {
   min-height: 36px;
@@ -1139,7 +1211,7 @@ button:disabled {
 .connection-footer p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.8571rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1151,7 +1223,7 @@ button:disabled {
   border-radius: var(--cmz-radius-md);
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 
 .modal-backdrop {
@@ -1177,13 +1249,13 @@ button:disabled {
 }
 .confirm-dialog h2 {
   margin: 0 0 9px;
-  font-size: 18px;
+  font-size: 1.2857rem;
   letter-spacing: 0;
 }
 .confirm-dialog > p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 0.9286rem;
   line-height: 1.65;
 }
 .invite-summary {
@@ -1193,7 +1265,7 @@ button:disabled {
   padding: 12px 14px;
   border-radius: var(--cmz-radius-sm);
   background: var(--surface-soft);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 .invite-summary span {
   color: var(--muted);
@@ -1208,7 +1280,7 @@ button:disabled {
   grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.8571rem;
   font-weight: 650;
 }
 .join-port-heading .mode-tabs {
@@ -1225,7 +1297,7 @@ button:disabled {
   border-radius: var(--cmz-radius-sm);
   color: var(--muted);
   background: var(--surface-soft);
-  font-size: 12px;
+  font-size: 0.8571rem;
 }
 .join-port-detail input {
   width: 100%;
@@ -1313,7 +1385,7 @@ button:disabled {
   .titlebar {
     padding-left: 16px;
   }
-  .app-content {
+  .page-transition-frame {
     padding: 24px 0;
   }
   .workspace {
@@ -1329,6 +1401,10 @@ button:disabled {
   }
   .settings-select,
   .settings-input {
+    max-width: none;
+    justify-self: stretch;
+  }
+  .font-size-control {
     max-width: none;
     justify-self: stretch;
   }

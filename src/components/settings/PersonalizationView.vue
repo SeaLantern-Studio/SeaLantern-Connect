@@ -7,6 +7,7 @@ import type { PersonalizationUpdate, Preferences, SplashDurationMs } from "../..
 import { getThemeOptions, type ColorThemeId } from "../../themes";
 import { useUiStore } from "../../stores/ui";
 import { toast } from "../../toast";
+import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../typography";
 
 const props = defineProps<{ preferences: Preferences }>();
 const uiStore = useUiStore();
@@ -19,6 +20,17 @@ const emit = defineEmits<{
 const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const persisted = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const saving = ref(false);
+const fontsLoading = ref(false);
+const systemFonts = ref<string[]>([]);
+const fontFamilyOptions = computed<SelectOption[]>(() => {
+  const fonts = systemFonts.value.includes(form.value.fontFamily)
+    ? systemFonts.value
+    : [form.value.fontFamily, ...systemFonts.value].filter(Boolean);
+  return [
+    { label: t("personalization.systemFont"), value: "" },
+    ...fonts.map((font) => ({ label: font, value: font })),
+  ];
+});
 const colorThemeOptions = computed<SelectOption[]>(() =>
   getThemeOptions().map((option) => ({
     label: t(`personalization.colorThemes.${option.value}`),
@@ -48,6 +60,8 @@ const hasChanges = computed(() => {
   return (
     update.theme !== current.theme ||
     update.colorTheme !== current.colorTheme ||
+    update.fontSize !== current.fontSize ||
+    update.fontFamily !== current.fontFamily ||
     update.splashDurationMs !== current.splashDurationMs ||
     update.locale !== current.locale ||
     update.rememberWindowState !== current.rememberWindowState ||
@@ -59,6 +73,8 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
   return {
     theme: preferences.theme,
     colorTheme: preferences.colorTheme,
+    fontSize: preferences.fontSize,
+    fontFamily: preferences.fontFamily,
     splashDurationMs: preferences.splashDurationMs,
     locale: preferences.locale,
     rememberWindowState: preferences.rememberWindowState,
@@ -78,6 +94,20 @@ watch(
   (colorTheme) => {
     form.value.colorTheme = colorTheme;
     persisted.value.colorTheme = colorTheme;
+  },
+);
+watch(
+  () => props.preferences.fontSize,
+  (fontSize) => {
+    form.value.fontSize = fontSize;
+    persisted.value.fontSize = fontSize;
+  },
+);
+watch(
+  () => props.preferences.fontFamily,
+  (fontFamily) => {
+    form.value.fontFamily = fontFamily;
+    persisted.value.fontFamily = fontFamily;
   },
 );
 watch(
@@ -128,12 +158,35 @@ async function save() {
 
 const saveAction = () => save();
 
+watch(
+  () => [form.value.fontSize, form.value.fontFamily] as const,
+  ([fontSize, fontFamily]) => applyTypography(fontSize, fontFamily),
+  { immediate: true },
+);
+
 watchEffect(() => {
   uiStore.setSaveState("personalize", !saving.value && hasChanges.value, saving.value);
 });
 
-onMounted(() => uiStore.registerSaveAction("personalize", saveAction));
-onUnmounted(() => uiStore.unregisterSaveAction("personalize", saveAction));
+onMounted(() => {
+  uiStore.registerSaveAction("personalize", saveAction);
+  void loadSystemFonts();
+});
+onUnmounted(() => {
+  uiStore.unregisterSaveAction("personalize", saveAction);
+  applyTypography(persisted.value.fontSize, persisted.value.fontFamily);
+});
+
+async function loadSystemFonts() {
+  fontsLoading.value = true;
+  try {
+    systemFonts.value = await invoke<string[]>("get_system_fonts");
+  } catch (error) {
+    console.error("Failed to load system fonts", error);
+  } finally {
+    fontsLoading.value = false;
+  }
+}
 
 function updateRememberWindowState(value: boolean) {
   form.value.rememberWindowState = value;
@@ -149,6 +202,15 @@ function setColorTheme(value: string | number) {
   if (!colorThemeOptions.value.some((option) => option.value === value)) return;
   form.value.colorTheme = value as ColorThemeId;
   emit("changeColorTheme", form.value.colorTheme);
+}
+
+function setFontFamily(value: string | number) {
+  if (typeof value !== "string") return;
+  form.value.fontFamily = value;
+}
+
+function setFontSize(event: Event) {
+  form.value.fontSize = Number((event.target as HTMLInputElement).value);
 }
 
 function setCloseAction(value: string | number) {
@@ -189,6 +251,36 @@ function setSplashDuration(value: string | number) {
           :model-value="form.colorTheme"
           :options="colorThemeOptions"
           @update:model-value="setColorTheme"
+        />
+      </div>
+
+      <div class="preference-row">
+        <span>{{ t("personalization.fontSize") }}</span>
+        <div class="font-size-control">
+          <input
+            class="settings-slider"
+            type="range"
+            :min="MIN_FONT_SIZE"
+            :max="MAX_FONT_SIZE"
+            step="1"
+            :value="form.fontSize"
+            @input="setFontSize"
+          />
+          <output>{{ form.fontSize }}px</output>
+        </div>
+      </div>
+
+      <div class="preference-row">
+        <span>{{ t("personalization.fontFamily") }}</span>
+        <Cmz_Select
+          class="settings-select font-family-select"
+          :model-value="form.fontFamily"
+          :options="fontFamilyOptions"
+          :searchable="true"
+          :loading="fontsLoading"
+          :preview-font="true"
+          :placeholder="t('personalization.searchFont')"
+          @update:model-value="setFontFamily"
         />
       </div>
     </section>

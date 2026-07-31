@@ -120,13 +120,13 @@ onUnmounted(() => {
 }
 .splash-text h1 {
   margin: 0 0 7px;
-  font-size: 28px;
+  font-size: 2rem;
   line-height: 1.2;
 }
 .splash-text p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 1rem;
 }
 
 .splash-loader {

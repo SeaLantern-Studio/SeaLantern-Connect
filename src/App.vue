@@ -17,6 +17,7 @@ import type { CloseAction } from "./preferences";
 import { useConnectionStore } from "./stores/connection";
 import { usePreferencesStore } from "./stores/preferences";
 import { useUiStore } from "./stores/ui";
+import { enableAutoHidingScrollbars } from "./scrollbars";
 
 const connectionStore = useConnectionStore();
 const preferencesStore = usePreferencesStore();
@@ -28,6 +29,7 @@ const showSplash = ref(true);
 const isInitializing = ref(true);
 const choosingCloseAction = ref(false);
 let unlistenCloseAction: UnlistenFn | null = null;
+let disableAutoHidingScrollbars: (() => void) | null = null;
 
 const pageTitle = computed(
   () =>
@@ -53,6 +55,7 @@ async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Prom
 }
 
 onMounted(async () => {
+  disableAutoHidingScrollbars = enableAutoHidingScrollbars();
   unlistenCloseAction = await listen("close-action-requested", uiStore.openClosePrompt);
   await preferencesStore.load();
   preferencesStore.startSystemThemeListener();
@@ -64,6 +67,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  disableAutoHidingScrollbars?.();
   unlistenCloseAction?.();
   connectionStore.dispose();
   preferencesStore.stopSystemThemeListener();

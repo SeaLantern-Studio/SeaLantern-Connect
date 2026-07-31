@@ -9,6 +9,8 @@ export type HostUriLifetime = "always" | "never" | "1h" | "3h" | "6h" | "12h" | 
 export interface Preferences {
   theme: ThemePreference;
   colorTheme: ColorThemeId;
+  fontSize: number;
+  fontFamily: string;
   splashDurationMs: SplashDurationMs;
   locale: Locale;
   rememberWindowState: boolean;
@@ -24,6 +26,8 @@ export interface Preferences {
 export interface PersonalizationUpdate {
   theme: ThemePreference;
   colorTheme: ColorThemeId;
+  fontSize: number;
+  fontFamily: string;
   splashDurationMs: SplashDurationMs;
   locale: Locale;
   rememberWindowState: boolean;
