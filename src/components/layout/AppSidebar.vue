@@ -24,6 +24,7 @@ const props = defineProps<{
   collapsed: boolean;
 }>();
 
+const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
 const sidebarNav = ref<HTMLElement | null>(null);
 const navIndicator = ref<HTMLElement | null>(null);
 let indicatorFrame: number | null = null;
@@ -88,7 +89,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed }">
+  <aside class="sidebar" :class="{ collapsed, 'macos-sidebar': isMacOS }">
     <div class="sidebar-brand" data-tauri-drag-region title="SeaLantern Connect">
       <img :src="logoUrl" alt="" draggable="false" />
       <div class="sidebar-brand-name" data-tauri-drag-region>

@@ -28,9 +28,12 @@
   --cmz-text-secondary: var(--muted);
   --cmz-text-tertiary: var(--muted);
   --cmz-text-inverse: #ffffff;
-  --cmz-radius-sm: 5px;
-  --cmz-radius-md: 7px;
-  --cmz-radius-lg: 8px;
+  --cmz-radius-xs: 4px;
+  --cmz-radius-sm: 6px;
+  --cmz-radius-md: 10px;
+  --cmz-radius-lg: 16px;
+  --cmz-radius-xl: 24px;
+  --cmz-radius-full: 9999px;
   --cmz-shadow-focus: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
   --cmz-glass-bg: rgba(255, 255, 255, 0.72);
   --cmz-acrylic-bg: rgba(255, 255, 255, 0.65);
@@ -79,6 +82,7 @@ button {
 }
 
 .app-shell {
+  --titlebar-center-offset: 110px;
   height: 100%;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -87,6 +91,7 @@ button {
   transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .app-shell.sidebar-collapsed {
+  --titlebar-center-offset: 34px;
   grid-template-columns: 68px minmax(0, 1fr);
 }
 .sidebar {
@@ -142,7 +147,11 @@ button {
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  border-radius: 6px;
+  border-radius: var(--cmz-radius-sm);
+}
+.macos-sidebar .sidebar-brand {
+  height: 72px;
+  padding-top: 24px;
 }
 .sidebar-nav {
   position: relative;
@@ -178,7 +187,7 @@ button {
   gap: 9px;
   padding: 0 14px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
@@ -206,7 +215,7 @@ button {
   left: 0;
   width: 3px;
   height: 20px;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 var(--cmz-radius-full) var(--cmz-radius-full) 0;
   background: var(--primary);
   box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 70%, transparent);
   opacity: 0;
@@ -286,7 +295,14 @@ button {
   -webkit-app-region: drag;
 }
 .titlebar.macos-overlay {
-  padding-left: 98px;
+  padding-left: 10px;
+}
+.titlebar.macos-overlay .page-title {
+  position: absolute;
+  left: calc(50% - var(--titlebar-center-offset));
+  max-width: calc(100% - 220px);
+  transform: translateX(-50%);
+  text-align: center;
 }
 .titlebar.macos-overlay .titlebar-actions {
   margin-left: auto;
@@ -319,7 +335,7 @@ button {
   justify-content: center;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--cmz-radius-full);
   color: var(--muted);
   background: var(--surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -348,7 +364,7 @@ button {
   padding: 8px;
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(20px) saturate(180%);
@@ -372,7 +388,7 @@ button {
   padding: 8px;
   overflow: hidden;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--cmz-radius-xs);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
@@ -434,7 +450,7 @@ button {
   gap: 2px;
   padding: 0 4px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--cmz-radius-full);
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(30, 55, 75, 0.06);
   -webkit-app-region: no-drag;
@@ -477,7 +493,7 @@ button {
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--cmz-radius-full);
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(30, 55, 75, 0.06);
   cursor: pointer;
@@ -499,7 +515,7 @@ button {
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--cmz-radius-xs);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
@@ -524,7 +540,7 @@ button {
   padding: 32px 0;
   margin: 0 12px 12px 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   background: var(--surface);
 }
 .page-transition-frame {
@@ -570,7 +586,7 @@ button {
   gap: 18px;
   padding: 20px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   background: var(--surface);
   box-shadow: var(--card-shadow);
 }
@@ -622,7 +638,7 @@ button {
   height: 38px;
   padding: 0 11px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   outline: 0;
   color: var(--text);
   background: var(--surface-soft);
@@ -644,10 +660,10 @@ button {
 .settings-input-row .cmz-input-container,
 .settings-input-row .cmz-select-trigger {
   min-height: 38px;
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
 }
 .settings-input-row .cmz-select-dropdown {
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
 }
 .settings-input-row .cmz-select-option {
   min-height: 36px;
@@ -669,7 +685,7 @@ button {
   place-items: center;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--cmz-radius-full);
   color: var(--muted);
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(30, 55, 75, 0.1);
@@ -732,7 +748,7 @@ h1 {
 .phase-pill {
   min-width: 66px;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--cmz-radius-full);
   text-align: center;
   font-size: 12px;
   color: var(--muted);
@@ -749,7 +765,7 @@ h1 {
 .create-panel {
   padding: 24px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -794,7 +810,7 @@ h1 {
   gap: 12px;
   padding: 10px 12px 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   background: var(--surface-soft);
 }
 .manual-port-field {
@@ -835,7 +851,7 @@ h1 {
   height: 38px;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   outline: 0;
   color: var(--text);
   background: var(--surface-soft);
@@ -896,7 +912,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   overflow: hidden;
 }
 .host-summary > div {
@@ -932,7 +948,7 @@ h1 {
   gap: 10px;
   padding: 0 8px 0 14px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   background: var(--surface-soft);
   color: var(--muted);
 }
@@ -962,7 +978,7 @@ h1 {
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--cmz-radius-xs);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
@@ -982,7 +998,7 @@ h1 {
   gap: 7px;
   padding: 0 15px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--cmz-radius-sm);
   cursor: pointer;
   font-weight: 650;
   font-size: 13px;
@@ -1062,7 +1078,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   overflow: hidden;
 }
 .metrics div {
@@ -1107,7 +1123,7 @@ button:disabled {
   margin: 0;
   padding: 11px 14px;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
   font-size: 12px;
@@ -1130,7 +1146,7 @@ button:disabled {
   width: min(420px, 100%);
   padding: 26px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 }
@@ -1150,7 +1166,7 @@ button:disabled {
   justify-content: space-between;
   margin-top: 19px;
   padding: 12px 14px;
-  border-radius: 6px;
+  border-radius: var(--cmz-radius-sm);
   background: var(--surface-soft);
   font-size: 12px;
 }
@@ -1181,7 +1197,7 @@ button:disabled {
   justify-self: end;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--cmz-radius-sm);
   color: var(--muted);
   background: var(--surface-soft);
   font-size: 12px;
@@ -1242,6 +1258,7 @@ button:disabled {
 @media (max-width: 720px) {
   .app-shell,
   .app-shell.sidebar-collapsed {
+    --titlebar-center-offset: 32px;
     grid-template-columns: 64px minmax(0, 1fr);
   }
   .sidebar-brand {

@@ -100,7 +100,7 @@ onUnmounted(() => {
   display: block;
   width: 96px;
   height: 96px;
-  border-radius: 20px;
+  border-radius: var(--cmz-radius-xl);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 

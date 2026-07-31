@@ -67,7 +67,7 @@ function iconFor(tone: ToastTone) {
   color: var(--text);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  border-radius: 8px;
+  border-radius: var(--cmz-radius-lg);
   box-shadow:
     0 12px 30px rgba(19, 36, 52, 0.14),
     0 2px 7px rgba(19, 36, 52, 0.07);
@@ -87,7 +87,7 @@ function iconFor(tone: ToastTone) {
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 7px;
+  border-radius: var(--cmz-radius-md);
   color: var(--primary);
   background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
@@ -120,7 +120,7 @@ function iconFor(tone: ToastTone) {
   color: var(--muted);
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--cmz-radius-sm);
   cursor: pointer;
   opacity: 0.62;
   transition:
