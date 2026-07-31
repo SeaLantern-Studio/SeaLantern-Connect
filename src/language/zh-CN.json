@@ -138,6 +138,7 @@
     "automaticDiscovery": "自动发现",
     "manual": "手动填写",
     "portFound": "已发现端口 {port}",
+    "portFoundLabel": "已发现端口",
     "discoveryFailed": "无法自动发现",
     "discovering": "正在寻找局域网世界",
     "worldReady": "Minecraft 世界可以创建房间",

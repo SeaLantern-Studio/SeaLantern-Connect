@@ -44,6 +44,7 @@ fn main() {
             connect::get_lan_scan,
             connect::restart_lan_scan,
             connect::stop_lan_scan,
+            connect::probe_host_port,
             connect::start_host,
             connect::start_join,
             connect::stop_join,

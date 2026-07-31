@@ -378,6 +378,11 @@ async fn minecraft_available(port: u16) -> bool {
 }
 
 #[tauri::command]
+pub async fn probe_host_port(port: u16) -> bool {
+    port != 0 && minecraft_available(port).await
+}
+
+#[tauri::command]
 pub async fn stop_tunnel(state: State<'_, ConnectState>) -> Result<(), String> {
     if let Ok(task) = state.host_task.lock()
         && let Some(task) = task.as_ref()

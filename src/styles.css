@@ -844,9 +844,25 @@ h1 {
   color: var(--text);
   font-size: 13px;
 }
+.detected-port {
+  color: var(--success);
+}
 .discovery-state span {
   color: var(--muted);
   font-size: 11px;
+}
+.discovery-status-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+.discovery-status-icon.detected {
+  color: var(--success);
+}
+.discovery-status-icon.failed {
+  color: var(--danger);
 }
 .manual-port-field input,
 .settings-field input {
@@ -861,6 +877,7 @@ h1 {
   user-select: text;
   appearance: textfield;
   -moz-appearance: textfield;
+  font-size: 13px;
 }
 .manual-port-field input,
 .settings-field input {

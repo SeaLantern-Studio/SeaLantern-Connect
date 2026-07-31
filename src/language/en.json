@@ -138,6 +138,7 @@
     "automaticDiscovery": "Auto discover",
     "manual": "Manual",
     "portFound": "Found port {port}",
+    "portFoundLabel": "Found port",
     "discoveryFailed": "Discovery failed",
     "discovering": "Looking for a LAN world",
     "worldReady": "The Minecraft world is ready to share",

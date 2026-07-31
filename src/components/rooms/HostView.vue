@@ -5,7 +5,15 @@ import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import type { ConnectStatus } from "../../connect";
 import type { HostUriLifetime } from "../../preferences";
 import { t } from "../../i18n";
-import { Check, Copy, HousePlus, LoaderCircle, RefreshCw, Square } from "lucide-vue-next";
+import {
+  Check,
+  CircleAlert,
+  CircleCheck,
+  Copy,
+  HousePlus,
+  LoaderCircle,
+  Square,
+} from "lucide-vue-next";
 
 interface LanScanSnapshot {
   scanning: boolean;
@@ -29,6 +37,7 @@ const commandError = ref("");
 const pending = ref(false);
 const copied = ref(false);
 let scanTimer: number | null = null;
+let monitorTimer: number | null = null;
 const portModeOptions = computed<SelectOption[]>(() => [
   { label: t("create.automaticDiscovery"), value: "auto" },
   { label: t("create.manual"), value: "manual" },
@@ -74,6 +83,7 @@ function setUriLifetime(value: string | number) {
 }
 
 async function beginScan(restart = false) {
+  stopMonitoring();
   scanError.value = "";
   try {
     scan.value = await invoke<LanScanSnapshot>(restart ? "restart_lan_scan" : "start_lan_scan");
@@ -88,12 +98,38 @@ function startPolling() {
   scanTimer = window.setInterval(async () => {
     try {
       scan.value = await invoke<LanScanSnapshot>("get_lan_scan");
-      if (scan.value.port != null || !scan.value.scanning) stopPolling();
+      if (scan.value.port != null) {
+        stopPolling();
+        startMonitoring();
+      } else if (!scan.value.scanning) {
+        stopPolling();
+      }
     } catch (error) {
       scanError.value = String(error);
       stopPolling();
     }
   }, 800);
+}
+
+function startMonitoring() {
+  if (monitorTimer != null) return;
+  monitorTimer = window.setInterval(async () => {
+    const port = scan.value.port;
+    if (port == null) return;
+    try {
+      const available = await invoke<boolean>("probe_host_port", { port });
+      if (!available) void beginScan(true);
+    } catch (error) {
+      scanError.value = String(error);
+    }
+  }, 5000);
+}
+
+function stopMonitoring() {
+  if (monitorTimer != null) {
+    window.clearInterval(monitorTimer);
+    monitorTimer = null;
+  }
 }
 
 function stopPolling() {
@@ -105,6 +141,7 @@ function stopPolling() {
 
 async function stopScan() {
   stopPolling();
+  stopMonitoring();
   scan.value = { scanning: false, port: null };
   try {
     await invoke("stop_lan_scan");
@@ -166,6 +203,7 @@ watch(
 
 onUnmounted(() => {
   stopPolling();
+  stopMonitoring();
   void invoke("stop_lan_scan").catch((error) => {
     console.error("Failed to stop LAN scan", error);
   });
@@ -233,26 +271,34 @@ onUnmounted(() => {
       <div v-if="portMode === 'auto'" class="discovery-row">
         <div class="discovery-state" :class="{ detected: scan.port != null, failed: scanError }">
           <div>
-            <strong>{{
-              scan.port != null
-                ? t("create.portFound", { port: scan.port })
-                : scanError
-                  ? t("create.discoveryFailed")
-                  : t("create.discovering")
+            <strong v-if="scan.port != null">
+              {{ t("create.portFoundLabel") }}
+              <span class="detected-port">{{ scan.port }}</span>
+            </strong>
+            <strong v-else>{{
+              scanError ? t("create.discoveryFailed") : t("create.discovering")
             }}</strong>
             <span>{{
               scan.port != null ? t("create.worldReady") : t("create.waitingBroadcast")
             }}</span>
           </div>
         </div>
-        <button
-          class="icon-button"
-          type="button"
-          :title="t('create.rescan')"
-          @click="beginScan(true)"
+        <span
+          class="discovery-status-icon"
+          :class="{ detected: scan.port != null, failed: scanError }"
+          :title="
+            scan.port != null
+              ? t('create.portFoundLabel')
+              : scanError
+                ? t('create.discoveryFailed')
+                : t('create.discovering')
+          "
+          aria-hidden="true"
         >
-          <RefreshCw :size="16" />
-        </button>
+          <CircleCheck v-if="scan.port != null" :size="20" />
+          <CircleAlert v-else-if="scanError" :size="19" />
+          <LoaderCircle v-else class="spin" :size="19" />
+        </span>
       </div>
 
       <div v-else class="form-field manual-port-field">
