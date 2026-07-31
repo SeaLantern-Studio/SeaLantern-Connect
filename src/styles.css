@@ -662,12 +662,15 @@ button {
   min-height: 38px;
   border-radius: var(--cmz-radius-md);
 }
-.settings-input-row .cmz-select-dropdown {
-  border-radius: var(--cmz-radius-md);
-}
-.settings-input-row .cmz-select-option {
-  min-height: 36px;
+.settings-select .cmz-select-trigger {
   font-size: 13px;
+}
+.cmz-select-dropdown {
+  border-radius: var(--cmz-radius-md);
+  font-size: 13px;
+}
+.cmz-select-dropdown .cmz-select-option {
+  min-height: 36px;
 }
 .relay-error {
   justify-self: end;
