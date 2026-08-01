@@ -819,53 +819,6 @@ button {
   width: min(200px, 100%);
   margin-top: -10px;
 }
-.floating-save-button {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 110;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-full);
-  color: var(--muted);
-  background: var(--surface);
-  box-shadow: 0 2px 8px rgba(30, 55, 75, 0.1);
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    opacity 0.15s ease;
-}
-.floating-save-button:hover:not(:disabled) {
-  color: var(--primary);
-  background: var(--surface-soft);
-}
-.floating-save-button:not(:disabled)::after {
-  content: "";
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--danger);
-  opacity: 0.72;
-  box-shadow: 0 0 0 1px var(--surface);
-  pointer-events: none;
-}
-.floating-save-button:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
-  outline-offset: 2px;
-}
-.floating-save-button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
 .workspace {
   width: min(760px, calc(100% - 48px));
   margin: auto;

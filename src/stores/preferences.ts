@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import * as preferencesApi from "@api";
 import { setLocale } from "../i18n";
 import type {
   ConnectionSettingsUpdate,
@@ -10,10 +10,9 @@ import type {
   PersonalizationUpdate,
   Preferences,
   ThemePreference,
-} from "../preferences";
-import type { ColorThemeId } from "../themes";
+} from "../models/preferences";
 import { applyColorTheme } from "../themes/apply";
-import { applyTypography, DEFAULT_FONT_SIZE } from "../typography";
+import { applyTypography, DEFAULT_FONT_SIZE } from "../ui/typography";
 
 const defaults: Preferences = {
   theme: "system",
@@ -36,8 +35,9 @@ export const usePreferencesStore = defineStore("preferences", () => {
   const preferences = ref<Preferences>({ ...defaults });
   const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
   let themeSaveQueue = Promise.resolve();
-  let colorThemeSaveQueue = Promise.resolve();
   let localeSaveQueue = Promise.resolve();
+  let personalizationSaveQueue = Promise.resolve();
+  let connectionSaveQueue = Promise.resolve();
 
   function applyTheme(): void {
     applyColorTheme(preferences.value.theme, preferences.value.colorTheme, systemTheme.matches);
@@ -50,7 +50,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
 
   async function load(): Promise<void> {
     try {
-      preferences.value = await invoke<Preferences>("get_preferences");
+      preferences.value = await preferencesApi.getPreferences();
       setLocale(preferences.value.locale);
     } catch (error) {
       console.error("Failed to load preferences", error);
@@ -60,7 +60,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
 
   async function saveTheme(theme: ThemePreference, fallback: ThemePreference): Promise<void> {
     try {
-      await invoke("set_theme", { theme });
+      await preferencesApi.saveTheme(theme);
     } catch (error) {
       if (preferences.value.theme === theme) {
         preferences.value.theme = fallback;
@@ -78,29 +78,9 @@ export const usePreferencesStore = defineStore("preferences", () => {
     themeSaveQueue = themeSaveQueue.then(() => saveTheme(theme, fallback));
   }
 
-  async function saveColorTheme(colorTheme: ColorThemeId, fallback: ColorThemeId): Promise<void> {
-    try {
-      await invoke("set_color_theme", { colorTheme });
-    } catch (error) {
-      if (preferences.value.colorTheme === colorTheme) {
-        preferences.value.colorTheme = fallback;
-        applyTheme();
-      }
-      console.error("Failed to save color theme", error);
-    }
-  }
-
-  function setColorTheme(colorTheme: ColorThemeId): void {
-    if (preferences.value.colorTheme === colorTheme) return;
-    const fallback = preferences.value.colorTheme;
-    preferences.value.colorTheme = colorTheme;
-    applyTheme();
-    colorThemeSaveQueue = colorThemeSaveQueue.then(() => saveColorTheme(colorTheme, fallback));
-  }
-
   async function saveLocale(locale: Locale, fallback: Locale): Promise<void> {
     try {
-      await invoke("set_locale", { locale });
+      await preferencesApi.saveLocale(locale);
     } catch (error) {
       if (preferences.value.locale === locale) {
         preferences.value.locale = fallback;
@@ -118,19 +98,27 @@ export const usePreferencesStore = defineStore("preferences", () => {
     localeSaveQueue = localeSaveQueue.then(() => saveLocale(locale, fallback));
   }
 
-  function applyPersonalization(update: PersonalizationUpdate): void {
-    Object.assign(preferences.value, update);
-    setLocale(update.locale);
+  function updatePersonalization(update: PersonalizationUpdate): void {
+    const snapshot = { ...update };
+    Object.assign(preferences.value, snapshot);
+    setLocale(snapshot.locale);
     applyPersonalizationStyles();
+    personalizationSaveQueue = personalizationSaveQueue
+      .then(() => preferencesApi.savePersonalization(snapshot))
+      .catch((error) => console.error("Failed to save personalization", error));
   }
 
-  function applyConnectionSettings(update: ConnectionSettingsUpdate): void {
-    Object.assign(preferences.value, update);
+  function updateConnectionSettings(update: ConnectionSettingsUpdate): void {
+    const snapshot = { ...update };
+    Object.assign(preferences.value, snapshot);
+    connectionSaveQueue = connectionSaveQueue
+      .then(() => preferencesApi.saveConnectionSettings(snapshot))
+      .catch((error) => console.error("Failed to save connection settings", error));
   }
 
   async function setCloseAction(closeAction: CloseAction): Promise<boolean> {
     try {
-      await invoke("set_close_action", { closeAction });
+      await preferencesApi.saveCloseAction(closeAction);
       preferences.value.closeAction = closeAction;
       return true;
     } catch (error) {
@@ -144,7 +132,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     const fallback = preferences.value.hostUriLifetime;
     preferences.value.hostUriLifetime = lifetime;
     try {
-      await invoke("set_invite_lifetime", { lifetime });
+      await preferencesApi.saveInviteLifetime(lifetime);
       return true;
     } catch (error) {
       if (preferences.value.hostUriLifetime === lifetime) {
@@ -171,10 +159,9 @@ export const usePreferencesStore = defineStore("preferences", () => {
     preferences,
     load,
     setTheme,
-    setColorTheme,
     changeLocale,
-    applyPersonalization,
-    applyConnectionSettings,
+    updatePersonalization,
+    updateConnectionSettings,
     setCloseAction,
     setHostUriLifetime,
     startSystemThemeListener,

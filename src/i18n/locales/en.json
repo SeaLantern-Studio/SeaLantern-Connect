@@ -55,8 +55,7 @@
     "startupHint": "Set the minimum splash screen duration",
     "splashDuration": "Splash Screen",
     "disabled": "Off",
-    "seconds": "{value} seconds",
-    "saved": "Personalization saved"
+    "seconds": "{value} seconds"
   },
   "connectionSettings": {
     "hint": "Configure relay and reconnection behavior; new connections use these settings",
@@ -74,9 +73,7 @@
     "unlimited": "Keep retrying",
     "limited": "Time limit",
     "timeout": "Retry timeout",
-    "seconds": "{value} seconds",
-    "save": "Save settings",
-    "saved": "Connection settings saved"
+    "seconds": "{value} seconds"
   },
   "join": {
     "starting": "Establishing a secure connection",
@@ -169,7 +166,6 @@
     "starting": "Starting"
   },
   "common": {
-    "saveFailed": "Could not save settings",
     "dismiss": "Dismiss notification"
   }
 }

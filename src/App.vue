@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { storeToRefs } from "pinia";
-import { LoaderCircle, Save } from "lucide-vue-next";
+import { closeWindow, getInitialDeepLinks, onCloseActionRequested, onDeepLinks } from "@api";
 import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
@@ -15,24 +11,24 @@ import JoinView from "./components/rooms/JoinView.vue";
 import PersonalizationView from "./components/settings/PersonalizationView.vue";
 import SettingsView from "./components/settings/SettingsView.vue";
 import { t } from "./i18n";
-import type { CloseAction } from "./preferences";
-import { useConnectionStore } from "./stores/connection";
+import { inviteFromDeepLinkUrls } from "./invitations";
+import type { CloseAction } from "./models/preferences";
 import { usePreferencesStore } from "./stores/preferences";
+import { useSessionStore } from "./stores/session";
 import { useUiStore } from "./stores/ui";
-import { enableAutoHidingScrollbars } from "./scrollbars";
-import { inviteFromDeepLinkUrls } from "./connect";
+import { enableAutoHidingScrollbars } from "./ui/scrollbars";
 
-const connectionStore = useConnectionStore();
+const sessionStore = useSessionStore();
 const preferencesStore = usePreferencesStore();
 const uiStore = useUiStore();
-const { status, state: connectionState } = storeToRefs(connectionStore);
+const { status, state: connectionState } = storeToRefs(sessionStore);
 const { preferences } = storeToRefs(preferencesStore);
 const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
 const isInitializing = ref(true);
 const choosingCloseAction = ref(false);
-let unlistenCloseAction: UnlistenFn | null = null;
-let unlistenDeepLinks: UnlistenFn | null = null;
+let unlistenCloseAction: (() => void) | null = null;
+let unlistenDeepLinks: (() => void) | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
 let lastDeepLink: { uri: string; receivedAt: number } | null = null;
 
@@ -53,7 +49,7 @@ async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Prom
     const saved = await preferencesStore.setCloseAction(closeAction);
     if (!saved) return;
     uiStore.closeClosePrompt();
-    await getCurrentWindow().close();
+    await closeWindow();
   } finally {
     choosingCloseAction.value = false;
   }
@@ -70,12 +66,8 @@ function importDeepLink(urls: string[]): void {
 
 async function setupDeepLinks(): Promise<void> {
   try {
-    unlistenDeepLinks = await onOpenUrl(importDeepLink);
-    const [current, pending] = await Promise.all([
-      getCurrent(),
-      invoke<string[]>("take_pending_links"),
-    ]);
-    importDeepLink([...(pending ?? []), ...(current ?? [])]);
+    unlistenDeepLinks = await onDeepLinks(importDeepLink);
+    importDeepLink(await getInitialDeepLinks());
   } catch (error) {
     console.error("Failed to initialize deep links", error);
   }
@@ -83,12 +75,12 @@ async function setupDeepLinks(): Promise<void> {
 
 onMounted(async () => {
   disableAutoHidingScrollbars = enableAutoHidingScrollbars();
-  unlistenCloseAction = await listen("close-action-requested", uiStore.openClosePrompt);
+  unlistenCloseAction = await onCloseActionRequested(uiStore.openClosePrompt);
   await setupDeepLinks();
   await preferencesStore.load();
   preferencesStore.startSystemThemeListener();
   try {
-    await connectionStore.initialize();
+    await sessionStore.initialize();
   } finally {
     isInitializing.value = false;
   }
@@ -98,7 +90,7 @@ onUnmounted(() => {
   disableAutoHidingScrollbars?.();
   unlistenCloseAction?.();
   unlistenDeepLinks?.();
-  connectionStore.dispose();
+  sessionStore.dispose();
   preferencesStore.stopSystemThemeListener();
 });
 </script>
@@ -152,31 +144,16 @@ onUnmounted(() => {
           <PersonalizationView
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
-            @change-color-theme="preferencesStore.setColorTheme"
-            @change-theme="preferencesStore.setTheme"
-            @saved="preferencesStore.applyPersonalization"
+            @change="preferencesStore.updatePersonalization"
           />
           <SettingsView
             v-else
             :preferences="preferences"
-            @saved="preferencesStore.applyConnectionSettings"
+            @change="preferencesStore.updateConnectionSettings"
           />
         </div>
       </Transition>
     </main>
-
-    <button
-      v-if="uiStore.showsSaveButton"
-      class="floating-save-button"
-      type="button"
-      :title="t('connectionSettings.save')"
-      :aria-label="t('connectionSettings.save')"
-      :disabled="!uiStore.activeSaveState.enabled"
-      @click="uiStore.saveActiveSection"
-    >
-      <LoaderCircle v-if="uiStore.activeSaveState.saving" class="spin" :size="17" />
-      <Save v-else :size="17" />
-    </button>
   </div>
 
   <div v-if="uiStore.closePromptOpen" class="modal-backdrop close-action-backdrop">

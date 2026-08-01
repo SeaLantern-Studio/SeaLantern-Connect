@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Check, Copy, Languages, Minus, Monitor, Moon, Square, Sun, X } from "lucide-vue-next";
+import {
+  closeWindow,
+  isWindowMaximized,
+  minimizeWindow,
+  onWindowResized,
+  toggleMaximize,
+} from "@api";
 import { t } from "../../i18n";
-import type { Locale, ThemePreference } from "../../preferences";
+import type { Locale, ThemePreference } from "../../models/preferences";
 
 const props = defineProps<{
   title: string;
@@ -16,7 +22,6 @@ defineEmits<{
   changeTheme: [theme: ThemePreference];
 }>();
 
-const appWindow = getCurrentWindow();
 const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
 const isMaximized = ref(false);
 const languageMenuOpen = ref(false);
@@ -33,18 +38,6 @@ const themeIndicatorOffset = computed(() => {
   return Math.max(index, 0) * 26;
 });
 
-async function minimizeWindow() {
-  await appWindow.minimize();
-}
-
-async function toggleMaximize() {
-  await appWindow.toggleMaximize();
-}
-
-async function closeWindow() {
-  await appWindow.close();
-}
-
 function closeLanguageMenu() {
   languageMenuOpen.value = false;
 }
@@ -55,9 +48,9 @@ function handleDocumentPointerDown(event: PointerEvent) {
 
 onMounted(async () => {
   document.addEventListener("pointerdown", handleDocumentPointerDown);
-  isMaximized.value = await appWindow.isMaximized();
-  unlistenResize = await appWindow.onResized(async () => {
-    isMaximized.value = await appWindow.isMaximized();
+  isMaximized.value = await isWindowMaximized();
+  unlistenResize = await onWindowResized(async () => {
+    isMaximized.value = await isWindowMaximized();
   });
 });
 

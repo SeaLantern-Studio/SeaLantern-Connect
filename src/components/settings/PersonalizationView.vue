@@ -1,25 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
+import { getSystemFonts } from "@api";
 import { t } from "../../i18n";
-import type { PersonalizationUpdate, Preferences, SplashDurationMs } from "../../preferences";
-import { getThemeOptions, type ColorThemeId } from "../../themes";
-import { useUiStore } from "../../stores/ui";
-import { toast } from "../../toast";
-import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../typography";
+import type {
+  PersonalizationUpdate,
+  Preferences,
+  SplashDurationMs,
+  ColorThemeId,
+} from "../../models/preferences";
+import { getThemeOptions } from "../../themes";
+import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../ui/typography";
 
 const props = defineProps<{ preferences: Preferences }>();
-const uiStore = useUiStore();
 const emit = defineEmits<{
-  changeColorTheme: [colorTheme: ColorThemeId];
-  changeTheme: [theme: PersonalizationUpdate["theme"]];
-  saved: [update: PersonalizationUpdate];
+  change: [update: PersonalizationUpdate];
 }>();
 
 const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
-const persisted = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
-const saving = ref(false);
 const fontsLoading = ref(false);
 const systemFonts = ref<string[]>([]);
 const fontFamilyOptions = computed<SelectOption[]>(() => {
@@ -57,21 +55,6 @@ const splashDurationOptions = computed<SelectOption[]>(() => [
 const fontSizeProgress = computed(
   () => `${((form.value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
 );
-const hasChanges = computed(() => {
-  const current = persisted.value;
-  const update = form.value;
-  return (
-    update.theme !== current.theme ||
-    update.colorTheme !== current.colorTheme ||
-    update.fontSize !== current.fontSize ||
-    update.fontFamily !== current.fontFamily ||
-    update.splashDurationMs !== current.splashDurationMs ||
-    update.locale !== current.locale ||
-    update.rememberWindowState !== current.rememberWindowState ||
-    update.closeAction !== current.closeAction
-  );
-});
-
 function pickPreferences(preferences: Preferences): PersonalizationUpdate {
   return {
     theme: preferences.theme,
@@ -87,79 +70,36 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
 
 watch(
   () => props.preferences.theme,
-  (theme) => {
-    form.value.theme = theme;
-    persisted.value.theme = theme;
-  },
+  (theme) => (form.value.theme = theme),
 );
 watch(
   () => props.preferences.colorTheme,
-  (colorTheme) => {
-    form.value.colorTheme = colorTheme;
-    persisted.value.colorTheme = colorTheme;
-  },
+  (colorTheme) => (form.value.colorTheme = colorTheme),
 );
 watch(
   () => props.preferences.fontSize,
-  (fontSize) => {
-    form.value.fontSize = fontSize;
-    persisted.value.fontSize = fontSize;
-  },
+  (fontSize) => (form.value.fontSize = fontSize),
 );
 watch(
   () => props.preferences.fontFamily,
-  (fontFamily) => {
-    form.value.fontFamily = fontFamily;
-    persisted.value.fontFamily = fontFamily;
-  },
+  (fontFamily) => (form.value.fontFamily = fontFamily),
 );
 watch(
   () => props.preferences.splashDurationMs,
-  (splashDurationMs) => {
-    form.value.splashDurationMs = splashDurationMs;
-    persisted.value.splashDurationMs = splashDurationMs;
-  },
+  (splashDurationMs) => (form.value.splashDurationMs = splashDurationMs),
 );
 watch(
   () => props.preferences.locale,
-  (locale) => {
-    form.value.locale = locale;
-    persisted.value.locale = locale;
-  },
+  (locale) => (form.value.locale = locale),
 );
 watch(
   () => props.preferences.rememberWindowState,
-  (rememberWindowState) => {
-    form.value.rememberWindowState = rememberWindowState;
-    persisted.value.rememberWindowState = rememberWindowState;
-  },
+  (rememberWindowState) => (form.value.rememberWindowState = rememberWindowState),
 );
 watch(
   () => props.preferences.closeAction,
-  (closeAction) => {
-    form.value.closeAction = closeAction;
-    persisted.value.closeAction = closeAction;
-  },
+  (closeAction) => (form.value.closeAction = closeAction),
 );
-
-async function save() {
-  if (!hasChanges.value || saving.value) return;
-  saving.value = true;
-  const update = { ...form.value };
-  try {
-    await invoke("set_personalization", { update });
-    persisted.value = { ...update };
-    emit("saved", update);
-    toast.success(t("personalization.saved"));
-  } catch (error) {
-    console.error("Failed to save personalization", error);
-    toast.error(t("common.saveFailed"));
-  } finally {
-    saving.value = false;
-  }
-}
-
-const saveAction = () => save();
 
 watch(
   () => [form.value.fontSize, form.value.fontFamily] as const,
@@ -167,23 +107,14 @@ watch(
   { immediate: true },
 );
 
-watchEffect(() => {
-  uiStore.setSaveState("personalize", !saving.value && hasChanges.value, saving.value);
-});
-
 onMounted(() => {
-  uiStore.registerSaveAction("personalize", saveAction);
   void loadSystemFonts();
-});
-onUnmounted(() => {
-  uiStore.unregisterSaveAction("personalize", saveAction);
-  applyTypography(persisted.value.fontSize, persisted.value.fontFamily);
 });
 
 async function loadSystemFonts() {
   fontsLoading.value = true;
   try {
-    systemFonts.value = await invoke<string[]>("get_system_fonts");
+    systemFonts.value = await getSystemFonts();
   } catch (error) {
     console.error("Failed to load system fonts", error);
   } finally {
@@ -193,37 +124,46 @@ async function loadSystemFonts() {
 
 function updateRememberWindowState(value: boolean) {
   form.value.rememberWindowState = value;
+  persist();
 }
 
 function setTheme(value: string | number) {
   if (value !== "system" && value !== "light" && value !== "dark") return;
   form.value.theme = value;
-  emit("changeTheme", value);
+  persist();
 }
 
 function setColorTheme(value: string | number) {
   if (!colorThemeOptions.value.some((option) => option.value === value)) return;
   form.value.colorTheme = value as ColorThemeId;
-  emit("changeColorTheme", form.value.colorTheme);
+  persist();
 }
 
 function setFontFamily(value: string | number) {
   if (typeof value !== "string") return;
   form.value.fontFamily = value;
+  persist();
 }
 
 function setFontSize(event: Event) {
   form.value.fontSize = Number((event.target as HTMLInputElement).value);
+  persist();
 }
 
 function setCloseAction(value: string | number) {
   if (value !== "ask" && value !== "exit" && value !== "hide_to_tray") return;
   form.value.closeAction = value;
+  persist();
 }
 
 function setSplashDuration(value: string | number) {
   if (!splashDurationOptions.value.some((option) => option.value === value)) return;
   form.value.splashDurationMs = value as SplashDurationMs;
+  persist();
+}
+
+function persist() {
+  emit("change", { ...form.value });
 }
 </script>
 
@@ -332,7 +272,6 @@ function setSplashDuration(value: string | number) {
           :model-value="form.rememberWindowState"
           variant="switch"
           size="sm"
-          :disabled="saving"
           @update:model-value="updateRememberWindowState"
         />
       </div>

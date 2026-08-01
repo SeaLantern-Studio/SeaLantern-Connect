@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inviteFromDeepLinkUrls, normalizeInvite } from "./connect";
+import { inviteFromDeepLinkUrls, normalizeInvite } from ".";
 
 describe("normalizeInvite", () => {
   it("converts a web invitation into the sculk URI", () => {

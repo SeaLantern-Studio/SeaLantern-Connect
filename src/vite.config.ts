@@ -8,6 +8,11 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   root: "src",
   plugins: [vue()],
+  resolve: {
+    alias: {
+      "@api": "/api/index.ts",
+    },
+  },
 
   build: {
     outDir: "../dist",

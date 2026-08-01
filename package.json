@@ -6,15 +6,15 @@
   "repository": "https://github.com/SeaLantern-Studio/SeaLantern-Connect",
   "type": "module",
   "scripts": {
-    "dev": "vite --config src/vite.config.ts",
-    "build": "vue-tsc --project src/tsconfig.json --noEmit && vite build --config src/vite.config.ts",
-    "preview": "vite preview --config src/vite.config.ts",
-    "test": "vitest run --config src/vite.config.ts",
+    "dev": "vite -c src/vite.config.ts",
+    "build": "vue-tsc -p src/tsconfig.json --noEmit && vite build -c src/vite.config.ts",
+    "preview": "vite preview -c src/vite.config.ts",
+    "test": "vitest run -c src/vite.config.ts",
     "tauri": "tauri",
-    "lint": "oxlint --config src/.oxlintrc.json src",
-    "lint:fix": "oxlint --config src/.oxlintrc.json --fix src",
-    "fmt": "oxfmt --config src/.oxfmtrc.json src package.json pnpm-workspace.yaml README.md",
-    "fmt:check": "oxfmt --config src/.oxfmtrc.json --check src package.json pnpm-workspace.yaml README.md"
+    "lint": "oxlint -c src/.oxlintrc.json src",
+    "lint:fix": "oxlint -c src/.oxlintrc.json --fix src",
+    "fmt": "oxfmt -c src/.oxfmtrc.json src package.json pnpm-workspace.yaml README.md",
+    "fmt:check": "oxfmt -c src/.oxfmtrc.json --check src package.json pnpm-workspace.yaml README.md"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
-import type { ConnectStatus } from "../../connect";
-import type { HostUriLifetime } from "../../preferences";
+import {
+  getLanScan,
+  probeHostPort,
+  startHost,
+  startLanScan,
+  stopLanScan,
+  stopTunnel,
+  type LanScanSnapshot,
+} from "@api";
+import type { HostUriLifetime } from "../../models/preferences";
+import type { ConnectStatus } from "../../models/tunnel";
 import { t } from "../../i18n";
 import {
   Check,
@@ -14,11 +22,6 @@ import {
   LoaderCircle,
   Square,
 } from "lucide-vue-next";
-
-interface LanScanSnapshot {
-  scanning: boolean;
-  port: number | null;
-}
 
 const props = defineProps<{
   status: ConnectStatus;
@@ -86,7 +89,7 @@ async function beginScan(restart = false) {
   stopMonitoring();
   scanError.value = "";
   try {
-    scan.value = await invoke<LanScanSnapshot>(restart ? "restart_lan_scan" : "start_lan_scan");
+    scan.value = await startLanScan(restart);
     startPolling();
   } catch (error) {
     scanError.value = String(error);
@@ -97,7 +100,7 @@ function startPolling() {
   if (scanTimer != null) return;
   scanTimer = window.setInterval(async () => {
     try {
-      scan.value = await invoke<LanScanSnapshot>("get_lan_scan");
+      scan.value = await getLanScan();
       if (scan.value.port != null) {
         stopPolling();
         startMonitoring();
@@ -117,7 +120,7 @@ function startMonitoring() {
     const port = scan.value.port;
     if (port == null) return;
     try {
-      const available = await invoke<boolean>("probe_host_port", { port });
+      const available = await probeHostPort(port);
       if (!available) void beginScan(true);
     } catch (error) {
       scanError.value = String(error);
@@ -144,7 +147,7 @@ async function stopScan() {
   stopMonitoring();
   scan.value = { scanning: false, port: null };
   try {
-    await invoke("stop_lan_scan");
+    await stopLanScan();
   } catch (error) {
     scanError.value = String(error);
   }
@@ -155,11 +158,11 @@ async function createRoom() {
   pending.value = true;
   commandError.value = "";
   try {
-    await invoke("start_host", {
-      port: selectedPort.value,
-      maxPlayers: maxPlayers.value.trim() === "" ? null : Number(maxPlayers.value),
-      uriLifetime: props.uriLifetime,
-    });
+    await startHost(
+      selectedPort.value,
+      maxPlayers.value.trim() === "" ? null : Number(maxPlayers.value),
+      props.uriLifetime,
+    );
   } catch (error) {
     commandError.value = String(error);
   } finally {
@@ -171,7 +174,7 @@ async function stopRoom() {
   pending.value = true;
   commandError.value = "";
   try {
-    await invoke("stop_tunnel");
+    await stopTunnel();
   } catch (error) {
     commandError.value = String(error);
   } finally {
@@ -204,7 +207,7 @@ watch(
 onUnmounted(() => {
   stopPolling();
   stopMonitoring();
-  void invoke("stop_lan_scan").catch((error) => {
+  void stopLanScan().catch((error) => {
     console.error("Failed to stop LAN scan", error);
   });
 });

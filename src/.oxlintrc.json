@@ -68,7 +68,16 @@
   },
   "overrides": [
     {
-      "files": ["**/*.ts", "**/*.tsx", "**/*.vue"]
+      "files": ["**/*.ts", "**/*.tsx", "**/*.vue"],
+      "excludeFiles": ["api/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@tauri-apps/*", "@api/*", "**/api/*"]
+          }
+        ]
+      }
     }
   ],
   "globals": {}

@@ -1,12 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { emptyConnectStatus, type ConnectStatus } from "../connect";
+import { getStatus, onStatus } from "@api";
+import { emptyConnectStatus, type ConnectStatus } from "../models/tunnel";
 
-export const useConnectionStore = defineStore("connection", () => {
+export const useSessionStore = defineStore("session", () => {
   const status = ref<ConnectStatus>({ ...emptyConnectStatus });
-  let unlisten: UnlistenFn | null = null;
+  let unlisten: (() => void) | null = null;
 
   const busy = computed(
     () => status.value.phase === "starting" || status.value.phase === "stopping",
@@ -19,11 +18,9 @@ export const useConnectionStore = defineStore("connection", () => {
   });
 
   async function initialize(): Promise<void> {
-    status.value = await invoke<ConnectStatus>("get_status");
+    status.value = await getStatus();
     unlisten?.();
-    unlisten = await listen<ConnectStatus>("connect-status", (event) => {
-      status.value = event.payload;
-    });
+    unlisten = await onStatus((next) => (status.value = next));
   }
 
   function dispose(): void {

@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { computed, ref } from "vue";
 import { Cmz_Input, Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import { t } from "../../i18n";
-import type { ConnectionSettingsUpdate, Preferences } from "../../preferences";
-import { useUiStore } from "../../stores/ui";
-import { toast } from "../../toast";
+import type { ConnectionSettingsUpdate, Preferences } from "../../models/preferences";
 
 const props = defineProps<{ preferences: Preferences }>();
-const emit = defineEmits<{ saved: [update: ConnectionSettingsUpdate] }>();
-const uiStore = useUiStore();
+const emit = defineEmits<{ change: [update: ConnectionSettingsUpdate] }>();
 
 const form = ref<ConnectionSettingsUpdate>(pickSettings(props.preferences));
 const reconnectUnlimited = ref(props.preferences.reconnectTimeoutSecs == null);
-const saving = ref(false);
 const relayOptions = computed<SelectOption[]>(() => [
   { label: t("connectionSettings.defaultRelay"), value: "default" },
   { label: t("connectionSettings.customRelay"), value: "custom" },
@@ -39,26 +34,25 @@ function pickSettings(preferences: Preferences): ConnectionSettingsUpdate {
 
 function setReconnectTimeout(value: string | number) {
   form.value.reconnectTimeoutSecs = Number(value);
+  persist();
 }
 
 function setRelayMode(value: string | number) {
-  if (value === "default" || value === "custom") form.value.relayCustom = value === "custom";
+  if (value !== "default" && value !== "custom") return;
+  form.value.relayCustom = value === "custom";
+  persist();
 }
 
 function setReconnectMode(value: string | number) {
-  if (value === "unlimited" || value === "limited") {
-    reconnectUnlimited.value = value === "unlimited";
-  }
+  if (value !== "unlimited" && value !== "limited") return;
+  reconnectUnlimited.value = value === "unlimited";
+  persist();
 }
 
-watch(
-  () => props.preferences,
-  (preferences) => {
-    form.value = pickSettings(preferences);
-    reconnectUnlimited.value = preferences.reconnectTimeoutSecs == null;
-  },
-  { deep: true },
-);
+function setRelayUrl(value: string | number) {
+  form.value.relayUrl = String(value);
+  persist();
+}
 
 const validRelay = computed(() => {
   if (!form.value.relayCustom) return true;
@@ -74,44 +68,9 @@ const pendingUpdate = computed<ConnectionSettingsUpdate>(() => ({
   relayUrl: form.value.relayUrl.trim(),
   reconnectTimeoutSecs: reconnectUnlimited.value ? null : form.value.reconnectTimeoutSecs,
 }));
-const hasChanges = computed(() => {
-  const current = props.preferences;
-  const update = pendingUpdate.value;
-  return (
-    update.relayCustom !== current.relayCustom ||
-    update.relayUrl !== current.relayUrl ||
-    update.reconnectTimeoutSecs !== current.reconnectTimeoutSecs
-  );
-});
-
-async function save() {
-  if (!validRelay.value || !hasChanges.value || saving.value) return;
-  saving.value = true;
-  const update = pendingUpdate.value;
-  try {
-    await invoke("set_connection_settings", { update });
-    emit("saved", update);
-    toast.success(t("connectionSettings.saved"));
-  } catch (error) {
-    console.error("Failed to save connection settings", error);
-    toast.error(t("common.saveFailed"));
-  } finally {
-    saving.value = false;
-  }
+function persist() {
+  if (validRelay.value) emit("change", { ...pendingUpdate.value });
 }
-
-const saveAction = () => save();
-
-watchEffect(() => {
-  uiStore.setSaveState(
-    "settings",
-    !saving.value && validRelay.value && hasChanges.value,
-    saving.value,
-  );
-});
-
-onMounted(() => uiStore.registerSaveAction("settings", saveAction));
-onUnmounted(() => uiStore.unregisterSaveAction("settings", saveAction));
 </script>
 
 <template>
@@ -136,9 +95,10 @@ onUnmounted(() => uiStore.unregisterSaveAction("settings", saveAction));
         <span>{{ t("connectionSettings.customRelayUrl") }}</span>
         <Cmz_Input
           class="settings-input"
-          v-model="form.relayUrl"
+          :model-value="form.relayUrl"
           type="url"
           :placeholder="t('connectionSettings.relayPlaceholder')"
+          @update:model-value="setRelayUrl"
         />
       </label>
       <p v-if="form.relayCustom && !validRelay" class="field-error relay-error">

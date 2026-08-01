@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
 import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
-import { normalizeInvite, type ConnectStatus, type IncomingInvite } from "../../connect";
+import {
+  saveJoinPort as persistJoinPort,
+  startJoin,
+  stopJoin,
+  stopTunnel,
+  validateInvite,
+} from "@api";
+import { normalizeInvite, type IncomingInvite } from "../../invitations";
+import type { ConnectStatus } from "../../models/tunnel";
 import { t } from "../../i18n";
 
 const props = defineProps<{
@@ -84,7 +91,7 @@ async function submitInvite() {
   commandError.value = "";
   try {
     invite.value = normalizeInvite(invite.value);
-    await invoke("validate_invite", { uri: invite.value });
+    await validateInvite(invite.value);
     await join();
   } catch {
     validationError.value = t("join.invalidInvite");
@@ -98,7 +105,7 @@ async function importIncomingInvite(uri: string) {
   invite.value = normalized;
   if (joining.value && props.status.shareUri === normalized) return;
   try {
-    await invoke("validate_invite", { uri: normalized });
+    await validateInvite(normalized);
     confirming.value = true;
   } catch {
     if (props.status.phase === "idle") validationError.value = t("join.invalidInvite");
@@ -134,13 +141,10 @@ async function join() {
   commandError.value = "";
   try {
     if (props.status.phase !== "idle") {
-      await invoke("stop_tunnel");
+      await stopTunnel();
       await waitForIdle();
     }
-    await invoke("start_join", {
-      uri: invite.value,
-      localPort: portMode.value === "auto" ? null : Number(manualPort.value),
-    });
+    await startJoin(invite.value, portMode.value === "auto" ? null : Number(manualPort.value));
   } catch (error) {
     commandError.value = String(error);
   }
@@ -149,7 +153,7 @@ async function join() {
 async function saveJoinPort() {
   if (!validManualPort.value) return;
   try {
-    await invoke("set_join_port", { port: Number(manualPort.value) });
+    await persistJoinPort(Number(manualPort.value));
   } catch (error) {
     console.error("Failed to save join port", error);
   }
@@ -158,7 +162,7 @@ async function saveJoinPort() {
 async function stop() {
   commandError.value = "";
   try {
-    await invoke("stop_join");
+    await stopJoin();
   } catch (error) {
     commandError.value = String(error);
   }

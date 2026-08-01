@@ -55,8 +55,7 @@
     "startupHint": "设置启动画面的最短展示时间",
     "splashDuration": "启动画面",
     "disabled": "关闭",
-    "seconds": "{value} 秒",
-    "saved": "个性化设置已保存"
+    "seconds": "{value} 秒"
   },
   "connectionSettings": {
     "hint": "配置中继节点和断线重连策略",
@@ -74,9 +73,7 @@
     "unlimited": "持续重连",
     "limited": "限时重连",
     "timeout": "重连时限",
-    "seconds": "{value} 秒",
-    "save": "保存设置",
-    "saved": "连接设置已保存"
+    "seconds": "{value} 秒"
   },
   "join": {
     "starting": "正在建立安全连接",
@@ -169,7 +166,6 @@
     "starting": "正在启动"
   },
   "common": {
-    "saveFailed": "保存失败",
     "dismiss": "关闭提示"
   }
 }

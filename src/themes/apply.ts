@@ -1,5 +1,5 @@
 import { getThemeColors, type ColorThemeId } from ".";
-import type { ThemePreference } from "../preferences";
+import type { ThemePreference } from "../models/preferences";
 
 function adjustBrightness(hex: string, percent: number): string {
   const value = Number.parseInt(hex.slice(1), 16);

@@ -1,6 +1,7 @@
-export type ColorPlan = "light" | "dark" | "lightAcrylic" | "darkAcrylic";
+import type { ColorThemeId } from "../models/preferences";
 
-export type ColorThemeId = "default" | "midnight" | "ocean" | "rose" | "sunset";
+export type ColorPlan = "light" | "dark" | "lightAcrylic" | "darkAcrylic";
+export type { ColorThemeId } from "../models/preferences";
 
 export interface ThemeColors {
   bg: string;
