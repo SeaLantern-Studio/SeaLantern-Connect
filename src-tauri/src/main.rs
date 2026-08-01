@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod connect;
+mod deep_link;
 mod host;
 mod lightweight;
 mod settings;
@@ -16,8 +17,12 @@ fn window_state_flags() -> StateFlags {
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::show_main_window(app);
+        }))
         .manage(connect::ConnectState::new())
         .manage(lightweight::LightweightState::new())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
                 .with_state_flags(window_state_flags())
@@ -25,6 +30,7 @@ fn main() {
                 .build(),
         )
         .setup(|app| {
+            deep_link::setup(app)?;
             connect::setup(app)?;
             if app
                 .state::<settings::SettingsState>()

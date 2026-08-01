@@ -18,6 +18,8 @@ fontdb = "0.24"
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-build = { version = "2", features = [] }
 tauri-plugin-window-state = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tokio = { version = "1", features = ["sync", "time"] }
 tempfile = "3"
 

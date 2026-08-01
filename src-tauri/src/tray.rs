@@ -135,7 +135,7 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
     }
 }
 
-fn show_main_window(app: &AppHandle) {
+pub(crate) fn show_main_window(app: &AppHandle) {
     let lightweight_state = app.state::<LightweightState>();
     if lightweight_state.is_active() {
         if let Err(error) = lightweight::exit(app) {
