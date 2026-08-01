@@ -121,6 +121,7 @@ onUnmounted(() => {
 .splash-text h1 {
   margin: 0 0 7px;
   font-size: 2rem;
+  font-weight: 600;
   line-height: 1.2;
 }
 .splash-text p {

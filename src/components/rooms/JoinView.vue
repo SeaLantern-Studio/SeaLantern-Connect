@@ -283,7 +283,12 @@ function formatBytes(value: number) {
   </div>
 
   <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">
-    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <section
+      class="confirm-dialog join-confirm-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+    >
       <h2 id="confirm-title">{{ t("join.confirmTitle") }}</h2>
       <p>{{ replacingConnection ? t("join.replaceHint") : t("join.confirmHint") }}</p>
       <div class="invite-summary">
