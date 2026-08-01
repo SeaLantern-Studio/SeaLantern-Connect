@@ -54,6 +54,9 @@ const splashDurationOptions = computed<SelectOption[]>(() => [
     value: durationMs,
   })),
 ]);
+const fontSizeProgress = computed(
+  () => `${((form.value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
+);
 const hasChanges = computed(() => {
   const current = persisted.value;
   const update = form.value;
@@ -264,6 +267,7 @@ function setSplashDuration(value: string | number) {
             :max="MAX_FONT_SIZE"
             step="1"
             :value="form.fontSize"
+            :style="{ '--slider-progress': fontSizeProgress }"
             @input="setFontSize"
           />
           <output>{{ form.fontSize }}px</output>

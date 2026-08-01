@@ -102,7 +102,12 @@ onUnmounted(() => {
             "
           >
             <span class="header-language-label">{{ option.label }}</span>
-            <Check v-if="locale === option.key" :size="16" aria-hidden="true" />
+            <Check
+              class="header-language-check"
+              :class="{ visible: locale === option.key }"
+              :size="16"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </div>
