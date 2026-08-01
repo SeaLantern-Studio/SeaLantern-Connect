@@ -11,6 +11,7 @@ import type {
 } from "../../models/preferences";
 import { getThemeOptions } from "../../themes";
 import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../ui/typography";
+import FontSelect from "./FontSelect.vue";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{
@@ -21,13 +22,7 @@ const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const fontsLoading = ref(false);
 const systemFonts = ref<string[]>([]);
 const fontFamilyOptions = computed<SelectOption[]>(() => {
-  const fonts = systemFonts.value.includes(form.value.fontFamily)
-    ? systemFonts.value
-    : [form.value.fontFamily, ...systemFonts.value].filter(Boolean);
-  return [
-    { label: t("personalization.systemFont"), value: "" },
-    ...fonts.map((font) => ({ label: font, value: font })),
-  ];
+  return fontOptions(form.value.fontFamily, t("personalization.systemFont"));
 });
 const colorThemeOptions = computed<SelectOption[]>(() =>
   getThemeOptions().map((option) => ({
@@ -66,6 +61,16 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
     rememberWindowState: preferences.rememberWindowState,
     closeAction: preferences.closeAction,
   };
+}
+
+function fontOptions(selected: string, defaultLabel: string): SelectOption[] {
+  const fonts = systemFonts.value.includes(selected)
+    ? systemFonts.value
+    : [selected, ...systemFonts.value].filter(Boolean);
+  return [
+    { label: defaultLabel, value: "" },
+    ...fonts.map((font) => ({ label: font, value: font })),
+  ];
 }
 
 watch(
@@ -216,13 +221,12 @@ function persist() {
 
       <div class="preference-row">
         <span>{{ t("personalization.fontFamily") }}</span>
-        <Cmz_Select
+        <FontSelect
           class="settings-select font-family-select"
           :model-value="form.fontFamily"
           :options="fontFamilyOptions"
           :searchable="true"
           :loading="fontsLoading"
-          :preview-font="true"
           :placeholder="t('personalization.searchFont')"
           @update:model-value="setFontFamily"
         />
