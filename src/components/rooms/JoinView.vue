@@ -35,7 +35,7 @@ const busy = computed(
 );
 const connected = computed(() => joining.value && props.status.phase === "active");
 const replacingConnection = computed(() => props.status.phase !== "idle");
-const canPreview = computed(() => invite.value.trim().length > 0 && props.status.phase === "idle");
+const canJoin = computed(() => invite.value.trim().length > 0 && props.status.phase === "idle");
 const validManualPort = computed(() => {
   const port = Number(manualPort.value);
   return Number.isInteger(port) && port >= 1 && port <= 65535;
@@ -79,13 +79,13 @@ function resetInvite() {
   commandError.value = "";
 }
 
-async function previewInvite() {
+async function submitInvite() {
   validationError.value = "";
   commandError.value = "";
   try {
     invite.value = normalizeInvite(invite.value);
     await invoke("validate_invite", { uri: invite.value });
-    confirming.value = true;
+    await join();
   } catch {
     validationError.value = t("join.invalidInvite");
   }
@@ -202,7 +202,7 @@ function formatBytes(value: number) {
           spellcheck="false"
           autocomplete="off"
           placeholder="https://ideaflash.cn/#/join/v1/..."
-          @keydown.enter="canPreview && previewInvite()"
+          @keydown.enter="canJoin && submitInvite()"
         />
         <button
           class="reset-invite-button"
@@ -219,7 +219,7 @@ function formatBytes(value: number) {
       </p>
       <div class="join-actions">
         <div class="privacy-note">{{ t("join.privacy") }}</div>
-        <button class="primary-button" type="button" :disabled="!canPreview" @click="previewInvite">
+        <button class="primary-button" type="button" :disabled="!canJoin" @click="submitInvite">
           {{ t("join.continue") }}<ArrowRight :size="17" />
         </button>
       </div>

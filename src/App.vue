@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
@@ -33,6 +34,7 @@ const choosingCloseAction = ref(false);
 let unlistenCloseAction: UnlistenFn | null = null;
 let unlistenDeepLinks: UnlistenFn | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
+let lastDeepLink: { uri: string; receivedAt: number } | null = null;
 
 const pageTitle = computed(
   () =>
@@ -59,13 +61,21 @@ async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Prom
 
 function importDeepLink(urls: string[]): void {
   const invite = inviteFromDeepLinkUrls(urls);
-  if (invite) uiStore.importInvite(invite);
+  if (!invite) return;
+  const now = Date.now();
+  if (lastDeepLink?.uri === invite && now - lastDeepLink.receivedAt < 1000) return;
+  lastDeepLink = { uri: invite, receivedAt: now };
+  uiStore.importInvite(invite);
 }
 
 async function setupDeepLinks(): Promise<void> {
   try {
     unlistenDeepLinks = await onOpenUrl(importDeepLink);
-    importDeepLink((await getCurrent()) ?? []);
+    const [current, pending] = await Promise.all([
+      getCurrent(),
+      invoke<string[]>("take_pending_links"),
+    ]);
+    importDeepLink([...(pending ?? []), ...(current ?? [])]);
   } catch (error) {
     console.error("Failed to initialize deep links", error);
   }
