@@ -20,6 +20,7 @@
         "minWidth": 1000,
         "minHeight": 625,
         "center": true,
+        "visible": false,
         "decorations": false
       }
     ],

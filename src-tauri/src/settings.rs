@@ -1,4 +1,4 @@
-use crate::tray;
+use crate::desktop::tray;
 use sculk::persist;
 use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
@@ -289,11 +289,11 @@ pub fn set_close_action(
 }
 
 #[tauri::command]
-pub fn set_host_uri_lifetime(
+pub fn set_invite_lifetime(
     lifetime: String,
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
-    if !is_host_uri_lifetime(&lifetime) {
+    if !is_invite_lifetime(&lifetime) {
         return Err("invalid host URI lifetime".to_owned());
     }
     state.update(|preferences| preferences.host_uri_lifetime = lifetime)
@@ -461,7 +461,7 @@ fn parse_preferences(content: &str) -> Preferences {
             }
         } else if let Some(value) = line.strip_prefix("host_uri_lifetime=") {
             let value = value.trim();
-            if is_host_uri_lifetime(value) {
+            if is_invite_lifetime(value) {
                 preferences.host_uri_lifetime = value.to_owned();
             }
         } else if let Some(value) = line.strip_prefix("join_uri=") {
@@ -490,7 +490,7 @@ fn is_color_theme(value: &str) -> bool {
     matches!(value, "default" | "midnight" | "ocean" | "rose" | "sunset")
 }
 
-fn is_host_uri_lifetime(value: &str) -> bool {
+fn is_invite_lifetime(value: &str) -> bool {
     matches!(
         value,
         "always" | "never" | "1h" | "3h" | "6h" | "12h" | "24h"
@@ -502,14 +502,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn missing_values_use_defaults() {
+    fn defaults_missing_values() {
         let preferences = parse_preferences("");
 
         assert_eq!(preferences, Preferences::default());
     }
 
     #[test]
-    fn parses_saved_preferences() {
+    fn parses_preferences() {
         let preferences = parse_preferences(
             "theme=dark\ncolor_theme=ocean\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
@@ -545,7 +545,7 @@ mod tests {
     }
 
     #[test]
-    fn atomically_replaces_saved_preferences_and_keeps_invite() {
+    fn preserves_invite_atomically() {
         let directory = tempfile::tempdir().expect("temporary directory should be created");
         let path = directory.path().join(PREFERENCES_FILE);
         std::fs::write(&path, "theme=light\n").expect("initial preferences should be written");

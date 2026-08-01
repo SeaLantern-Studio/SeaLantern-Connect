@@ -144,7 +144,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     const fallback = preferences.value.hostUriLifetime;
     preferences.value.hostUriLifetime = lifetime;
     try {
-      await invoke("set_host_uri_lifetime", { lifetime });
+      await invoke("set_invite_lifetime", { lifetime });
       return true;
     } catch (error) {
       if (preferences.value.hostUriLifetime === lifetime) {

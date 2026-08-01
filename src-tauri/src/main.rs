@@ -1,13 +1,13 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Protocol activation starts a short-lived second process on Windows. Using the GUI
+// subsystem in debug builds too prevents that process from flashing a console window.
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-mod connect;
-mod deep_link;
-mod host;
-mod lightweight;
+mod connection;
+mod desktop;
 mod settings;
-mod tray;
 
+use connection::{host, join};
+use desktop::{deeplink, tray, window_state};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
@@ -15,13 +15,26 @@ fn window_state_flags() -> StateFlags {
     StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
 }
 
+#[tauri::command]
+async fn stop_tunnel(app: tauri::AppHandle) -> Result<(), String> {
+    match app.state::<connection::ConnectState>().active_mode() {
+        Some(connection::ConnectMode::Host) => host::stop(&app),
+        Some(connection::ConnectMode::Join) => join::stop(&app).await,
+        None => Ok(()),
+    }
+}
+
 fn main() {
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            deeplink::stash_restore_links(app, &args);
             tray::show_main_window(app);
         }))
-        .manage(connect::ConnectState::new())
-        .manage(lightweight::LightweightState::new())
+        .manage(connection::ConnectState::new())
+        .manage(host::HostState::new())
+        .manage(join::JoinState::new())
+        .manage(window_state::MainWindowState::new())
+        .manage(deeplink::PendingDeepLinks::default())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
@@ -30,8 +43,9 @@ fn main() {
                 .build(),
         )
         .setup(|app| {
-            deep_link::setup(app)?;
-            connect::setup(app)?;
+            app.manage(settings::SettingsState::load(app.handle())?);
+            deeplink::setup(app)?;
+            join::setup(app);
             if app
                 .state::<settings::SettingsState>()
                 .remembers_window_state()
@@ -40,31 +54,33 @@ fn main() {
                 window.restore_state(window_state_flags())?;
             }
             tray::setup(app)?;
+            tray::show_main_window(app.handle());
             Ok(())
         })
         .on_window_event(tray::handle_window_event)
         .invoke_handler(tauri::generate_handler![
-            connect::validate_invite,
-            connect::get_status,
-            connect::start_lan_scan,
-            connect::get_lan_scan,
-            connect::restart_lan_scan,
-            connect::stop_lan_scan,
-            connect::probe_host_port,
-            connect::start_host,
-            connect::start_join,
-            connect::stop_join,
-            connect::stop_tunnel,
+            connection::get_status,
+            stop_tunnel,
+            host::start_lan_scan,
+            host::get_lan_scan,
+            host::restart_lan_scan,
+            host::stop_lan_scan,
+            host::probe_host_port,
+            host::start_host,
+            join::validate_invite,
+            join::start_join,
+            join::stop_join,
             settings::get_preferences,
             settings::get_system_fonts,
             settings::set_theme,
             settings::set_color_theme,
             settings::set_locale,
             settings::set_close_action,
-            settings::set_host_uri_lifetime,
+            settings::set_invite_lifetime,
             settings::set_join_port,
             settings::set_personalization,
             settings::set_connection_settings,
+            deeplink::take_pending_links,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

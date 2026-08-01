@@ -1,10 +1,12 @@
-use crate::lightweight::{self, LightweightState};
+use super::lightweight;
+use super::window_state::{
+    self as window_lifecycle, MAIN_WINDOW_LABEL, MainWindowMode, MainWindowState,
+};
 use crate::settings::{CloseAction, SettingsState};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{App, AppHandle, Emitter, Manager, Window, WindowEvent, Wry};
+use tauri::{App, AppHandle, Emitter, Manager, Window as TauriWindow, WindowEvent, Wry};
 
-const MAIN_WINDOW_LABEL: &str = "main";
 const SHOW_MENU_ID: &str = "tray-show";
 const LIGHTWEIGHT_MENU_ID: &str = "tray-lightweight";
 const QUIT_MENU_ID: &str = "tray-quit";
@@ -51,7 +53,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let quit = MenuItem::with_id(app, QUIT_MENU_ID, labels.quit, true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &lightweight, &quit])?;
-    app.state::<LightweightState>()
+    app.state::<MainWindowState>()
         .set_tray_item(lightweight.clone());
     app.manage(TrayMenuState {
         show: show.clone(),
@@ -111,7 +113,7 @@ pub fn update_locale(app: &AppHandle) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
-pub fn handle_window_event(window: &Window, event: &WindowEvent) {
+pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
     if window.label() != MAIN_WINDOW_LABEL {
         return;
     }
@@ -121,7 +123,9 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
         match settings.close_action() {
             CloseAction::HideToTray => {
                 api.prevent_close();
-                let _ = window.hide();
+                if let Err(error) = window_lifecycle::hide(window.app_handle()) {
+                    eprintln!("failed to hide main window: {error}");
+                }
             }
             CloseAction::Ask => {
                 api.prevent_close();
@@ -136,23 +140,28 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
 }
 
 pub(crate) fn show_main_window(app: &AppHandle) {
-    let lightweight_state = app.state::<LightweightState>();
-    if lightweight_state.is_active() {
-        if let Err(error) = lightweight::exit(app) {
-            eprintln!("failed to exit lightweight mode: {error}");
-        }
-        return;
-    }
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
+    if let Err(error) = reveal_main_window(app) {
+        eprintln!("failed to show main window: {error}");
     }
 }
 
+fn reveal_main_window(app: &AppHandle) -> Result<(), String> {
+    let state = app.state::<MainWindowState>();
+    let mut transition = state.begin_transition()?;
+    if app.get_webview_window(MAIN_WINDOW_LABEL).is_none()
+        && transition.mode() != MainWindowMode::Background
+    {
+        transition.move_to(MainWindowMode::Background)?;
+    }
+    if transition.mode() == MainWindowMode::Background {
+        lightweight::restore_hidden(app, &mut transition)?;
+    }
+    window_lifecycle::show(app, &mut transition)
+}
+
 fn toggle_lightweight_mode(app: &AppHandle) {
-    let result = if app.state::<LightweightState>().is_active() {
-        lightweight::exit(app)
+    let result = if app.state::<MainWindowState>().is_background() {
+        reveal_main_window(app)
     } else {
         lightweight::enter(app)
     };
@@ -166,7 +175,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn selects_tray_labels_for_locale() {
+    fn localizes_tray_labels() {
         assert_eq!(tray_labels("zh-CN").quit, "退出");
         assert_eq!(tray_labels("en").lightweight, "Lightweight Mode");
         assert_eq!(tray_labels("unknown").show, "Show Main Window");
