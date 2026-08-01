@@ -308,4 +308,35 @@ mod tests {
         );
         assert_eq!(token_refresh_policy("invalid"), None);
     }
+
+    #[test]
+    fn maps_every_supported_refresh_policy() {
+        assert_eq!(
+            token_refresh_policy("always"),
+            Some(TokenRefreshPolicy::Always)
+        );
+        assert_eq!(
+            token_refresh_policy("never"),
+            Some(TokenRefreshPolicy::Never)
+        );
+        for (value, hours) in [("1h", 1), ("3h", 3), ("6h", 6), ("12h", 12), ("24h", 24)] {
+            assert_eq!(
+                token_refresh_policy(value),
+                Some(TokenRefreshPolicy::After(Duration::from_secs(
+                    hours * 60 * 60
+                )))
+            );
+        }
+    }
+
+    #[test]
+    fn health_check_requires_consecutive_failures() {
+        let mut failures = 0;
+        assert!(!record_health_check(&mut failures, false));
+        assert!(!record_health_check(&mut failures, false));
+        assert!(record_health_check(&mut failures, false));
+
+        assert!(!record_health_check(&mut failures, true));
+        assert_eq!(failures, 0);
+    }
 }

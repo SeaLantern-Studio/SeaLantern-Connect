@@ -264,18 +264,18 @@ pub async fn start_host(
     if state.host_task.lock().is_ok_and(|task| task.is_some())
         || state.service.status().state.phase != TunnelPhase::Idle
     {
-        return Err("请先停止当前房间或连接".to_owned());
+        return Err("stop the current room or connection first".to_owned());
     }
     if port == 0 {
-        return Err("Minecraft 端口必须在 1 到 65535 之间".to_owned());
+        return Err("Minecraft port must be between 1 and 65535".to_owned());
     }
     if !minecraft_available(port).await {
         return Err(format!(
-            "端口 {port} 没有可用的 Minecraft 世界，请确认已开放局域网联机"
+            "no Minecraft world is available on port {port}; make sure the world is open to LAN"
         ));
     }
     let token_refresh = host::token_refresh_policy(&uri_lifetime)
-        .ok_or_else(|| "无效的房间链接有效期".to_owned())?;
+        .ok_or_else(|| "invalid room invitation lifetime".to_owned())?;
     let settings = app.state::<SettingsState>();
     let secret_key = settings.host_secret_key();
     let state_path = settings.host_state_path();
@@ -323,7 +323,7 @@ pub async fn start_join(
     state: State<'_, ConnectState>,
 ) -> Result<(), String> {
     if state.host_task.lock().is_ok_and(|task| task.is_some()) {
-        return Err("请先停止当前房间或连接".to_owned());
+        return Err("stop the current room or connection first".to_owned());
     }
     let uri = uri.trim().to_owned();
     let join_uri = uri.parse::<JoinUri>().map_err(|error| error.to_string())?;
@@ -338,7 +338,8 @@ pub async fn start_join(
         .reconnect_timeout(settings.reconnect_timeout()?);
     let local_port = match local_port {
         Some(port) => LocalPort::Fixed(
-            NonZeroU16::new(port).ok_or_else(|| "本地端口必须在 1 到 65535 之间".to_owned())?,
+            NonZeroU16::new(port)
+                .ok_or_else(|| "local port must be between 1 and 65535".to_owned())?,
         ),
         None => LocalPort::Auto,
     };
@@ -388,7 +389,7 @@ pub async fn stop_tunnel(state: State<'_, ConnectState>) -> Result<(), String> {
         && let Some(task) = task.as_ref()
     {
         if !task.stop() {
-            return Err("房间停止任务不可用".to_owned());
+            return Err("room stop task is unavailable".to_owned());
         }
         if let Ok(mut status) = state.host_status.lock()
             && let Some(status) = status.as_mut()
@@ -439,7 +440,9 @@ fn apply_host_update(state: &ConnectState, update: HostUpdate) {
         HostUpdate::Error(error) => state.set_message(Some(error)),
         HostUpdate::MinecraftUnavailable => {
             finish_host(state);
-            state.set_message(Some("Minecraft 世界已关闭，房间已自动停止。".to_owned()));
+            state.set_message(Some(
+                "the Minecraft world was closed, so the room stopped automatically".to_owned(),
+            ));
         }
         HostUpdate::Failed(error) => {
             finish_host(state);
@@ -496,7 +499,7 @@ fn apply_update(app: &AppHandle, update: TunnelUpdate) {
                 && let Some(uri) = state.take_pending_join_uri()
                 && let Err(error) = app.state::<SettingsState>().remember_join_uri(uri)
             {
-                state.set_message(Some(format!("保存偏好失败：{error}")));
+                state.set_message(Some(format!("failed to save preferences: {error}")));
             }
         }
         TunnelUpdate::Event(event) => state.set_message(event_message(event)),
@@ -507,17 +510,17 @@ fn apply_update(app: &AppHandle, update: TunnelUpdate) {
 
 fn event_message(event: TunnelEvent) -> Option<String> {
     match event {
-        TunnelEvent::Connected => Some("已连接到房主".to_owned()),
-        TunnelEvent::PlayerJoined { id } => Some(format!("玩家 {id} 已加入")),
-        TunnelEvent::PlayerLeft { id, .. } => Some(format!("玩家 {id} 已离开")),
-        TunnelEvent::Disconnected { reason } => Some(format!("连接已断开：{reason}")),
-        TunnelEvent::Reconnecting { attempt } => Some(format!("正在进行第 {attempt} 次重连")),
-        TunnelEvent::Reconnected => Some("已恢复连接".to_owned()),
+        TunnelEvent::Connected => Some("connected to the host".to_owned()),
+        TunnelEvent::PlayerJoined { id } => Some(format!("player {id} joined")),
+        TunnelEvent::PlayerLeft { id, .. } => Some(format!("player {id} left")),
+        TunnelEvent::Disconnected { reason } => Some(format!("disconnected: {reason}")),
+        TunnelEvent::Reconnecting { attempt } => Some(format!("reconnecting, attempt {attempt}")),
+        TunnelEvent::Reconnected => Some("connection restored".to_owned()),
         TunnelEvent::PathChanged {
             is_relay, rtt_ms, ..
         } => Some(format!(
-            "当前使用{}，延迟 {rtt_ms} ms",
-            if is_relay { "中继连接" } else { "直连" }
+            "using a {} connection with {rtt_ms} ms latency",
+            if is_relay { "relay" } else { "direct" }
         )),
         TunnelEvent::Error { message, .. } => Some(message),
         _ => None,
@@ -608,5 +611,58 @@ fn category_name(category: ErrorCategory) -> &'static str {
         ErrorCategory::InvalidConfiguration => "invalid_configuration",
         ErrorCategory::Internal => "internal",
         _ => "unknown",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn maps_connection_events_to_english_messages() {
+        assert_eq!(
+            event_message(TunnelEvent::Connected),
+            Some("connected to the host".to_owned())
+        );
+        assert_eq!(
+            event_message(TunnelEvent::Reconnecting { attempt: 3 }),
+            Some("reconnecting, attempt 3".to_owned())
+        );
+        assert_eq!(
+            event_message(TunnelEvent::Reconnected),
+            Some("connection restored".to_owned())
+        );
+    }
+
+    #[test]
+    fn host_snapshot_reports_starting_before_first_status() {
+        let snapshot = snapshot_from_host(
+            None,
+            Some("sculk://join/v1/example".to_owned()),
+            None,
+            Some(25_565),
+        );
+
+        assert_eq!(snapshot.phase, "starting");
+        assert_eq!(snapshot.mode, Some("host"));
+        assert_eq!(snapshot.host_port, Some(25_565));
+        assert_eq!(
+            snapshot.share_uri.as_deref(),
+            Some("sculk://join/v1/example")
+        );
+        assert_eq!(snapshot.player_count, 0);
+    }
+
+    #[test]
+    fn exposes_stable_error_category_names() {
+        assert_eq!(
+            category_name(ErrorCategory::AuthorizationDenied),
+            "authorization_denied"
+        );
+        assert_eq!(
+            category_name(ErrorCategory::LocalPortUnavailable),
+            "local_port_unavailable"
+        );
+        assert_eq!(category_name(ErrorCategory::Internal), "internal");
     }
 }

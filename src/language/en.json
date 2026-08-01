@@ -106,7 +106,7 @@
     "received": "Received",
     "syncing": "Synchronizing connection status...",
     "disconnect": "Disconnect",
-    "connectionFailed": "Connection did not complete ",
+    "connectionFailed": "Connection did not complete:",
     "retryHint": "Check the invitation and network, then try again",
     "occupied": "Stop the current room or connection first",
     "confirmTitle": "Join this Minecraft world?",

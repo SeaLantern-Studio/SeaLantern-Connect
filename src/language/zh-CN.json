@@ -106,7 +106,7 @@
     "received": "接收",
     "syncing": "正在同步连接状态...",
     "disconnect": "断开",
-    "connectionFailed": "连接未完成",
+    "connectionFailed": "连接未完成：",
     "retryHint": "请检查邀请和网络后重试",
     "occupied": "请先停止当前房间或连接",
     "confirmTitle": "加入这个 Minecraft 世界？",
