@@ -68,20 +68,25 @@ impl HostState {
         }
     }
 
-    fn stop_scanner(&self) -> Result<(), String> {
-        let scanner = self
-            .scanner
-            .lock()
-            .map_err(|_| "LAN scan state is unavailable".to_owned())?
-            .take();
-        if let Some(scanner) = scanner {
-            scanner.stop().map_err(|error| error.to_string())?;
-        }
+    fn take_scanner(&self) -> Result<Option<LanScanner>, String> {
         *self
             .detected_port
             .lock()
             .map_err(|_| "LAN scan state is unavailable".to_owned())? = None;
-        Ok(())
+        self.scanner
+            .lock()
+            .map_err(|_| "LAN scan state is unavailable".to_owned())
+            .map(|mut scanner| scanner.take())
+    }
+
+    async fn stop_scanner(&self) -> Result<(), String> {
+        let Some(scanner) = self.take_scanner()? else {
+            return Ok(());
+        };
+        tokio::task::spawn_blocking(move || scanner.stop())
+            .await
+            .map_err(|error| format!("LAN scan stop task failed: {error}"))?
+            .map_err(|error| error.to_string())
     }
 }
 
@@ -136,14 +141,16 @@ pub(crate) fn get_lan_scan(state: State<'_, HostState>) -> Result<LanScanSnapsho
 }
 
 #[tauri::command]
-pub(crate) fn restart_lan_scan(state: State<'_, HostState>) -> Result<LanScanSnapshot, String> {
-    state.stop_scanner()?;
+pub(crate) async fn restart_lan_scan(
+    state: State<'_, HostState>,
+) -> Result<LanScanSnapshot, String> {
+    state.stop_scanner().await?;
     start_lan_scan(state)
 }
 
 #[tauri::command]
-pub(crate) fn stop_lan_scan(state: State<'_, HostState>) -> Result<(), String> {
-    state.stop_scanner()
+pub(crate) async fn stop_lan_scan(state: State<'_, HostState>) -> Result<(), String> {
+    state.stop_scanner().await
 }
 
 #[tauri::command]
@@ -183,7 +190,7 @@ pub(crate) async fn start_host(
         token_refresh,
         state_path: settings.host_state_path(),
     };
-    host_state.stop_scanner()?;
+    host_state.stop_scanner().await?;
     connect_state.acquire(ConnectMode::Host)?;
 
     host_state.set_message(None);
