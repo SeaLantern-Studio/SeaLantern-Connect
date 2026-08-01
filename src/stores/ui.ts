@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
+import type { IncomingInvite } from "../connect";
 
 export type SectionId = "create" | "join" | "personalize" | "settings";
 export type SettingsSectionId = Extract<SectionId, "personalize" | "settings">;
@@ -15,6 +16,8 @@ export const useUiStore = defineStore("ui", () => {
   const activeSection = ref<SectionId>("join");
   const sidebarCollapsed = ref(false);
   const closePromptOpen = ref(false);
+  const incomingInvite = ref<IncomingInvite | null>(null);
+  let nextInviteId = 0;
   const saveStates = reactive<Record<SettingsSectionId, SaveState>>({
     personalize: { enabled: false, saving: false },
     settings: { enabled: false, saving: false },
@@ -46,6 +49,15 @@ export const useUiStore = defineStore("ui", () => {
     closePromptOpen.value = false;
   }
 
+  function importInvite(uri: string): void {
+    incomingInvite.value = { id: ++nextInviteId, uri };
+    activeSection.value = "join";
+  }
+
+  function consumeIncomingInvite(id: number): void {
+    if (incomingInvite.value?.id === id) incomingInvite.value = null;
+  }
+
   function registerSaveAction(section: SettingsSectionId, action: SaveAction): void {
     saveActions.set(section, action);
   }
@@ -68,12 +80,15 @@ export const useUiStore = defineStore("ui", () => {
     activeSection,
     sidebarCollapsed,
     closePromptOpen,
+    incomingInvite,
     showsSaveButton,
     activeSaveState,
     navigate,
     toggleSidebar,
     openClosePrompt,
     closeClosePrompt,
+    importInvite,
+    consumeIncomingInvite,
     registerSaveAction,
     unregisterSaveAction,
     setSaveState,

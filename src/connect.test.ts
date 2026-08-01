@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { normalizeInvite } from "./connect";
+import { inviteFromDeepLinkUrls, normalizeInvite } from "./connect";
 
 describe("normalizeInvite", () => {
   it("converts a web invitation into the sculk URI", () => {
-    expect(normalizeInvite("https://example.com/#/join/v1/token-123")).toBe(
+    expect(normalizeInvite("https://ideaflash.cn/#/join/v1/token-123")).toBe(
       "sculk://join/v1/token-123",
     );
   });
@@ -16,5 +16,33 @@ describe("normalizeInvite", () => {
     expect(normalizeInvite("https://example.com/rooms/token-123")).toBe(
       "https://example.com/rooms/token-123",
     );
+  });
+
+  it("does not trust invitation wrappers from another host", () => {
+    expect(normalizeInvite("https://example.com/#/join/v1/token-123")).toBe(
+      "https://example.com/#/join/v1/token-123",
+    );
+  });
+
+  it("does not accept an insecure HTTP wrapper", () => {
+    expect(normalizeInvite("http://example.com/#/join/v1/token-123")).toBe(
+      "http://example.com/#/join/v1/token-123",
+    );
+  });
+});
+
+describe("inviteFromDeepLinkUrls", () => {
+  it("selects the first valid native invitation", () => {
+    expect(
+      inviteFromDeepLinkUrls([
+        "https://example.com/not-a-deep-link",
+        "sculk://join/v1/token_123-abc",
+      ]),
+    ).toBe("sculk://join/v1/token_123-abc");
+  });
+
+  it("rejects malformed or oversized invitations", () => {
+    expect(inviteFromDeepLinkUrls(["sculk://join/v1/token?query=1"])).toBeNull();
+    expect(inviteFromDeepLinkUrls([`sculk://join/v1/${"a".repeat(600)}`])).toBeNull();
   });
 });

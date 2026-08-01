@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { storeToRefs } from "pinia";
 import { LoaderCircle, Save } from "lucide-vue-next";
 import AppToast from "./components/AppToast.vue";
@@ -18,6 +19,7 @@ import { useConnectionStore } from "./stores/connection";
 import { usePreferencesStore } from "./stores/preferences";
 import { useUiStore } from "./stores/ui";
 import { enableAutoHidingScrollbars } from "./scrollbars";
+import { inviteFromDeepLinkUrls } from "./connect";
 
 const connectionStore = useConnectionStore();
 const preferencesStore = usePreferencesStore();
@@ -29,6 +31,7 @@ const showSplash = ref(true);
 const isInitializing = ref(true);
 const choosingCloseAction = ref(false);
 let unlistenCloseAction: UnlistenFn | null = null;
+let unlistenDeepLinks: UnlistenFn | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
 
 const pageTitle = computed(
@@ -54,9 +57,24 @@ async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Prom
   }
 }
 
+function importDeepLink(urls: string[]): void {
+  const invite = inviteFromDeepLinkUrls(urls);
+  if (invite) uiStore.importInvite(invite);
+}
+
+async function setupDeepLinks(): Promise<void> {
+  try {
+    unlistenDeepLinks = await onOpenUrl(importDeepLink);
+    importDeepLink((await getCurrent()) ?? []);
+  } catch (error) {
+    console.error("Failed to initialize deep links", error);
+  }
+}
+
 onMounted(async () => {
   disableAutoHidingScrollbars = enableAutoHidingScrollbars();
   unlistenCloseAction = await listen("close-action-requested", uiStore.openClosePrompt);
+  await setupDeepLinks();
   await preferencesStore.load();
   preferencesStore.startSystemThemeListener();
   try {
@@ -69,6 +87,7 @@ onMounted(async () => {
 onUnmounted(() => {
   disableAutoHidingScrollbars?.();
   unlistenCloseAction?.();
+  unlistenDeepLinks?.();
   connectionStore.dispose();
   preferencesStore.stopSystemThemeListener();
 });
@@ -117,6 +136,8 @@ onUnmounted(() => {
             :status="status"
             :saved-invite="preferences.joinUri"
             :saved-port="preferences.joinPort"
+            :incoming-invite="uiStore.incomingInvite"
+            @consume-incoming-invite="uiStore.consumeIncomingInvite"
           />
           <PersonalizationView
             v-else-if="activeSection === 'personalize'"

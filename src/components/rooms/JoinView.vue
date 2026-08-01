@@ -3,13 +3,17 @@ import { computed, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
 import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
-import { normalizeInvite, type ConnectStatus } from "../../connect";
+import { normalizeInvite, type ConnectStatus, type IncomingInvite } from "../../connect";
 import { t } from "../../i18n";
 
 const props = defineProps<{
   status: ConnectStatus;
   savedInvite: string;
   savedPort: number;
+  incomingInvite: IncomingInvite | null;
+}>();
+const emit = defineEmits<{
+  consumeIncomingInvite: [id: number];
 }>();
 
 const invite = ref(props.savedInvite);
@@ -30,6 +34,7 @@ const busy = computed(
   () => joining.value && (props.status.phase === "starting" || props.status.phase === "stopping"),
 );
 const connected = computed(() => joining.value && props.status.phase === "active");
+const replacingConnection = computed(() => props.status.phase !== "idle");
 const canPreview = computed(() => invite.value.trim().length > 0 && props.status.phase === "idle");
 const validManualPort = computed(() => {
   const port = Number(manualPort.value);
@@ -54,6 +59,16 @@ watch(
   (value) => (manualPort.value = String(value)),
 );
 
+watch(
+  () => props.incomingInvite,
+  (request) => {
+    if (!request) return;
+    emit("consumeIncomingInvite", request.id);
+    void importIncomingInvite(request.uri);
+  },
+  { immediate: true },
+);
+
 function setPortMode(value: string | null) {
   if (value === "auto" || value === "manual") portMode.value = value;
 }
@@ -76,11 +91,52 @@ async function previewInvite() {
   }
 }
 
+async function importIncomingInvite(uri: string) {
+  const normalized = normalizeInvite(uri);
+  validationError.value = "";
+  commandError.value = "";
+  invite.value = normalized;
+  if (joining.value && props.status.shareUri === normalized) return;
+  try {
+    await invoke("validate_invite", { uri: normalized });
+    confirming.value = true;
+  } catch {
+    if (props.status.phase === "idle") validationError.value = t("join.invalidInvite");
+    else commandError.value = t("join.invalidInvite");
+  }
+}
+
+function waitForIdle(timeoutMs = 20_000): Promise<void> {
+  if (props.status.phase === "idle") return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const stopWatching = watch(
+      () => props.status.phase,
+      (phase) => {
+        if (phase === "idle") finish();
+      },
+    );
+    const timeout = window.setTimeout(
+      () => finish(new Error("timed out while stopping the current connection")),
+      timeoutMs,
+    );
+    function finish(error?: Error) {
+      window.clearTimeout(timeout);
+      stopWatching();
+      if (error) reject(error);
+      else resolve();
+    }
+  });
+}
+
 async function join() {
   if (portMode.value === "manual" && !validManualPort.value) return;
   confirming.value = false;
   commandError.value = "";
   try {
+    if (props.status.phase !== "idle") {
+      await invoke("stop_tunnel");
+      await waitForIdle();
+    }
     await invoke("start_join", {
       uri: invite.value,
       localPort: portMode.value === "auto" ? null : Number(manualPort.value),
@@ -145,7 +201,7 @@ function formatBytes(value: number) {
           type="text"
           spellcheck="false"
           autocomplete="off"
-          placeholder="sculk://join/v1/..."
+          placeholder="https://ideaflash.cn/#/join/v1/..."
           @keydown.enter="canPreview && previewInvite()"
         />
         <button
@@ -225,7 +281,7 @@ function formatBytes(value: number) {
   <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">
     <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <h2 id="confirm-title">{{ t("join.confirmTitle") }}</h2>
-      <p>{{ t("join.confirmHint") }}</p>
+      <p>{{ replacingConnection ? t("join.replaceHint") : t("join.confirmHint") }}</p>
       <div class="invite-summary">
         <span>{{ t("join.inviteProtocol") }}</span
         ><strong>sculk / v1</strong>
@@ -266,7 +322,9 @@ function formatBytes(value: number) {
           :disabled="portMode === 'manual' && !validManualPort"
           @click="join"
         >
-          <Radio :size="17" />{{ t("join.confirm") }}
+          <Radio :size="17" />{{
+            replacingConnection ? t("join.confirmReplace") : t("join.confirm")
+          }}
         </button>
       </div>
     </section>

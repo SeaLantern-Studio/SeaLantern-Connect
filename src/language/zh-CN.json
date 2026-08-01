@@ -111,6 +111,7 @@
     "occupied": "请先停止当前房间或连接",
     "confirmTitle": "加入这个 Minecraft 世界？",
     "confirmHint": "连接后，SeaLantern Connect 会在本机创建一个临时地址，并在多人游戏列表中广播房间",
+    "replaceHint": "确认后将先停止当前房间或连接，再加入邀请中的 Minecraft 世界",
     "inviteProtocol": "邀请协议",
     "localPort": "本地端口",
     "portMode": "本地端口选择方式",
@@ -119,7 +120,8 @@
     "automaticPort": "自动选择可用端口",
     "localPortNumber": "本地端口号",
     "cancel": "取消",
-    "confirm": "确认加入"
+    "confirm": "确认加入",
+    "confirmReplace": "切换并加入"
   },
   "create": {
     "running": "房间正在运行",

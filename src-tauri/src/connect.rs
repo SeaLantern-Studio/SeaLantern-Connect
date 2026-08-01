@@ -18,6 +18,13 @@ use tauri::{App, AppHandle, Emitter, Manager, State};
 const STATUS_EVENT: &str = "connect-status";
 const LAN_NAME: &str = "SeaLantern Connect";
 const MC_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
+const JOIN_URI_PREFIX: &str = "sculk://join/v1/";
+const SHARE_URL_PREFIX: &str = "https://ideaflash.cn/#/join/v1/";
+
+fn share_url_from_join_uri(uri: &str) -> Option<String> {
+    let payload = uri.strip_prefix(JOIN_URI_PREFIX)?;
+    (!payload.is_empty()).then(|| format!("{SHARE_URL_PREFIX}{payload}"))
+}
 
 pub struct ConnectState {
     service: TunnelService,
@@ -583,7 +590,7 @@ fn snapshot_from_host(
         },
         mode: Some("host"),
         local_address: None,
-        share_uri,
+        share_uri: share_uri.and_then(|uri| share_url_from_join_uri(&uri)),
         player_count: status.as_ref().map_or(0, |status| status.connection_count),
         host_port,
         route: None,
@@ -648,7 +655,7 @@ mod tests {
         assert_eq!(snapshot.host_port, Some(25_565));
         assert_eq!(
             snapshot.share_uri.as_deref(),
-            Some("sculk://join/v1/example")
+            Some("https://ideaflash.cn/#/join/v1/example")
         );
         assert_eq!(snapshot.player_count, 0);
     }
@@ -664,5 +671,15 @@ mod tests {
             "local_port_unavailable"
         );
         assert_eq!(category_name(ErrorCategory::Internal), "internal");
+    }
+
+    #[test]
+    fn wraps_join_uri_as_official_https_share_url() {
+        assert_eq!(
+            share_url_from_join_uri("sculk://join/v1/payload_123-abc").as_deref(),
+            Some("https://ideaflash.cn/#/join/v1/payload_123-abc")
+        );
+        assert_eq!(share_url_from_join_uri("sculk://join/v1/"), None);
+        assert_eq!(share_url_from_join_uri("https://example.com/invite"), None);
     }
 }
