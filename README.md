@@ -15,9 +15,9 @@
 
 ## 能干什么
 
-房主打开 Minecraft 单人世界的局域网联机后，SeaLantern Connect 可以自动发现端口、创建 P2P 房间，并生成可分享的联机邀请。房间链接可以设置定时刷新，也可以限制最大玩家数。
+房主打开 Minecraft 单人世界的局域网联机后，SeaLantern Connect 可以自动发现端口、创建 P2P 房间，并生成可分享的官网 HTTPS 邀请。房间链接可以设置定时刷新，也可以限制最大玩家数。
 
-加入者只需粘贴 SeaLantern 生成的联机邀请，即可与房主建立 P2P 连接。成功使用的邀请会保存在本机，并在下次启动时自动填入输入框。
+加入者可以直接打开邀请网页，再点击按钮唤起 SeaLantern Connect；也可以粘贴 HTTPS 分享链接或原始 `sculk://` 邀请。应用会在连接或切换房间前要求确认。成功使用的邀请会保存在本机，并在下次启动时自动填入输入框。
 
 连接成功后，远端世界将自动出现在 Minecraft 的局域网服务器列表中；你也可以使用软件显示的本地地址手动加入。
 
@@ -50,6 +50,16 @@ only build
 ```bash
 only ci
 ```
+
+### Deep Link 开发测试
+
+开发模式会在 Windows 和 Linux 上注册 `sculk` 协议。请使用真实房间邀请测试完整流程：
+
+```powershell
+Start-Process "sculk://join/v1/<payload>"
+```
+
+macOS 只能通过安装到 `/Applications` 的已打包应用测试协议唤起。
 
 ## 许可证
 
