@@ -9,6 +9,7 @@
     "dev": "vite --config src/vite.config.ts",
     "build": "vue-tsc --project src/tsconfig.json --noEmit && vite build --config src/vite.config.ts",
     "preview": "vite preview --config src/vite.config.ts",
+    "test": "vitest run --config src/vite.config.ts",
     "tauri": "tauri",
     "lint": "oxlint --config src/.oxlintrc.json src",
     "lint:fix": "oxlint --config src/.oxlintrc.json --fix src",
@@ -29,6 +30,7 @@
     "oxlint": "^1.76.0",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
+    "vitest": "^4.1.10",
     "vue-tsc": "^2.1.10"
   },
   "packageManager": "pnpm@11.5.3+sha512.7ac1c919341c213a34dc0d02afb7143c5c26ac26ee8c4782deea821b8ac64d2134a081fd8941dae6e29bbb48f58dfc2b7fbceeccc07cb2f09d219d342a4969ed"

@@ -35,9 +35,11 @@ check() & _front_check & _back_check:
 
 # 运行测试
 test() ? @has("cargo-nextest"):
+    pnpm test
     cargo nextest run
 
 test():
+    pnpm test
     cargo test --all-targets --workspace
 
 # 运行本地 CI

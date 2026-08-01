@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
 import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
-import type { ConnectStatus } from "../../connect";
+import { normalizeInvite, type ConnectStatus } from "../../connect";
 import { t } from "../../i18n";
 
 const props = defineProps<{
@@ -53,12 +53,6 @@ watch(
   () => props.savedPort,
   (value) => (manualPort.value = String(value)),
 );
-
-function normalizeInvite(value: string) {
-  const trimmed = value.trim();
-  const fragment = trimmed.match(/^https?:\/\/[^#]+\/#\/join\/v1\/([^/?#\s]+)$/i);
-  return fragment ? `sculk://join/v1/${fragment[1]}` : trimmed;
-}
 
 function setPortMode(value: string | null) {
   if (value === "auto" || value === "manual") portMode.value = value;
@@ -223,8 +217,8 @@ function formatBytes(value: number) {
     </section>
 
     <p v-if="commandError || status.error || occupied" class="error-banner">
-      {{ t("join.connectionFailed")
-      }}{{ occupied ? t("join.occupied") : commandError || status.message || t("join.retryHint") }}
+      {{ t("join.connectionFailed") }}
+      {{ occupied ? t("join.occupied") : commandError || status.message || t("join.retryHint") }}
     </p>
   </div>
 

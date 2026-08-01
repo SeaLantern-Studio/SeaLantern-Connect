@@ -29,3 +29,9 @@ export const emptyConnectStatus: ConnectStatus = {
   error: null,
   message: null,
 };
+
+export function normalizeInvite(value: string): string {
+  const trimmed = value.trim();
+  const fragment = trimmed.match(/^https?:\/\/[^#]+\/#\/join\/v1\/([^/?#\s]+)$/i);
+  return fragment ? `sculk://join/v1/${fragment[1]}` : trimmed;
+}

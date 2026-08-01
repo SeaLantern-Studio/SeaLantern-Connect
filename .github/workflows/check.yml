@@ -105,5 +105,8 @@ jobs:
       - name: 运行前端 Lint
         run: pnpm lint
 
+      - name: 运行前端测试
+        run: pnpm test
+
       - name: 检查类型并构建前端
         run: pnpm build
