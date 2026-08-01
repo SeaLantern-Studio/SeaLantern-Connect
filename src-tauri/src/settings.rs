@@ -1,8 +1,10 @@
+use crate::tray;
 use sculk::persist;
 use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
@@ -121,7 +123,7 @@ impl SettingsState {
 
     pub fn set_join_port(&self, port: u16) -> Result<(), String> {
         if port == 0 {
-            return Err("本地端口必须在 1 到 65535 之间".to_owned());
+            return Err("local port must be between 1 and 65535".to_owned());
         }
         self.update(|preferences| preferences.join_port = port)
     }
@@ -172,6 +174,13 @@ impl SettingsState {
         self.preferences
             .lock()
             .is_ok_and(|preferences| preferences.remember_window_state)
+    }
+
+    pub fn locale(&self) -> String {
+        self.preferences
+            .lock()
+            .map(|preferences| preferences.locale.clone())
+            .unwrap_or_else(|_| "en".to_owned())
     }
 
     pub fn persist(&self) -> Result<(), String> {
@@ -253,11 +262,19 @@ pub fn set_color_theme(color_theme: String, state: State<'_, SettingsState>) -> 
 }
 
 #[tauri::command]
-pub fn set_locale(locale: String, state: State<'_, SettingsState>) -> Result<(), String> {
+pub fn set_locale(
+    locale: String,
+    app: AppHandle,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
     if !matches!(locale.as_str(), "zh-CN" | "en") {
         return Err("invalid locale preference".to_owned());
     }
-    state.update(|preferences| preferences.locale = locale)
+    state.update(|preferences| preferences.locale = locale)?;
+    if let Err(error) = tray::update_locale(&app) {
+        eprintln!("failed to update tray locale: {error}");
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -352,7 +369,7 @@ pub fn set_join_port(port: u16, state: State<'_, SettingsState>) -> Result<(), S
     state.set_join_port(port)
 }
 
-fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), String> {
+fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
@@ -376,7 +393,26 @@ fn save_preferences(path: &PathBuf, preferences: &Preferences) -> Result<(), Str
         preferences.relay_custom,
         preferences.relay_url,
     );
-    std::fs::write(path, content).map_err(|error| error.to_string())
+    let mut temporary =
+        tempfile::NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
+    temporary
+        .write_all(content.as_bytes())
+        .map_err(|error| error.to_string())?;
+    temporary
+        .as_file()
+        .sync_all()
+        .map_err(|error| error.to_string())?;
+    let persisted = temporary
+        .persist(path)
+        .map_err(|error| error.error.to_string())?;
+    persisted.sync_all().map_err(|error| error.to_string())?;
+
+    #[cfg(unix)]
+    std::fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| error.to_string())?;
+
+    Ok(())
 }
 
 fn parse_preferences(content: &str) -> Preferences {
@@ -506,5 +542,28 @@ mod tests {
         assert_eq!(preferences.locale, "zh-CN");
         assert_eq!(preferences.close_action, "ask");
         assert_eq!(preferences.reconnect_timeout_secs, None);
+    }
+
+    #[test]
+    fn atomically_replaces_saved_preferences_and_keeps_invite() {
+        let directory = tempfile::tempdir().expect("temporary directory should be created");
+        let path = directory.path().join(PREFERENCES_FILE);
+        std::fs::write(&path, "theme=light\n").expect("initial preferences should be written");
+
+        let preferences = Preferences {
+            theme: "dark".to_owned(),
+            join_uri: "sculk://join/v1/remember-me".to_owned(),
+            ..Preferences::default()
+        };
+        save_preferences(&path, &preferences).expect("preferences should be replaced");
+
+        let saved = std::fs::read_to_string(&path).expect("preferences should remain readable");
+        assert_eq!(parse_preferences(&saved), preferences);
+        assert_eq!(
+            std::fs::read_dir(directory.path())
+                .expect("directory should be readable")
+                .count(),
+            1
+        );
     }
 }
