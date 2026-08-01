@@ -26,7 +26,7 @@ export function applyColorTheme(
 
   root.dataset.theme = dark ? "dark" : "light";
   root.style.setProperty("--background", colors.bg);
-  root.style.setProperty("--surface", dark ? colors.bgSecondary : "#ffffff");
+  root.style.setProperty("--surface", colors.bgSecondary);
   root.style.setProperty("--surface-soft", colors.bgSecondary);
   root.style.setProperty("--surface-strong", colors.bgTertiary);
   root.style.setProperty("--primary", colors.primary);

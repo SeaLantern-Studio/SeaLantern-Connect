@@ -601,6 +601,7 @@ button {
   display: grid;
   overflow: auto;
   padding: 32px 0;
+  background: var(--surface-soft);
 }
 .page-enter-active {
   transition:
@@ -641,7 +642,7 @@ button {
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: var(--cmz-radius-lg);
-  background: var(--surface);
+  background: var(--surface-soft);
   box-shadow: var(--card-shadow);
 }
 .settings-section-heading {
