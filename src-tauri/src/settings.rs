@@ -425,8 +425,8 @@ fn parse_preferences(content: &str) -> Preferences {
             }
         } else if let Some(value) = line.strip_prefix("color_theme=") {
             let value = value.trim();
-            if is_color_theme(value) {
-                preferences.color_theme = value.to_owned();
+            if let Some(color_theme) = normalize_color_theme(value) {
+                preferences.color_theme = color_theme.to_owned();
             }
         } else if let Some(value) = line.strip_prefix("font_size=") {
             preferences.font_size = value
@@ -487,7 +487,18 @@ fn parse_preferences(content: &str) -> Preferences {
 }
 
 fn is_color_theme(value: &str) -> bool {
-    matches!(value, "default" | "midnight" | "ocean" | "rose" | "sunset")
+    matches!(value, "default" | "neutral" | "warm" | "sage" | "mauve")
+}
+
+fn normalize_color_theme(value: &str) -> Option<&'static str> {
+    match value {
+        "default" => Some("default"),
+        "neutral" | "midnight" => Some("neutral"),
+        "warm" | "sunset" => Some("warm"),
+        "sage" | "ocean" => Some("sage"),
+        "mauve" | "rose" => Some("mauve"),
+        _ => None,
+    }
 }
 
 fn is_invite_lifetime(value: &str) -> bool {
@@ -511,11 +522,11 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=ocean\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=sage\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
-        assert_eq!(preferences.color_theme, "ocean");
+        assert_eq!(preferences.color_theme, "sage");
         assert_eq!(preferences.font_size, 17);
         assert_eq!(preferences.font_family, "Microsoft YaHei");
         assert_eq!(preferences.splash_duration_ms, 2000);
@@ -532,7 +543,7 @@ mod tests {
     #[test]
     fn ignores_unknown_theme() {
         let preferences = parse_preferences(
-            "theme=midnight\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nreconnect_timeout_secs=45\n",
+            "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nreconnect_timeout_secs=45\n",
         );
 
         assert_eq!(preferences.theme, "system");
@@ -542,6 +553,20 @@ mod tests {
         assert_eq!(preferences.locale, "zh-CN");
         assert_eq!(preferences.close_action, "ask");
         assert_eq!(preferences.reconnect_timeout_secs, None);
+    }
+
+    #[test]
+    fn migrates_old_palette() {
+        assert_eq!(
+            parse_preferences("color_theme=midnight\n").color_theme,
+            "neutral"
+        );
+        assert_eq!(
+            parse_preferences("color_theme=sunset\n").color_theme,
+            "warm"
+        );
+        assert_eq!(parse_preferences("color_theme=ocean\n").color_theme, "sage");
+        assert_eq!(parse_preferences("color_theme=rose\n").color_theme, "mauve");
     }
 
     #[test]

@@ -31,11 +31,11 @@
     "systemFont": "System default",
     "searchFont": "Search fonts",
     "colorThemes": {
-      "default": "Default",
-      "midnight": "Midnight",
-      "ocean": "Ocean",
-      "rose": "Rose",
-      "sunset": "Sunset"
+      "default": "Celadon",
+      "neutral": "Inkstone",
+      "warm": "Vellum",
+      "sage": "Mountain Haze",
+      "mauve": "Gloaming"
     },
     "language": "Language",
     "simplifiedChinese": "简体中文",

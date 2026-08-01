@@ -1,15 +1,6 @@
 import { getThemeColors, type ColorThemeId } from ".";
 import type { ThemePreference } from "../models/preferences";
 
-function adjustBrightness(hex: string, percent: number): string {
-  const value = Number.parseInt(hex.slice(1), 16);
-  const offset = Math.round(2.55 * percent);
-  const red = Math.min(255, Math.max(0, (value >> 16) + offset));
-  const green = Math.min(255, Math.max(0, ((value >> 8) & 0xff) + offset));
-  const blue = Math.min(255, Math.max(0, (value & 0xff) + offset));
-  return `#${((1 << 24) | (red << 16) | (green << 8) | blue).toString(16).slice(1)}`;
-}
-
 function rgba(hex: string, alpha: number): string {
   const value = Number.parseInt(hex.slice(1), 16);
   return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${alpha})`;
@@ -30,7 +21,10 @@ export function applyColorTheme(
   root.style.setProperty("--surface-soft", colors.bgSecondary);
   root.style.setProperty("--surface-strong", colors.bgTertiary);
   root.style.setProperty("--primary", colors.primary);
-  root.style.setProperty("--primary-hover", adjustBrightness(colors.primary, dark ? -20 : -30));
+  root.style.setProperty(
+    "--primary-hover",
+    `color-mix(in srgb, ${colors.primary} 82%, ${colors.textPrimary})`,
+  );
   root.style.setProperty("--accent", colors.secondary);
   root.style.setProperty("--text", colors.textPrimary);
   root.style.setProperty("--muted", colors.textSecondary);

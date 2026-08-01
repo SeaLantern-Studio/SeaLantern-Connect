@@ -1,5 +1,5 @@
 export type ThemePreference = "system" | "light" | "dark";
-export type ColorThemeId = "default" | "midnight" | "ocean" | "rose" | "sunset";
+export type ColorThemeId = "default" | "neutral" | "warm" | "sage" | "mauve";
 export type SplashDurationMs = 0 | 500 | 1000 | 1500 | 2000;
 export type Locale = "zh-CN" | "en";
 export type CloseAction = "ask" | "exit" | "hide_to_tray";
