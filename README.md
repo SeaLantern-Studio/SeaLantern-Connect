@@ -53,11 +53,7 @@ only ci
 
 ### Deep Link 开发测试
 
-开发模式会在 Windows 和 Linux 上注册 `sculk` 协议。请使用真实房间邀请测试完整流程：
-
-```powershell
-Start-Process "sculk://join/v1/<payload>"
-```
+开发模式会在 Windows 和 Linux 上注册 `sculk` 协议。请使用真实房间邀请测试完整流程。
 
 macOS 只能通过安装到 `/Applications` 的已打包应用测试协议唤起。
 

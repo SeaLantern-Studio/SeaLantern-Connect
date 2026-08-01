@@ -55,11 +55,7 @@ only ci
 
 ### Testing deep links during development
 
-Development builds register the `sculk` scheme on Windows and Linux. Use a real room invitation to test the complete flow:
-
-```powershell
-Start-Process "sculk://join/v1/<payload>"
-```
+Development builds register the `sculk` scheme on Windows and Linux. Use a real room invitation to test the complete flow.
 
 On macOS, protocol activation can only be tested with a bundled app installed in `/Applications`.
 
