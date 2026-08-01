@@ -49,12 +49,12 @@ pub(crate) fn take_pending_links(state: State<'_, PendingDeepLinks>) -> Vec<Stri
         .unwrap_or_default()
 }
 
-pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
+pub fn setup(_app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(any(target_os = "linux", all(debug_assertions, target_os = "windows")))]
     {
         use tauri_plugin_deep_link::DeepLinkExt;
 
-        app.deep_link().register_all()?;
+        _app.deep_link().register_all()?;
     }
 
     Ok(())
