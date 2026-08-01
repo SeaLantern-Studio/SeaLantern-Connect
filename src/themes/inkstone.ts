@@ -1,7 +1,7 @@
 import type { ThemeDefinition } from "./types";
 
-const neutralTheme: ThemeDefinition = {
-  id: "neutral",
+const inkstoneTheme: ThemeDefinition = {
+  id: "inkstone",
   name: "Inkstone",
   description: "Paper gray surfaces with a quiet blue-black accent",
   author: "SeaLantern Team",
@@ -11,6 +11,8 @@ const neutralTheme: ThemeDefinition = {
     bgSecondary: "#f0f0ef",
     bgTertiary: "#dedfe0",
     primary: "#45505d",
+    primarySolid: "#45505d",
+    primarySolidHover: "#36414d",
     secondary: "#69727c",
     textPrimary: "#202326",
     textSecondary: "#666b70",
@@ -21,6 +23,8 @@ const neutralTheme: ThemeDefinition = {
     bgSecondary: "#191a1d",
     bgTertiary: "#25272b",
     primary: "#aab4c0",
+    primarySolid: "#455666",
+    primarySolidHover: "#536778",
     secondary: "#c1c7cf",
     textPrimary: "#f1f1f2",
     textSecondary: "#a6a8ae",
@@ -31,6 +35,8 @@ const neutralTheme: ThemeDefinition = {
     bgSecondary: "rgba(240, 240, 239, 0.55)",
     bgTertiary: "rgba(222, 223, 224, 0.45)",
     primary: "#45505d",
+    primarySolid: "#45505d",
+    primarySolidHover: "#36414d",
     secondary: "#69727c",
     textPrimary: "#202326",
     textSecondary: "#666b70",
@@ -41,6 +47,8 @@ const neutralTheme: ThemeDefinition = {
     bgSecondary: "rgba(25, 26, 29, 0.55)",
     bgTertiary: "rgba(37, 39, 43, 0.45)",
     primary: "#aab4c0",
+    primarySolid: "#455666",
+    primarySolidHover: "#536778",
     secondary: "#c1c7cf",
     textPrimary: "#f1f1f2",
     textSecondary: "#a6a8ae",
@@ -48,4 +56,4 @@ const neutralTheme: ThemeDefinition = {
   },
 };
 
-export default neutralTheme;
+export default inkstoneTheme;

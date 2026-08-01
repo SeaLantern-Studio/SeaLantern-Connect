@@ -1,7 +1,7 @@
 import type { ThemeDefinition } from "./types";
 
-const defaultTheme: ThemeDefinition = {
-  id: "default",
+const celadonTheme: ThemeDefinition = {
+  id: "celadon",
   name: "Celadon",
   description: "Rain-washed celadon surfaces with a deep blue-green accent",
   author: "SeaLantern Team",
@@ -11,6 +11,8 @@ const defaultTheme: ThemeDefinition = {
     bgSecondary: "#eaf3f5",
     bgTertiary: "#d5e7ea",
     primary: "#357c93",
+    primarySolid: "#357c93",
+    primarySolidHover: "#2c687c",
     secondary: "#5e9faa",
     textPrimary: "#223036",
     textSecondary: "#63747a",
@@ -21,6 +23,8 @@ const defaultTheme: ThemeDefinition = {
     bgSecondary: "#0e1416",
     bgTertiary: "#192226",
     primary: "#75b9c8",
+    primarySolid: "#3f7886",
+    primarySolidHover: "#4b8998",
     secondary: "#8bc5ca",
     textPrimary: "#eef5f6",
     textSecondary: "#98a9ad",
@@ -31,6 +35,8 @@ const defaultTheme: ThemeDefinition = {
     bgSecondary: "rgba(234, 243, 245, 0.55)",
     bgTertiary: "rgba(213, 231, 234, 0.45)",
     primary: "#357c93",
+    primarySolid: "#357c93",
+    primarySolidHover: "#2c687c",
     secondary: "#5e9faa",
     textPrimary: "#223036",
     textSecondary: "#63747a",
@@ -41,6 +47,8 @@ const defaultTheme: ThemeDefinition = {
     bgSecondary: "rgba(14, 20, 22, 0.55)",
     bgTertiary: "rgba(25, 34, 38, 0.45)",
     primary: "#75b9c8",
+    primarySolid: "#3f7886",
+    primarySolidHover: "#4b8998",
     secondary: "#8bc5ca",
     textPrimary: "#eef5f6",
     textSecondary: "#98a9ad",
@@ -48,4 +56,4 @@ const defaultTheme: ThemeDefinition = {
   },
 };
 
-export default defaultTheme;
+export default celadonTheme;

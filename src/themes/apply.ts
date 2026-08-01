@@ -25,6 +25,8 @@ export function applyColorTheme(
     "--primary-hover",
     `color-mix(in srgb, ${colors.primary} 82%, ${colors.textPrimary})`,
   );
+  root.style.setProperty("--primary-solid", colors.primarySolid);
+  root.style.setProperty("--primary-solid-hover", colors.primarySolidHover);
   root.style.setProperty("--accent", colors.secondary);
   root.style.setProperty("--text", colors.textPrimary);
   root.style.setProperty("--muted", colors.textSecondary);

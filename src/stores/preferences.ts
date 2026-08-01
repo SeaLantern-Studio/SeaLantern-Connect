@@ -16,7 +16,7 @@ import { applyTypography, DEFAULT_FONT_SIZE } from "../ui/typography";
 
 const defaults: Preferences = {
   theme: "system",
-  colorTheme: "default",
+  colorTheme: "celadon",
   fontSize: DEFAULT_FONT_SIZE,
   fontFamily: "",
   splashDurationMs: 1000,

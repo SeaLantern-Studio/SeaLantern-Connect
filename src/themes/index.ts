@@ -1,16 +1,16 @@
-import defaultTheme from "./default";
-import mauveTheme from "./mauve";
-import neutralTheme from "./neutral";
-import sageTheme from "./sage";
-import warmTheme from "./warm";
+import celadonTheme from "./celadon";
+import gloamingTheme from "./gloaming";
+import inkstoneTheme from "./inkstone";
+import mossTheme from "./moss";
+import vellumTheme from "./vellum";
 import type { ColorPlan, ColorThemeId, ThemeColors, ThemeDefinition } from "./types";
 
 const themes: Record<ColorThemeId, ThemeDefinition> = {
-  default: defaultTheme,
-  neutral: neutralTheme,
-  warm: warmTheme,
-  sage: sageTheme,
-  mauve: mauveTheme,
+  celadon: celadonTheme,
+  inkstone: inkstoneTheme,
+  vellum: vellumTheme,
+  moss: mossTheme,
+  gloaming: gloamingTheme,
 };
 
 export function getThemeOptions(): Array<{ label: string; value: ColorThemeId }> {
@@ -18,7 +18,7 @@ export function getThemeOptions(): Array<{ label: string; value: ColorThemeId }>
 }
 
 export function getThemeColors(themeId: ColorThemeId, plan: ColorPlan): ThemeColors {
-  return (themes[themeId] ?? themes.default)[plan];
+  return (themes[themeId] ?? themes.celadon)[plan];
 }
 
 export type { ColorPlan, ColorThemeId, ThemeColors, ThemeDefinition } from "./types";

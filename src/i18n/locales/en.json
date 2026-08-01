@@ -27,15 +27,15 @@
     "colorTheme": "Color Theme",
     "colorThemeHint": "Choose a preset color scheme for the app",
     "fontSize": "Text Size",
-    "fontFamily": "Interface Font",
-    "systemFont": "System default",
+    "fontFamily": "Font",
+    "systemFont": "System default font",
     "searchFont": "Search fonts",
     "colorThemes": {
-      "default": "Celadon",
-      "neutral": "Inkstone",
-      "warm": "Vellum",
-      "sage": "Mountain Haze",
-      "mauve": "Gloaming"
+      "celadon": "Celadon",
+      "inkstone": "Inkstone",
+      "vellum": "Vellum",
+      "moss": "Moss",
+      "gloaming": "Gloaming"
     },
     "language": "Language",
     "simplifiedChinese": "简体中文",

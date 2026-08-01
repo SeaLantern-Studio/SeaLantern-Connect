@@ -27,15 +27,15 @@
     "colorTheme": "颜色主题",
     "colorThemeHint": "选择应用使用的预设颜色方案",
     "fontSize": "文字大小",
-    "fontFamily": "界面字体",
-    "systemFont": "系统默认",
+    "fontFamily": "字体",
+    "systemFont": "系统默认字体",
     "searchFont": "搜索字体",
     "colorThemes": {
-      "default": "天青",
-      "neutral": "砚墨",
-      "warm": "素笺",
-      "sage": "苍岚",
-      "mauve": "暮霭"
+      "celadon": "天青",
+      "inkstone": "砚墨",
+      "vellum": "素笺",
+      "moss": "苔痕",
+      "gloaming": "暮霭"
     },
     "language": "界面语言",
     "simplifiedChinese": "简体中文",

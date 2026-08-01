@@ -1,7 +1,7 @@
 import type { ThemeDefinition } from "./types";
 
-const warmTheme: ThemeDefinition = {
-  id: "warm",
+const vellumTheme: ThemeDefinition = {
+  id: "vellum",
   name: "Vellum",
   description: "Fiber-warm paper surfaces with a soft umber accent",
   author: "SeaLantern Team",
@@ -11,6 +11,8 @@ const warmTheme: ThemeDefinition = {
     bgSecondary: "#f5eee2",
     bgTertiary: "#e8dcc9",
     primary: "#80664d",
+    primarySolid: "#80664d",
+    primarySolidHover: "#6e563f",
     secondary: "#9b7d5e",
     textPrimary: "#282522",
     textSecondary: "#6f6961",
@@ -21,6 +23,8 @@ const warmTheme: ThemeDefinition = {
     bgSecondary: "#1f1c19",
     bgTertiary: "#2c2823",
     primary: "#ceb99f",
+    primarySolid: "#745d46",
+    primarySolidHover: "#876e55",
     secondary: "#decab2",
     textPrimary: "#f4f1ec",
     textSecondary: "#aca49a",
@@ -31,6 +35,8 @@ const warmTheme: ThemeDefinition = {
     bgSecondary: "rgba(245, 238, 226, 0.55)",
     bgTertiary: "rgba(232, 220, 201, 0.45)",
     primary: "#80664d",
+    primarySolid: "#80664d",
+    primarySolidHover: "#6e563f",
     secondary: "#9b7d5e",
     textPrimary: "#282522",
     textSecondary: "#6f6961",
@@ -41,6 +47,8 @@ const warmTheme: ThemeDefinition = {
     bgSecondary: "rgba(31, 28, 25, 0.55)",
     bgTertiary: "rgba(44, 40, 35, 0.45)",
     primary: "#ceb99f",
+    primarySolid: "#745d46",
+    primarySolidHover: "#876e55",
     secondary: "#decab2",
     textPrimary: "#f4f1ec",
     textSecondary: "#aca49a",
@@ -48,4 +56,4 @@ const warmTheme: ThemeDefinition = {
   },
 };
 
-export default warmTheme;
+export default vellumTheme;

@@ -49,7 +49,7 @@ impl Default for Preferences {
     fn default() -> Self {
         Self {
             theme: "system".to_owned(),
-            color_theme: "default".to_owned(),
+            color_theme: "celadon".to_owned(),
             font_size: 14,
             font_family: String::new(),
             splash_duration_ms: 1000,
@@ -313,10 +313,8 @@ pub fn set_personalization(
     if !FONT_SIZE_RANGE.contains(&update.font_size) {
         return Err("invalid font size".to_owned());
     }
-    let font_family = update.font_family.trim().to_owned();
-    if font_family.len() > 128 || font_family.chars().any(char::is_control) {
-        return Err("invalid font family".to_owned());
-    }
+    let font_family = normalize_font_family(&update.font_family)
+        .ok_or_else(|| "invalid font family".to_owned())?;
     if !SPLASH_DURATION_OPTIONS_MS.contains(&update.splash_duration_ms) {
         return Err("invalid splash duration".to_owned());
     }
@@ -436,9 +434,8 @@ fn parse_preferences(content: &str) -> Preferences {
                 .filter(|size| FONT_SIZE_RANGE.contains(size))
                 .unwrap_or(14);
         } else if let Some(value) = line.strip_prefix("font_family=") {
-            let value = value.trim();
-            if value.len() <= 128 && !value.chars().any(char::is_control) {
-                preferences.font_family = value.to_owned();
+            if let Some(font_family) = normalize_font_family(value) {
+                preferences.font_family = font_family;
             }
         } else if let Some(value) = line.strip_prefix("splash_duration_ms=") {
             preferences.splash_duration_ms = value
@@ -487,16 +484,24 @@ fn parse_preferences(content: &str) -> Preferences {
 }
 
 fn is_color_theme(value: &str) -> bool {
-    matches!(value, "default" | "neutral" | "warm" | "sage" | "mauve")
+    matches!(
+        value,
+        "celadon" | "inkstone" | "vellum" | "moss" | "gloaming"
+    )
+}
+
+fn normalize_font_family(value: &str) -> Option<String> {
+    let value = value.trim();
+    (value.len() <= 128 && !value.chars().any(char::is_control)).then(|| value.to_owned())
 }
 
 fn normalize_color_theme(value: &str) -> Option<&'static str> {
     match value {
-        "default" => Some("default"),
-        "neutral" | "midnight" => Some("neutral"),
-        "warm" | "sunset" => Some("warm"),
-        "sage" | "ocean" => Some("sage"),
-        "mauve" | "rose" => Some("mauve"),
+        "celadon" | "default" => Some("celadon"),
+        "inkstone" | "neutral" | "midnight" => Some("inkstone"),
+        "vellum" | "warm" | "sunset" => Some("vellum"),
+        "moss" | "mountain" | "sage" | "ocean" => Some("moss"),
+        "gloaming" | "mauve" | "rose" => Some("gloaming"),
         _ => None,
     }
 }
@@ -522,11 +527,11 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=sage\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
-        assert_eq!(preferences.color_theme, "sage");
+        assert_eq!(preferences.color_theme, "moss");
         assert_eq!(preferences.font_size, 17);
         assert_eq!(preferences.font_family, "Microsoft YaHei");
         assert_eq!(preferences.splash_duration_ms, 2000);
@@ -547,7 +552,7 @@ mod tests {
         );
 
         assert_eq!(preferences.theme, "system");
-        assert_eq!(preferences.color_theme, "default");
+        assert_eq!(preferences.color_theme, "celadon");
         assert_eq!(preferences.font_size, 14);
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
@@ -557,16 +562,23 @@ mod tests {
 
     #[test]
     fn migrates_old_palette() {
-        assert_eq!(
-            parse_preferences("color_theme=midnight\n").color_theme,
-            "neutral"
-        );
-        assert_eq!(
-            parse_preferences("color_theme=sunset\n").color_theme,
-            "warm"
-        );
-        assert_eq!(parse_preferences("color_theme=ocean\n").color_theme, "sage");
-        assert_eq!(parse_preferences("color_theme=rose\n").color_theme, "mauve");
+        for (old, current) in [
+            ("default", "celadon"),
+            ("neutral", "inkstone"),
+            ("midnight", "inkstone"),
+            ("warm", "vellum"),
+            ("sunset", "vellum"),
+            ("mountain", "moss"),
+            ("sage", "moss"),
+            ("ocean", "moss"),
+            ("mauve", "gloaming"),
+            ("rose", "gloaming"),
+        ] {
+            assert_eq!(
+                parse_preferences(&format!("color_theme={old}\n")).color_theme,
+                current
+            );
+        }
     }
 
     #[test]

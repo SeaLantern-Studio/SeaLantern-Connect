@@ -8,6 +8,8 @@ export interface ThemeColors {
   bgSecondary: string;
   bgTertiary: string;
   primary: string;
+  primarySolid: string;
+  primarySolidHover: string;
   secondary: string;
   textPrimary: string;
   textSecondary: string;

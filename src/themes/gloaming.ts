@@ -1,7 +1,7 @@
 import type { ThemeDefinition } from "./types";
 
-const mauveTheme: ThemeDefinition = {
-  id: "mauve",
+const gloamingTheme: ThemeDefinition = {
+  id: "gloaming",
   name: "Gloaming",
   description: "Dusk-gray surfaces with a fading violet accent",
   author: "SeaLantern Team",
@@ -11,6 +11,8 @@ const mauveTheme: ThemeDefinition = {
     bgSecondary: "#f1ecf3",
     bgTertiary: "#e2d9e5",
     primary: "#775f80",
+    primarySolid: "#775f80",
+    primarySolidHover: "#644d6d",
     secondary: "#987f9e",
     textPrimary: "#2b272d",
     textSecondary: "#706973",
@@ -21,6 +23,8 @@ const mauveTheme: ThemeDefinition = {
     bgSecondary: "#1d1920",
     bgTertiary: "#2a2430",
     primary: "#bea0c7",
+    primarySolid: "#705078",
+    primarySolidHover: "#815f89",
     secondary: "#d0b5d5",
     textPrimary: "#f4f1f5",
     textSecondary: "#aaa2ac",
@@ -31,6 +35,8 @@ const mauveTheme: ThemeDefinition = {
     bgSecondary: "rgba(241, 236, 243, 0.55)",
     bgTertiary: "rgba(226, 217, 229, 0.45)",
     primary: "#775f80",
+    primarySolid: "#775f80",
+    primarySolidHover: "#644d6d",
     secondary: "#987f9e",
     textPrimary: "#2b272d",
     textSecondary: "#706973",
@@ -41,6 +47,8 @@ const mauveTheme: ThemeDefinition = {
     bgSecondary: "rgba(29, 25, 32, 0.55)",
     bgTertiary: "rgba(42, 36, 48, 0.45)",
     primary: "#bea0c7",
+    primarySolid: "#705078",
+    primarySolidHover: "#815f89",
     secondary: "#d0b5d5",
     textPrimary: "#f4f1f5",
     textSecondary: "#aaa2ac",
@@ -48,4 +56,4 @@ const mauveTheme: ThemeDefinition = {
   },
 };
 
-export default mauveTheme;
+export default gloamingTheme;
