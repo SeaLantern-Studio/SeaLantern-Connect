@@ -24,6 +24,7 @@ const defaults: Preferences = {
   locale: "zh-CN",
   rememberWindowState: true,
   closeAction: "ask",
+  windowMaterial: "solid",
   autoLightweightMinutes: null,
   hostUriLifetime: "always",
   joinUri: "",
@@ -43,7 +44,12 @@ export const usePreferencesStore = defineStore("preferences", () => {
   let lightweightSaveQueue = Promise.resolve();
 
   function applyTheme(): void {
-    applyColorTheme(preferences.value.theme, preferences.value.colorTheme, systemTheme.matches);
+    applyColorTheme(
+      preferences.value.theme,
+      preferences.value.colorTheme,
+      systemTheme.matches,
+      preferences.value.windowMaterial,
+    );
   }
 
   function applyPersonalizationStyles(): void {

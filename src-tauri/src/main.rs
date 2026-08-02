@@ -7,7 +7,7 @@ mod desktop;
 mod settings;
 
 use connection::{host, join};
-use desktop::{autodelay, deeplink, tray, window_state};
+use desktop::{autodelay, deeplink, effects, tray, window_state};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
@@ -53,6 +53,15 @@ fn main() {
                 && let Some(window) = app.get_webview_window("main")
             {
                 window.restore_state(window_state_flags())?;
+            }
+            if let Err(error) = effects::set_material(
+                app.handle(),
+                app.state::<settings::SettingsState>()
+                    .window_material()
+                    .as_str(),
+                app.state::<settings::SettingsState>().theme().as_str(),
+            ) {
+                eprintln!("failed to apply native window effects: {error}");
             }
             tray::setup(app)?;
             tray::show_main_window(app.handle());

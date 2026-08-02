@@ -22,6 +22,7 @@
   "personalization": {
     "appearance": "外观",
     "appearanceHint": "调整界面显示主题",
+    "nativeMaterialHint": "使用原生材质配色，跟随主题模式切换明暗",
     "themeSection": "主题",
     "themeMode": "主题模式",
     "colorTheme": "颜色主题",
@@ -50,6 +51,13 @@
     "askOnClose": "关闭时询问",
     "exitApplication": "退出应用",
     "hideToTray": "隐藏到托盘",
+    "windowMaterial": "窗口材质",
+    "windowMaterials": {
+      "solid": "纯色",
+      "mica": "云母",
+      "acrylic": "亚克力",
+      "vibrancy": "毛玻璃"
+    },
     "rememberWindowState": "记住窗口位置和大小",
     "startup": "启动",
     "startupHint": "设置启动画面的最短展示时间",

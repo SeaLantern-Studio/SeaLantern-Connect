@@ -1,4 +1,4 @@
-use crate::desktop::tray;
+use crate::desktop::{effects, tray};
 use sculk::persist;
 use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,7 @@ pub struct Preferences {
     locale: String,
     remember_window_state: bool,
     close_action: String,
+    window_material: String,
     auto_lightweight_minutes: Option<u32>,
     host_uri_lifetime: String,
     join_uri: String,
@@ -58,6 +59,7 @@ impl Default for Preferences {
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
             close_action: "ask".to_owned(),
+            window_material: "solid".to_owned(),
             auto_lightweight_minutes: None,
             host_uri_lifetime: "always".to_owned(),
             join_uri: String::new(),
@@ -87,6 +89,7 @@ pub struct PersonalizationUpdate {
     locale: String,
     remember_window_state: bool,
     close_action: String,
+    window_material: String,
 }
 
 #[derive(Deserialize)]
@@ -185,6 +188,20 @@ impl SettingsState {
             .is_ok_and(|preferences| preferences.remember_window_state)
     }
 
+    pub fn window_material(&self) -> String {
+        self.preferences
+            .lock()
+            .map(|preferences| preferences.window_material.clone())
+            .unwrap_or_else(|_| "solid".to_owned())
+    }
+
+    pub fn theme(&self) -> String {
+        self.preferences
+            .lock()
+            .map(|preferences| preferences.theme.clone())
+            .unwrap_or_else(|_| "system".to_owned())
+    }
+
     pub fn auto_lightweight_delay(&self) -> Option<Duration> {
         self.preferences
             .lock()
@@ -263,11 +280,20 @@ pub async fn get_system_fonts() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub fn set_theme(theme: String, state: State<'_, SettingsState>) -> Result<(), String> {
+pub fn set_theme(
+    theme: String,
+    app: AppHandle,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
     if !matches!(theme.as_str(), "system" | "light" | "dark") {
         return Err("invalid theme preference".to_owned());
     }
-    state.update(|preferences| preferences.theme = theme)
+    let window_material = state.window_material();
+    state.update(|preferences| preferences.theme = theme.clone())?;
+    if let Err(error) = effects::set_material(&app, &window_material, &theme) {
+        eprintln!("failed to update native window material: {error}");
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -319,6 +345,7 @@ pub fn set_invite_lifetime(
 #[tauri::command]
 pub fn set_personalization(
     update: PersonalizationUpdate,
+    app: AppHandle,
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     if !matches!(update.theme.as_str(), "system" | "light" | "dark") {
@@ -344,6 +371,11 @@ pub fn set_personalization(
     ) {
         return Err("invalid close action".to_owned());
     }
+    if !is_window_material(&update.window_material) {
+        return Err("invalid window material".to_owned());
+    }
+    let theme = update.theme.clone();
+    let window_material = update.window_material;
     state.update(|preferences| {
         preferences.theme = update.theme;
         preferences.color_theme = update.color_theme;
@@ -353,7 +385,12 @@ pub fn set_personalization(
         preferences.locale = update.locale;
         preferences.remember_window_state = update.remember_window_state;
         preferences.close_action = update.close_action;
-    })
+        preferences.window_material = window_material.clone();
+    })?;
+    if let Err(error) = effects::set_material(&app, &window_material, &theme) {
+        eprintln!("failed to update window material: {error}");
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -408,7 +445,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
         preferences.font_size,
@@ -417,6 +454,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         preferences.locale,
         preferences.remember_window_state,
         preferences.close_action,
+        preferences.window_material,
         preferences
             .auto_lightweight_minutes
             .map_or_else(|| "off".to_owned(), |value| value.to_string()),
@@ -494,6 +532,11 @@ fn parse_preferences(content: &str) -> Preferences {
             if matches!(value, "ask" | "exit" | "hide_to_tray") {
                 preferences.close_action = value.to_owned();
             }
+        } else if let Some(value) = line.strip_prefix("window_material=") {
+            let value = value.trim();
+            if is_window_material(value) {
+                preferences.window_material = value.to_owned();
+            }
         } else if let Some(value) = line.strip_prefix("auto_lightweight_minutes=") {
             preferences.auto_lightweight_minutes = value
                 .trim()
@@ -557,6 +600,10 @@ fn is_invite_lifetime(value: &str) -> bool {
     )
 }
 
+fn is_window_material(value: &str) -> bool {
+    matches!(value, "solid" | "mica" | "acrylic" | "vibrancy")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -571,7 +618,7 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\nwindow_material=acrylic\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
@@ -582,6 +629,7 @@ mod tests {
         assert_eq!(preferences.locale, "en");
         assert!(!preferences.remember_window_state);
         assert_eq!(preferences.close_action, "exit");
+        assert_eq!(preferences.window_material, "acrylic");
         assert_eq!(preferences.auto_lightweight_minutes, Some(10));
         assert_eq!(preferences.join_uri, "sculk://join/v1/example");
         assert_eq!(preferences.join_port, 25_566);

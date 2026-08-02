@@ -8,6 +8,7 @@ import type {
   Preferences,
   SplashDurationMs,
   ColorThemeId,
+  WindowMaterial,
 } from "../../models/preferences";
 import { getThemeOptions } from "../../themes";
 import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../ui/typography";
@@ -40,6 +41,22 @@ const closeActionOptions = computed<SelectOption[]>(() => [
   { label: t("personalization.exitApplication"), value: "exit" },
   { label: t("personalization.hideToTray"), value: "hide_to_tray" },
 ]);
+const windowMaterialOptions = computed<SelectOption[]>(() => {
+  if (/Macintosh|Mac OS X/i.test(navigator.userAgent)) {
+    return [
+      { label: t("personalization.windowMaterials.solid"), value: "solid" },
+      { label: t("personalization.windowMaterials.vibrancy"), value: "vibrancy" },
+    ];
+  }
+  if (/Windows/i.test(navigator.userAgent)) {
+    return [
+      { label: t("personalization.windowMaterials.solid"), value: "solid" },
+      { label: t("personalization.windowMaterials.acrylic"), value: "acrylic" },
+      { label: t("personalization.windowMaterials.mica"), value: "mica" },
+    ];
+  }
+  return [{ label: t("personalization.windowMaterials.solid"), value: "solid" }];
+});
 const splashDurationOptions = computed<SelectOption[]>(() => [
   { label: t("personalization.disabled"), value: 0 },
   ...[500, 1000, 1500, 2000].map((durationMs) => ({
@@ -50,6 +67,7 @@ const splashDurationOptions = computed<SelectOption[]>(() => [
 const fontSizeProgress = computed(
   () => `${((form.value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
 );
+const usesSolidWindowMaterial = computed(() => form.value.windowMaterial === "solid");
 function pickPreferences(preferences: Preferences): PersonalizationUpdate {
   return {
     theme: preferences.theme,
@@ -60,6 +78,7 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
     locale: preferences.locale,
     rememberWindowState: preferences.rememberWindowState,
     closeAction: preferences.closeAction,
+    windowMaterial: preferences.windowMaterial,
   };
 }
 
@@ -105,6 +124,10 @@ watch(
   () => props.preferences.closeAction,
   (closeAction) => (form.value.closeAction = closeAction),
 );
+watch(
+  () => props.preferences.windowMaterial,
+  (windowMaterial) => (form.value.windowMaterial = windowMaterial),
+);
 
 watch(
   () => [form.value.fontSize, form.value.fontFamily] as const,
@@ -129,6 +152,12 @@ async function loadSystemFonts() {
 
 function updateRememberWindowState(value: boolean) {
   form.value.rememberWindowState = value;
+  persist();
+}
+
+function setWindowMaterial(value: string | number) {
+  if (!windowMaterialOptions.value.some((option) => option.value === value)) return;
+  form.value.windowMaterial = value as WindowMaterial;
   persist();
 }
 
@@ -178,8 +207,26 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("personalization.themeSection") }}</h2>
-          <p>{{ t("personalization.appearanceHint") }}</p>
+          <p>
+            {{
+              t(
+                usesSolidWindowMaterial
+                  ? "personalization.appearanceHint"
+                  : "personalization.nativeMaterialHint",
+              )
+            }}
+          </p>
         </div>
+      </div>
+
+      <div class="preference-row">
+        <span>{{ t("personalization.windowMaterial") }}</span>
+        <Cmz_Select
+          class="settings-select"
+          :model-value="form.windowMaterial"
+          :options="windowMaterialOptions"
+          @update:model-value="setWindowMaterial"
+        />
       </div>
 
       <div class="preference-row">
@@ -192,7 +239,7 @@ function persist() {
         />
       </div>
 
-      <div class="preference-row">
+      <div v-if="usesSolidWindowMaterial" class="preference-row">
         <span>{{ t("personalization.colorTheme") }}</span>
         <Cmz_Select
           class="settings-select"

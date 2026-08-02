@@ -3,6 +3,7 @@ export type ColorThemeId = "celadon" | "inkstone" | "vellum" | "moss" | "gloamin
 export type SplashDurationMs = 0 | 500 | 1000 | 1500 | 2000;
 export type Locale = "zh-CN" | "en";
 export type CloseAction = "ask" | "exit" | "hide_to_tray";
+export type WindowMaterial = "solid" | "mica" | "acrylic" | "vibrancy";
 export type HostUriLifetime = "always" | "never" | "1h" | "3h" | "6h" | "12h" | "24h";
 
 export interface Preferences {
@@ -14,6 +15,7 @@ export interface Preferences {
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;
+  windowMaterial: WindowMaterial;
   autoLightweightMinutes: number | null;
   hostUriLifetime: HostUriLifetime;
   joinUri: string;
@@ -32,6 +34,7 @@ export interface PersonalizationUpdate {
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;
+  windowMaterial: WindowMaterial;
 }
 
 export interface ConnectionSettingsUpdate {
