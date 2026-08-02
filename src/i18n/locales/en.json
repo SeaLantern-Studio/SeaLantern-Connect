@@ -57,7 +57,7 @@
     "followSystem": "System",
     "light": "Light",
     "dark": "Dark",
-    "exitApplication": "Exit app",
+    "restartApplication": "Restart app",
     "windowMaterial": "Window Material",
     "windowMaterials": {
       "solid": "Solid",
@@ -67,7 +67,7 @@
       "liquidGlass": "Liquid Glass"
     },
     "restartTitle": "Restart to apply window material",
-    "restartHint": "Liquid Glass will take effect the next time SeaLantern Connect starts. Exit and reopen the app."
+    "restartHint": "Liquid Glass will take effect after SeaLantern Connect restarts."
   },
   "connectionSettings": {
     "startup": "Startup",

@@ -57,7 +57,7 @@
     "followSystem": "跟随系统",
     "light": "浅色",
     "dark": "深色",
-    "exitApplication": "退出应用",
+    "restartApplication": "重启应用",
     "windowMaterial": "窗口材质",
     "windowMaterials": {
       "solid": "纯色",
@@ -67,7 +67,7 @@
       "liquidGlass": "液态玻璃"
     },
     "restartTitle": "重启以应用窗口材质",
-    "restartHint": "液态玻璃将在下次启动 SeaLantern Connect 后生效，请退出后重新打开应用。"
+    "restartHint": "液态玻璃将在 SeaLantern Connect 重启后生效。"
   },
   "connectionSettings": {
     "startup": "启动",

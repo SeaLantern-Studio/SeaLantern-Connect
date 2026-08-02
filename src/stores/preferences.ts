@@ -62,6 +62,16 @@ const defaults: Preferences = {
   relayUrl: "",
 };
 
+async function restartForMaterialChange(): Promise<boolean> {
+  try {
+    await preferencesApi.restartApplication();
+    return true;
+  } catch (error) {
+    console.error("Failed to restart application", error);
+    return false;
+  }
+}
+
 export const usePreferencesStore = defineStore("preferences", () => {
   const preferences = ref<Preferences>({ ...defaults });
   const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -160,28 +170,6 @@ export const usePreferencesStore = defineStore("preferences", () => {
       .catch((error) => console.error("Failed to save application settings", error));
   }
 
-  async function exitForMaterialChange(): Promise<boolean> {
-    const current = preferences.value;
-    const snapshot: PersonalizationUpdate = {
-      theme: current.theme,
-      colorTheme: current.colorTheme,
-      customTheme: structuredClone(current.customTheme),
-      fontSize: current.fontSize,
-      fontFamily: current.fontFamily,
-      windowMaterial: current.windowMaterial,
-    };
-    personalizationRevision += 1;
-    try {
-      await Promise.all([personalizationSaveQueue, applicationSaveQueue]);
-      await preferencesApi.savePersonalization(snapshot);
-      await preferencesApi.exitApplication();
-      return true;
-    } catch (error) {
-      console.error("Failed to exit application", error);
-      return false;
-    }
-  }
-
   function updateConnectionSettings(update: ConnectionSettingsUpdate): void {
     const snapshot = { ...update };
     Object.assign(preferences.value, snapshot);
@@ -233,7 +221,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     changeLocale,
     updatePersonalization,
     updateApplicationSettings,
-    exitForMaterialChange,
+    restartForMaterialChange,
     updateConnectionSettings,
     updateLightweightSettings,
     setHostUriLifetime,

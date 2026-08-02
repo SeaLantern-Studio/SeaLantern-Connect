@@ -7,8 +7,8 @@ export function closeWindow(): Promise<void> {
   return mainWindow.close();
 }
 
-export function exitApplication(): Promise<void> {
-  return invoke("exit_application");
+export function restartApplication(): Promise<void> {
+  return invoke("restart_application");
 }
 
 export function minimizeWindow(): Promise<void> {

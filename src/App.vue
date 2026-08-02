@@ -27,7 +27,7 @@ const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
 const isInitializing = ref(true);
 const materialRestartPromptOpen = ref(false);
-const exitingApplication = ref(false);
+const restartingApplication = ref(false);
 let unlistenDeepLinks: (() => void) | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
 let lastDeepLink: { uri: string; receivedAt: number } | null = null;
@@ -51,11 +51,11 @@ function updatePersonalization(
   if (enteringLiquidGlass) materialRestartPromptOpen.value = true;
 }
 
-async function exitForMaterialChange(): Promise<void> {
-  if (exitingApplication.value) return;
-  exitingApplication.value = true;
-  const exited = await preferencesStore.exitForMaterialChange();
-  if (!exited) exitingApplication.value = false;
+async function restartForMaterialChange(): Promise<void> {
+  if (restartingApplication.value) return;
+  restartingApplication.value = true;
+  const restarted = await preferencesStore.restartForMaterialChange();
+  if (!restarted) restartingApplication.value = false;
 }
 
 function importDeepLink(urls: string[]): void {
@@ -171,10 +171,10 @@ onUnmounted(() => {
       <Cmz_Button
         class="primary-button"
         type="button"
-        :disabled="exitingApplication"
-        @click="exitForMaterialChange"
+        :disabled="restartingApplication"
+        @click="restartForMaterialChange"
       >
-        {{ t("personalization.exitApplication") }}
+        {{ t("personalization.restartApplication") }}
       </Cmz_Button>
     </template>
   </Cmz_Modal>

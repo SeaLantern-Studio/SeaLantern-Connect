@@ -39,8 +39,9 @@ async fn stop_tunnel(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn exit_application(app: tauri::AppHandle) {
-    app.exit(0);
+fn restart_application(app: tauri::AppHandle) {
+    log::info!("restarting application immediately");
+    tauri::process::restart(&app.env());
 }
 
 fn main() {
@@ -104,7 +105,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             connection::get_status,
             stop_tunnel,
-            exit_application,
+            restart_application,
             host::start_lan_scan,
             host::get_lan_scan,
             host::restart_lan_scan,
