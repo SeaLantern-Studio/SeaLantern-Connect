@@ -59,6 +59,12 @@
   },
   "connectionSettings": {
     "hint": "配置中继节点和断线重连策略",
+    "lightweightSection": "轻量模式",
+    "lightweightHint": "窗口隐藏一段时间后自动释放界面资源",
+    "autoLightweight": "自动进入轻量模式",
+    "lightweightDelay": "隐藏后等待",
+    "minutes": "分钟",
+    "invalidLightweightDelay": "请输入 1 到 1440 分钟之间的整数",
     "relaySection": "中继设置",
     "relayHint": "配置联机时使用的中继节点",
     "relayNode": "中继节点",

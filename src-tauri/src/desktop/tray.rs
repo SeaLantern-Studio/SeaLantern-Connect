@@ -1,3 +1,4 @@
+use super::autodelay::AutoDelay;
 use super::lightweight;
 use super::window_state::{
     self as window_lifecycle, MAIN_WINDOW_LABEL, MainWindowMode, MainWindowState,
@@ -72,7 +73,11 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             SHOW_MENU_ID => show_main_window(app),
-            LIGHTWEIGHT_MENU_ID => toggle_lightweight_mode(app),
+            LIGHTWEIGHT_MENU_ID => {
+                if let Err(error) = toggle_lightweight_mode(app) {
+                    eprintln!("failed to toggle lightweight mode: {error}");
+                }
+            }
             QUIT_MENU_ID => {
                 let _ = app.state::<SettingsState>().persist();
                 app.exit(0);
@@ -125,6 +130,8 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
                 api.prevent_close();
                 if let Err(error) = window_lifecycle::hide(window.app_handle()) {
                     eprintln!("failed to hide main window: {error}");
+                } else {
+                    schedule_auto_lightweight(window.app_handle());
                 }
             }
             CloseAction::Ask => {
@@ -140,6 +147,7 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
 }
 
 pub(crate) fn show_main_window(app: &AppHandle) {
+    app.state::<AutoDelay>().cancel();
     if let Err(error) = reveal_main_window(app) {
         eprintln!("failed to show main window: {error}");
     }
@@ -154,20 +162,53 @@ fn reveal_main_window(app: &AppHandle) -> Result<(), String> {
         transition.move_to(MainWindowMode::Background)?;
     }
     if transition.mode() == MainWindowMode::Background {
-        lightweight::restore_hidden(app, &mut transition)?;
+        lightweight::leave(app, &mut transition)?;
     }
     window_lifecycle::show(app, &mut transition)
 }
 
-fn toggle_lightweight_mode(app: &AppHandle) {
-    let result = if app.state::<MainWindowState>().is_background() {
-        reveal_main_window(app)
+fn toggle_lightweight_mode(app: &AppHandle) -> Result<(), String> {
+    app.state::<AutoDelay>().cancel();
+    let state = app.state::<MainWindowState>();
+    let mut transition = state.begin_transition()?;
+    let leaving = transition.mode() == MainWindowMode::Background;
+    if leaving {
+        lightweight::leave(app, &mut transition)?;
     } else {
-        lightweight::enter(app)
-    };
-    if let Err(error) = result {
-        eprintln!("failed to toggle lightweight mode: {error}");
+        lightweight::enter(app, &mut transition)?;
     }
+    drop(transition);
+    if leaving {
+        schedule_auto_lightweight(app);
+    }
+    Ok(())
+}
+
+pub(crate) fn schedule_auto_lightweight(app: &AppHandle) {
+    let timer = app.state::<AutoDelay>();
+    let Some(delay) = app.state::<SettingsState>().auto_lightweight_delay() else {
+        timer.cancel();
+        return;
+    };
+    if app.state::<MainWindowState>().mode() != MainWindowMode::Hidden {
+        timer.cancel();
+        return;
+    }
+
+    let app = app.clone();
+    timer.schedule(delay, move |ticket| {
+        let state = app.state::<MainWindowState>();
+        let Ok(mut transition) = state.begin_transition() else {
+            return;
+        };
+        if !ticket.is_current() || transition.mode() != MainWindowMode::Hidden {
+            return;
+        }
+        app.state::<AutoDelay>().cancel();
+        if let Err(error) = lightweight::enter(&app, &mut transition) {
+            eprintln!("failed to enter lightweight mode automatically: {error}");
+        }
+    });
 }
 
 #[cfg(test)]

@@ -1,6 +1,4 @@
-use super::window_state::{
-    MAIN_WINDOW_LABEL, MainWindowMode, MainWindowState, MainWindowTransition,
-};
+use super::window_state::{MAIN_WINDOW_LABEL, MainWindowMode, MainWindowTransition};
 use crate::settings::SettingsState;
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
@@ -11,7 +9,7 @@ fn window_state_flags() -> StateFlags {
     StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
 }
 
-pub(crate) fn restore_hidden(
+pub(crate) fn leave(
     app: &AppHandle,
     transition: &mut MainWindowTransition<'_>,
 ) -> Result<(), String> {
@@ -49,9 +47,10 @@ pub(crate) fn restore_hidden(
     transition.move_to(MainWindowMode::Hidden)
 }
 
-pub(crate) fn enter(app: &AppHandle) -> Result<(), String> {
-    let state = app.state::<MainWindowState>();
-    let mut transition = state.begin_transition()?;
+pub(crate) fn enter(
+    app: &AppHandle,
+    transition: &mut MainWindowTransition<'_>,
+) -> Result<(), String> {
     if transition.mode() == MainWindowMode::Background {
         return Ok(());
     }

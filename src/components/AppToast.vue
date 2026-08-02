@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleAlert, CircleCheck, Info, X } from "lucide-vue-next";
+import { CircleAlert, CircleCheck, Info, X } from "@lucide/vue";
 import { t } from "../i18n";
 import { dismissToast, pauseToast, resumeToast, toastItems, type ToastTone } from "../ui/toast";
 

@@ -59,6 +59,12 @@
   },
   "connectionSettings": {
     "hint": "Configure relay and reconnection behavior; new connections use these settings",
+    "lightweightSection": "Lightweight Mode",
+    "lightweightHint": "Release interface resources after the window has been hidden for a while",
+    "autoLightweight": "Enter lightweight mode automatically",
+    "lightweightDelay": "Delay after hiding",
+    "minutes": "minutes",
+    "invalidLightweightDelay": "Enter a whole number from 1 to 1440 minutes",
     "relaySection": "Relay Settings",
     "relayHint": "Choose the relay used for multiplayer connections",
     "relayNode": "Relay",

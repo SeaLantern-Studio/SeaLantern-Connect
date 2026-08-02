@@ -14,6 +14,7 @@ export interface Preferences {
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;
+  autoLightweightMinutes: number | null;
   hostUriLifetime: HostUriLifetime;
   joinUri: string;
   joinPort: number;
@@ -37,4 +38,8 @@ export interface ConnectionSettingsUpdate {
   relayCustom: boolean;
   relayUrl: string;
   reconnectTimeoutSecs: number | null;
+}
+
+export interface LightweightSettingsUpdate {
+  autoLightweightMinutes: number | null;
 }

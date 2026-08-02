@@ -16,6 +16,7 @@ const HOST_STATE_FILE: &str = "host.state";
 const DEFAULT_JOIN_PORT: u16 = 25_565;
 const SPLASH_DURATION_OPTIONS_MS: [u32; 5] = [0, 500, 1000, 1500, 2000];
 const FONT_SIZE_RANGE: std::ops::RangeInclusive<u32> = 12..=20;
+const AUTO_LIGHTWEIGHT_MINUTES_RANGE: std::ops::RangeInclusive<u32> = 1..=1440;
 pub const RECONNECT_TIMEOUT_OPTIONS_SECS: [u64; 5] = [10, 15, 20, 30, 60];
 static SYSTEM_FONTS: OnceLock<Vec<String>> = OnceLock::new();
 
@@ -37,6 +38,7 @@ pub struct Preferences {
     locale: String,
     remember_window_state: bool,
     close_action: String,
+    auto_lightweight_minutes: Option<u32>,
     host_uri_lifetime: String,
     join_uri: String,
     join_port: u16,
@@ -56,6 +58,7 @@ impl Default for Preferences {
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
             close_action: "ask".to_owned(),
+            auto_lightweight_minutes: None,
             host_uri_lifetime: "always".to_owned(),
             join_uri: String::new(),
             join_port: DEFAULT_JOIN_PORT,
@@ -92,6 +95,12 @@ pub struct ConnectionSettingsUpdate {
     relay_custom: bool,
     relay_url: String,
     reconnect_timeout_secs: Option<u64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LightweightSettingsUpdate {
+    auto_lightweight_minutes: Option<u32>,
 }
 
 impl SettingsState {
@@ -174,6 +183,14 @@ impl SettingsState {
         self.preferences
             .lock()
             .is_ok_and(|preferences| preferences.remember_window_state)
+    }
+
+    pub fn auto_lightweight_delay(&self) -> Option<Duration> {
+        self.preferences
+            .lock()
+            .ok()
+            .and_then(|preferences| preferences.auto_lightweight_minutes)
+            .map(|minutes| Duration::from_secs(u64::from(minutes) * 60))
     }
 
     pub fn locale(&self) -> String {
@@ -363,6 +380,24 @@ pub fn set_connection_settings(
 }
 
 #[tauri::command]
+pub fn set_lightweight_settings(
+    update: LightweightSettingsUpdate,
+    app: AppHandle,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
+    if let Some(minutes) = update.auto_lightweight_minutes
+        && !AUTO_LIGHTWEIGHT_MINUTES_RANGE.contains(&minutes)
+    {
+        return Err("invalid automatic lightweight delay".to_owned());
+    }
+    state.update(|preferences| {
+        preferences.auto_lightweight_minutes = update.auto_lightweight_minutes;
+    })?;
+    tray::schedule_auto_lightweight(&app);
+    Ok(())
+}
+
+#[tauri::command]
 pub fn set_join_port(port: u16, state: State<'_, SettingsState>) -> Result<(), String> {
     state.set_join_port(port)
 }
@@ -373,7 +408,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
         preferences.font_size,
@@ -382,6 +417,9 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         preferences.locale,
         preferences.remember_window_state,
         preferences.close_action,
+        preferences
+            .auto_lightweight_minutes
+            .map_or_else(|| "off".to_owned(), |value| value.to_string()),
         preferences.host_uri_lifetime,
         preferences.join_uri,
         preferences.join_port,
@@ -456,6 +494,12 @@ fn parse_preferences(content: &str) -> Preferences {
             if matches!(value, "ask" | "exit" | "hide_to_tray") {
                 preferences.close_action = value.to_owned();
             }
+        } else if let Some(value) = line.strip_prefix("auto_lightweight_minutes=") {
+            preferences.auto_lightweight_minutes = value
+                .trim()
+                .parse::<u32>()
+                .ok()
+                .filter(|minutes| AUTO_LIGHTWEIGHT_MINUTES_RANGE.contains(minutes));
         } else if let Some(value) = line.strip_prefix("host_uri_lifetime=") {
             let value = value.trim();
             if is_invite_lifetime(value) {
@@ -527,7 +571,7 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
@@ -538,6 +582,7 @@ mod tests {
         assert_eq!(preferences.locale, "en");
         assert!(!preferences.remember_window_state);
         assert_eq!(preferences.close_action, "exit");
+        assert_eq!(preferences.auto_lightweight_minutes, Some(10));
         assert_eq!(preferences.join_uri, "sculk://join/v1/example");
         assert_eq!(preferences.join_port, 25_566);
         assert_eq!(preferences.reconnect_timeout_secs, Some(30));
@@ -548,7 +593,7 @@ mod tests {
     #[test]
     fn ignores_unknown_theme() {
         let preferences = parse_preferences(
-            "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nreconnect_timeout_secs=45\n",
+            "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nauto_lightweight_minutes=0\nreconnect_timeout_secs=45\n",
         );
 
         assert_eq!(preferences.theme, "system");
@@ -557,6 +602,7 @@ mod tests {
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
         assert_eq!(preferences.close_action, "ask");
+        assert_eq!(preferences.auto_lightweight_minutes, None);
         assert_eq!(preferences.reconnect_timeout_secs, None);
     }
 

@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Cmz_Input, Cmz_Select, type SelectOption } from "cmzya-modern-ui";
+import { Cmz_Input, Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
 import { t } from "../../i18n";
-import type { ConnectionSettingsUpdate, Preferences } from "../../models/preferences";
+import type {
+  ConnectionSettingsUpdate,
+  LightweightSettingsUpdate,
+  Preferences,
+} from "../../models/preferences";
 
 const props = defineProps<{ preferences: Preferences }>();
-const emit = defineEmits<{ change: [update: ConnectionSettingsUpdate] }>();
+const emit = defineEmits<{
+  change: [update: ConnectionSettingsUpdate];
+  lightweightChange: [update: LightweightSettingsUpdate];
+}>();
 
 const form = ref<ConnectionSettingsUpdate>(pickSettings(props.preferences));
 const reconnectUnlimited = ref(props.preferences.reconnectTimeoutSecs == null);
+const autoLightweightEnabled = ref(props.preferences.autoLightweightMinutes != null);
+const autoLightweightMinutes = ref(String(props.preferences.autoLightweightMinutes ?? 3));
 const relayOptions = computed<SelectOption[]>(() => [
   { label: t("connectionSettings.defaultRelay"), value: "default" },
   { label: t("connectionSettings.customRelay"), value: "custom" },
@@ -54,6 +63,31 @@ function setRelayUrl(value: string | number) {
   persist();
 }
 
+function setAutoLightweightEnabled(value: boolean) {
+  autoLightweightEnabled.value = value;
+  if (!value) {
+    emit("lightweightChange", { autoLightweightMinutes: null });
+    return;
+  }
+  if (!validAutoLightweightMinutes.value) autoLightweightMinutes.value = "3";
+  persistLightweight();
+}
+
+function setAutoLightweightMinutes(value: string) {
+  autoLightweightMinutes.value = value;
+  persistLightweight();
+}
+
+const validAutoLightweightMinutes = computed(() => {
+  const minutes = Number(autoLightweightMinutes.value);
+  return Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440;
+});
+
+function persistLightweight() {
+  if (!autoLightweightEnabled.value || !validAutoLightweightMinutes.value) return;
+  emit("lightweightChange", { autoLightweightMinutes: Number(autoLightweightMinutes.value) });
+}
+
 const validRelay = computed(() => {
   if (!form.value.relayCustom) return true;
   try {
@@ -75,6 +109,42 @@ function persist() {
 
 <template>
   <div class="workspace settings-workspace">
+    <section class="settings-section">
+      <div class="settings-section-heading">
+        <div>
+          <h2>{{ t("connectionSettings.lightweightSection") }}</h2>
+          <p>{{ t("connectionSettings.lightweightHint") }}</p>
+        </div>
+      </div>
+      <div class="preference-row switch-row">
+        <span>{{ t("connectionSettings.autoLightweight") }}</span>
+        <Cmz_Toggle
+          :model-value="autoLightweightEnabled"
+          @update:model-value="setAutoLightweightEnabled"
+        />
+      </div>
+      <label v-if="autoLightweightEnabled" class="preference-row settings-input-row">
+        <span>{{ t("connectionSettings.lightweightDelay") }}</span>
+        <Cmz_Input
+          class="settings-input"
+          :model-value="autoLightweightMinutes"
+          type="number"
+          :min="1"
+          :max="1440"
+          :hide-number-controls="true"
+          @update:model-value="setAutoLightweightMinutes"
+        >
+          <template #suffix>{{ t("connectionSettings.minutes") }}</template>
+        </Cmz_Input>
+      </label>
+      <p
+        v-if="autoLightweightEnabled && !validAutoLightweightMinutes"
+        class="field-error relay-error"
+      >
+        {{ t("connectionSettings.invalidLightweightDelay") }}
+      </p>
+    </section>
+
     <section class="settings-section">
       <div class="settings-section-heading">
         <div>

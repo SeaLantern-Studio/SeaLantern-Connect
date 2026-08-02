@@ -1166,6 +1166,13 @@ button:disabled {
   font-size: 0.9286rem;
   line-height: 1.65;
 }
+.close-prompt-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 .invite-summary {
   display: flex;
   justify-content: space-between;

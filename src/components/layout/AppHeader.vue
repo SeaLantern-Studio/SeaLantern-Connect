@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { Check, Copy, Languages, Minus, Monitor, Moon, Square, Sun, X } from "lucide-vue-next";
+import { Check, Copy, Languages, Minus, Monitor, Moon, Square, Sun, X } from "@lucide/vue";
 import {
   closeWindow,
   isWindowMaximized,

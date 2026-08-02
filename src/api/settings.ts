@@ -4,6 +4,7 @@ import type {
   ConnectionSettingsUpdate,
   HostUriLifetime,
   Locale,
+  LightweightSettingsUpdate,
   PersonalizationUpdate,
   Preferences,
   ThemePreference,
@@ -39,4 +40,8 @@ export function savePersonalization(update: PersonalizationUpdate): Promise<void
 
 export function saveConnectionSettings(update: ConnectionSettingsUpdate): Promise<void> {
   return invoke("set_connection_settings", { update });
+}
+
+export function saveLightweightSettings(update: LightweightSettingsUpdate): Promise<void> {
+  return invoke("set_lightweight_settings", { update });
 }

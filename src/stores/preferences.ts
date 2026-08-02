@@ -6,6 +6,7 @@ import type {
   ConnectionSettingsUpdate,
   CloseAction,
   HostUriLifetime,
+  LightweightSettingsUpdate,
   Locale,
   PersonalizationUpdate,
   Preferences,
@@ -23,6 +24,7 @@ const defaults: Preferences = {
   locale: "zh-CN",
   rememberWindowState: true,
   closeAction: "ask",
+  autoLightweightMinutes: null,
   hostUriLifetime: "always",
   joinUri: "",
   joinPort: 25565,
@@ -38,6 +40,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
   let localeSaveQueue = Promise.resolve();
   let personalizationSaveQueue = Promise.resolve();
   let connectionSaveQueue = Promise.resolve();
+  let lightweightSaveQueue = Promise.resolve();
 
   function applyTheme(): void {
     applyColorTheme(preferences.value.theme, preferences.value.colorTheme, systemTheme.matches);
@@ -116,6 +119,14 @@ export const usePreferencesStore = defineStore("preferences", () => {
       .catch((error) => console.error("Failed to save connection settings", error));
   }
 
+  function updateLightweightSettings(update: LightweightSettingsUpdate): void {
+    const snapshot = { ...update };
+    Object.assign(preferences.value, snapshot);
+    lightweightSaveQueue = lightweightSaveQueue
+      .then(() => preferencesApi.saveLightweightSettings(snapshot))
+      .catch((error) => console.error("Failed to save lightweight settings", error));
+  }
+
   async function setCloseAction(closeAction: CloseAction): Promise<boolean> {
     try {
       await preferencesApi.saveCloseAction(closeAction);
@@ -162,6 +173,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     changeLocale,
     updatePersonalization,
     updateConnectionSettings,
+    updateLightweightSettings,
     setCloseAction,
     setHostUriLifetime,
     startSystemThemeListener,

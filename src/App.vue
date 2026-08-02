@@ -151,6 +151,7 @@ onUnmounted(() => {
             v-else
             :preferences="preferences"
             @change="preferencesStore.updateConnectionSettings"
+            @lightweight-change="preferencesStore.updateLightweightSettings"
           />
         </div>
       </Transition>
@@ -166,23 +167,25 @@ onUnmounted(() => {
   >
     <p class="modal-copy">{{ t("window.closePromptHint") }}</p>
     <template #footer>
-      <Cmz_Button
-        class="danger-button"
-        variant="outline"
-        type="button"
-        :disabled="choosingCloseAction"
-        @click="chooseCloseAction('exit')"
-      >
-        {{ t("personalization.exitApplication") }}
-      </Cmz_Button>
-      <Cmz_Button
-        class="primary-button"
-        type="button"
-        :disabled="choosingCloseAction"
-        @click="chooseCloseAction('hide_to_tray')"
-      >
-        {{ t("personalization.hideToTray") }}
-      </Cmz_Button>
+      <div class="close-prompt-actions">
+        <Cmz_Button
+          class="danger-button"
+          variant="outline"
+          type="button"
+          :disabled="choosingCloseAction"
+          @click="chooseCloseAction('exit')"
+        >
+          {{ t("personalization.exitApplication") }}
+        </Cmz_Button>
+        <Cmz_Button
+          class="primary-button"
+          type="button"
+          :disabled="choosingCloseAction"
+          @click="chooseCloseAction('hide_to_tray')"
+        >
+          {{ t("personalization.hideToTray") }}
+        </Cmz_Button>
+      </div>
     </template>
   </Cmz_Modal>
 </template>

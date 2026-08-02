@@ -21,7 +21,7 @@ import {
   HousePlus,
   LoaderCircle,
   Square,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 
 const props = defineProps<{
   status: ConnectStatus;

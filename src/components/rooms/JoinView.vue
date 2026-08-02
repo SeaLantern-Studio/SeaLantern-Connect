@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { Cmz_Button, Cmz_Input, Cmz_Modal, Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
-import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
+import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "@lucide/vue";
 import {
   saveJoinPort as persistJoinPort,
   startJoin,

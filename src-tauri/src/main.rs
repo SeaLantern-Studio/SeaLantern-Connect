@@ -7,7 +7,7 @@ mod desktop;
 mod settings;
 
 use connection::{host, join};
-use desktop::{deeplink, tray, window_state};
+use desktop::{autodelay, deeplink, tray, window_state};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
@@ -34,6 +34,7 @@ fn main() {
         .manage(host::HostState::new())
         .manage(join::JoinState::new())
         .manage(window_state::MainWindowState::new())
+        .manage(autodelay::AutoDelay::new())
         .manage(deeplink::PendingDeepLinks::default())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
@@ -80,6 +81,7 @@ fn main() {
             settings::set_join_port,
             settings::set_personalization,
             settings::set_connection_settings,
+            settings::set_lightweight_settings,
             deeplink::take_pending_links,
         ])
         .build(tauri::generate_context!())

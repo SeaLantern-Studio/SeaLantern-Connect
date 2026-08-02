@@ -1,3 +1,4 @@
+pub(crate) mod autodelay;
 pub(crate) mod deeplink;
 pub(crate) mod lightweight;
 pub(crate) mod tray;
