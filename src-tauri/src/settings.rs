@@ -49,7 +49,7 @@ impl Default for Preferences {
     fn default() -> Self {
         Self {
             theme: "system".to_owned(),
-            color_theme: "celadon".to_owned(),
+            color_theme: "inkstone".to_owned(),
             font_size: 14,
             font_family: String::new(),
             splash_duration_ms: 1000,
@@ -552,7 +552,7 @@ mod tests {
         );
 
         assert_eq!(preferences.theme, "system");
-        assert_eq!(preferences.color_theme, "celadon");
+        assert_eq!(preferences.color_theme, "inkstone");
         assert_eq!(preferences.font_size, 14);
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
