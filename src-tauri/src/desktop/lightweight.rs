@@ -16,13 +16,13 @@ pub(crate) fn leave(
     app: &AppHandle,
     transition: &mut MainWindowTransition<'_>,
 ) -> Result<(), String> {
-    tracing::debug!(
+    log::debug!(
         "lightweight leave: {:?}, window={}",
         transition.mode(),
         app.get_webview_window(MAIN_WINDOW_LABEL).is_some()
     );
     if transition.mode() != MainWindowMode::Background {
-        tracing::debug!("lightweight leave skipped");
+        log::debug!("lightweight leave skipped");
         return Ok(());
     }
 
@@ -35,7 +35,7 @@ pub(crate) fn leave(
     let window = if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         window
     } else {
-        tracing::debug!("window rebuild");
+        log::debug!("window rebuild");
         let config = app
             .config()
             .app
@@ -57,9 +57,9 @@ pub(crate) fn leave(
     let settings = app.state::<SettingsState>();
     let material = settings.window_material();
     let theme = settings.theme();
-    tracing::debug!("material restore: {material}/{theme}");
+    log::debug!("material restore: {material}/{theme}");
     if let Err(error) = effects::set_material(app, &material, &theme) {
-        tracing::error!("material restore failed: {error}");
+        log::error!("material restore failed: {error}");
     }
     #[cfg(target_os = "windows")]
     let _ = window.set_skip_taskbar(false);
@@ -71,13 +71,13 @@ pub(crate) fn enter(
     app: &AppHandle,
     transition: &mut MainWindowTransition<'_>,
 ) -> Result<(), String> {
-    tracing::debug!(
+    log::debug!(
         "lightweight enter: {:?}, window={}",
         transition.mode(),
         app.get_webview_window(MAIN_WINDOW_LABEL).is_some()
     );
     if transition.mode() == MainWindowMode::Background {
-        tracing::debug!("lightweight enter skipped");
+        log::debug!("lightweight enter skipped");
         return Ok(());
     }
 

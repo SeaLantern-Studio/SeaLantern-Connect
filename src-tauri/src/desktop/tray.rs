@@ -75,7 +75,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             SHOW_MENU_ID => show_main_window(app),
             LIGHTWEIGHT_MENU_ID => {
                 if let Err(error) = toggle_lightweight_mode(app) {
-                    tracing::error!("lightweight toggle failed: {error}");
+                    log::error!("lightweight toggle failed: {error}");
                 }
             }
             QUIT_MENU_ID => {
@@ -124,10 +124,10 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
     }
     match event {
         WindowEvent::CloseRequested { .. } => {
-            tracing::debug!("close requested");
+            log::debug!("close requested");
         }
         WindowEvent::Destroyed => {
-            tracing::debug!(
+            log::debug!(
                 "destroyed: {:?}, registered={}",
                 window.state::<MainWindowState>().mode(),
                 window
@@ -145,7 +145,7 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
             CloseAction::HideToTray => {
                 api.prevent_close();
                 if let Err(error) = window_lifecycle::hide(window.app_handle()) {
-                    tracing::error!("window hide failed: {error}");
+                    log::error!("window hide failed: {error}");
                 } else {
                     schedule_auto_lightweight(window.app_handle());
                 }
@@ -165,7 +165,7 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
 pub(crate) fn show_main_window(app: &AppHandle) {
     app.state::<AutoDelay>().cancel();
     if let Err(error) = reveal_main_window(app) {
-        tracing::error!("tray show failed: {error}");
+        log::error!("tray show failed: {error}");
     }
 }
 
@@ -222,7 +222,7 @@ pub(crate) fn schedule_auto_lightweight(app: &AppHandle) {
         }
         app.state::<AutoDelay>().cancel();
         if let Err(error) = lightweight::enter(&app, &mut transition) {
-            tracing::error!("automatic lightweight entry failed: {error}");
+            log::error!("automatic lightweight entry failed: {error}");
         }
     });
 }

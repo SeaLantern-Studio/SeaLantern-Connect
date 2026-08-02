@@ -12,6 +12,17 @@ use desktop::{autodelay, deeplink, effects, tray, window_state};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
+#[cfg(all(target_os = "windows", debug_assertions))]
+fn attach_parent_console() {
+    use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
+
+    // The debug executable keeps the GUI subsystem to avoid protocol-activation flashes.
+    // Attaching an existing parent console restores stdout without creating a new window.
+    unsafe {
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+}
+
 fn window_state_flags() -> StateFlags {
     StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
 }
@@ -31,8 +42,11 @@ fn exit_application(app: tauri::AppHandle) {
 }
 
 fn main() {
-    logging::init();
+    #[cfg(all(target_os = "windows", debug_assertions))]
+    attach_parent_console();
+
     let app = tauri::Builder::default()
+        .plugin(logging::plugin())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             deeplink::stash_restore_links(app, &args);
             tray::show_main_window(app);
@@ -54,7 +68,7 @@ fn main() {
             app.manage(settings::SettingsState::load(app.handle())?);
             let material = app.state::<settings::SettingsState>().window_material();
             let theme = app.state::<settings::SettingsState>().theme();
-            tracing::info!("startup: {material}/{theme}");
+            log::info!("startup: {material}/{theme}");
             deeplink::setup(app)?;
             join::setup(app);
             if app
@@ -65,7 +79,7 @@ fn main() {
                 window.restore_state(window_state_flags())?;
             }
             if let Err(error) = effects::set_material(app.handle(), &material, &theme) {
-                tracing::error!("native material failed: {error}");
+                log::error!("native material failed: {error}");
             }
             tray::setup(app)?;
             tray::show_main_window(app.handle());
@@ -107,7 +121,7 @@ fn main() {
             api, code: None, ..
         } => api.prevent_exit(),
         tauri::RunEvent::Exit => {
-            tracing::info!("exit");
+            log::info!("exit");
         }
         _ => {}
     });

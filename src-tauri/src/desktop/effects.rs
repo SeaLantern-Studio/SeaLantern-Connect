@@ -15,18 +15,18 @@ unsafe extern "C" {
 #[cfg(target_os = "macos")]
 fn set_liquid_glass(app: &AppHandle, enabled: bool) -> Result<bool, String> {
     if enabled && unsafe { sealantern_supports_liquid_glass() } != 1 {
-        tracing::warn!("liquid glass unavailable");
+        log::warn!("liquid glass unavailable");
         return Ok(false);
     }
     let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
-        tracing::warn!("liquid glass skipped: window missing");
+        log::warn!("liquid glass skipped: window missing");
         return Ok(true);
     };
     let native_window = window.ns_window().map_err(|error| error.to_string())?;
     // Tauri owns the NSWindow. Swift uses this unowned pointer synchronously on AppKit's main thread.
     let status = unsafe { sealantern_set_liquid_glass(native_window, i32::from(enabled)) };
     if status == 1 {
-        tracing::debug!(
+        log::debug!(
             "liquid glass: {}",
             if enabled { "installed" } else { "removed" }
         );
@@ -37,7 +37,7 @@ fn set_liquid_glass(app: &AppHandle, enabled: bool) -> Result<bool, String> {
 }
 
 pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Result<(), String> {
-    tracing::debug!("material: {material}/{theme}");
+    log::debug!("material: {material}/{theme}");
     #[cfg(target_os = "windows")]
     {
         use tauri::{
@@ -46,7 +46,7 @@ pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Resu
         };
 
         let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
-            tracing::warn!("material skipped: window missing");
+            log::warn!("material skipped: window missing");
             return Ok(());
         };
 

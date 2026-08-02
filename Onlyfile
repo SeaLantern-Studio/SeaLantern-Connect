@@ -6,6 +6,9 @@
 // 项目终端执行 `only` 来查看所有命令
 
 # 启动开发模式
+dev(level="info") ? @os("windows") shell?=pwsh:
+    $env:RUST_LOG = "{{ level }}"; pnpm tauri dev
+
 dev(level="info"):
     RUST_LOG={{ level }} pnpm tauri dev
 
