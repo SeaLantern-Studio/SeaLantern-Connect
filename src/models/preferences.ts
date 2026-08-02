@@ -12,6 +12,7 @@ export interface Preferences {
   fontSize: number;
   fontFamily: string;
   splashDurationMs: SplashDurationMs;
+  silentStart: boolean;
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;
@@ -31,6 +32,7 @@ export interface PersonalizationUpdate {
   fontSize: number;
   fontFamily: string;
   splashDurationMs: SplashDurationMs;
+  silentStart: boolean;
   locale: Locale;
   rememberWindowState: boolean;
   closeAction: CloseAction;

@@ -35,6 +35,7 @@ pub struct Preferences {
     font_size: u32,
     font_family: String,
     splash_duration_ms: u32,
+    silent_start: bool,
     locale: String,
     remember_window_state: bool,
     close_action: String,
@@ -56,6 +57,7 @@ impl Default for Preferences {
             font_size: 14,
             font_family: String::new(),
             splash_duration_ms: 1000,
+            silent_start: false,
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
             close_action: "ask".to_owned(),
@@ -86,6 +88,7 @@ pub struct PersonalizationUpdate {
     font_size: u32,
     font_family: String,
     splash_duration_ms: u32,
+    silent_start: bool,
     locale: String,
     remember_window_state: bool,
     close_action: String,
@@ -186,6 +189,12 @@ impl SettingsState {
         self.preferences
             .lock()
             .is_ok_and(|preferences| preferences.remember_window_state)
+    }
+
+    pub fn starts_silently(&self) -> bool {
+        self.preferences
+            .lock()
+            .is_ok_and(|preferences| preferences.silent_start)
     }
 
     pub fn window_material(&self) -> String {
@@ -382,6 +391,7 @@ pub fn set_personalization(
         preferences.font_size = update.font_size;
         preferences.font_family = font_family;
         preferences.splash_duration_ms = update.splash_duration_ms;
+        preferences.silent_start = update.silent_start;
         preferences.locale = update.locale;
         preferences.remember_window_state = update.remember_window_state;
         preferences.close_action = update.close_action;
@@ -445,12 +455,13 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nlocale={}\nremember_window_state={}\nclose_action={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nlocale={}\nremember_window_state={}\nclose_action={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
         preferences.font_size,
         preferences.font_family,
         preferences.splash_duration_ms,
+        preferences.silent_start,
         preferences.locale,
         preferences.remember_window_state,
         preferences.close_action,
@@ -520,6 +531,8 @@ fn parse_preferences(content: &str) -> Preferences {
                 .ok()
                 .filter(|duration| SPLASH_DURATION_OPTIONS_MS.contains(duration))
                 .unwrap_or(1000);
+        } else if let Some(value) = line.strip_prefix("silent_start=") {
+            preferences.silent_start = value.trim() == "true";
         } else if let Some(value) = line.strip_prefix("locale=") {
             let value = value.trim();
             if matches!(value, "zh-CN" | "en") {
@@ -621,7 +634,7 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nlocale=en\nremember_window_state=false\nclose_action=exit\nwindow_material=acrylic\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nsilent_start=true\nlocale=en\nremember_window_state=false\nclose_action=exit\nwindow_material=acrylic\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
@@ -629,6 +642,7 @@ mod tests {
         assert_eq!(preferences.font_size, 17);
         assert_eq!(preferences.font_family, "Microsoft YaHei");
         assert_eq!(preferences.splash_duration_ms, 2000);
+        assert!(preferences.silent_start);
         assert_eq!(preferences.locale, "en");
         assert!(!preferences.remember_window_state);
         assert_eq!(preferences.close_action, "exit");

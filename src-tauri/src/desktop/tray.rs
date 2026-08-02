@@ -169,6 +169,12 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     }
 }
 
+pub(crate) fn start_silently(app: &AppHandle) -> Result<(), String> {
+    let state = app.state::<MainWindowState>();
+    let mut transition = state.begin_transition()?;
+    lightweight::enter(app, &mut transition)
+}
+
 fn reveal_main_window(app: &AppHandle) -> Result<(), String> {
     let state = app.state::<MainWindowState>();
     let mut transition = state.begin_transition()?;

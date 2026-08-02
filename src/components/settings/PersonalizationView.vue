@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
-import { getSystemFonts, supportsLiquidGlass } from "@api";
+import {
+  disableAutostart,
+  enableAutostart,
+  getAutostartEnabled,
+  getSystemFonts,
+  supportsLiquidGlass,
+} from "@api";
 import { t } from "../../i18n";
 import type {
   PersonalizationUpdate,
@@ -23,6 +29,9 @@ const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const fontsLoading = ref(false);
 const systemFonts = ref<string[]>([]);
 const liquidGlassSupported = ref(false);
+const autostartEnabled = ref(false);
+const autostartLoading = ref(true);
+const autostartUpdating = ref(false);
 const fontFamilyOptions = computed<SelectOption[]>(() => {
   return fontOptions(form.value.fontFamily, t("personalization.systemFont"));
 });
@@ -83,6 +92,7 @@ function pickPreferences(preferences: Preferences): PersonalizationUpdate {
     fontSize: preferences.fontSize,
     fontFamily: preferences.fontFamily,
     splashDurationMs: preferences.splashDurationMs,
+    silentStart: preferences.silentStart,
     locale: preferences.locale,
     rememberWindowState: preferences.rememberWindowState,
     closeAction: preferences.closeAction,
@@ -121,6 +131,10 @@ watch(
   (splashDurationMs) => (form.value.splashDurationMs = splashDurationMs),
 );
 watch(
+  () => props.preferences.silentStart,
+  (silentStart) => (form.value.silentStart = silentStart),
+);
+watch(
   () => props.preferences.locale,
   (locale) => (form.value.locale = locale),
 );
@@ -146,7 +160,38 @@ watch(
 onMounted(() => {
   void loadSystemFonts();
   void loadMaterialCapabilities();
+  void loadAutostart();
 });
+
+async function loadAutostart() {
+  autostartLoading.value = true;
+  try {
+    autostartEnabled.value = await getAutostartEnabled();
+  } catch (error) {
+    console.error("Failed to load autostart state", error);
+  } finally {
+    autostartLoading.value = false;
+  }
+}
+
+async function updateAutostart(value: boolean) {
+  if (autostartLoading.value || autostartUpdating.value) return;
+  const fallback = autostartEnabled.value;
+  autostartEnabled.value = value;
+  autostartUpdating.value = true;
+  try {
+    if (value) {
+      await enableAutostart();
+    } else {
+      await disableAutostart();
+    }
+  } catch (error) {
+    autostartEnabled.value = fallback;
+    console.error("Failed to update autostart state", error);
+  } finally {
+    autostartUpdating.value = false;
+  }
+}
 
 async function loadMaterialCapabilities() {
   try {
@@ -169,6 +214,11 @@ async function loadSystemFonts() {
 
 function updateRememberWindowState(value: boolean) {
   form.value.rememberWindowState = value;
+  persist();
+}
+
+function updateSilentStart(value: boolean) {
+  form.value.silentStart = value;
   persist();
 }
 
@@ -306,6 +356,27 @@ function persist() {
           <h2>{{ t("personalization.startup") }}</h2>
           <p>{{ t("personalization.startupHint") }}</p>
         </div>
+      </div>
+
+      <div class="preference-row switch-row">
+        <span>{{ t("personalization.launchAtLogin") }}</span>
+        <Cmz_Toggle
+          :model-value="autostartEnabled"
+          variant="switch"
+          size="sm"
+          :disabled="autostartLoading || autostartUpdating"
+          @update:model-value="updateAutostart"
+        />
+      </div>
+
+      <div v-if="autostartEnabled" class="preference-row switch-row">
+        <span>{{ t("personalization.silentStart") }}</span>
+        <Cmz_Toggle
+          :model-value="form.silentStart"
+          variant="switch"
+          size="sm"
+          @update:model-value="updateSilentStart"
+        />
       </div>
 
       <div class="preference-row">

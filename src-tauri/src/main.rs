@@ -12,6 +12,8 @@ use desktop::{autodelay, deeplink, effects, tray, window_state};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
+const AUTOSTART_ARGUMENT: &str = "--autostart";
+
 #[cfg(all(target_os = "windows", debug_assertions))]
 fn attach_parent_console() {
     use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
@@ -45,8 +47,14 @@ fn main() {
     #[cfg(all(target_os = "windows", debug_assertions))]
     attach_parent_console();
 
+    let launched_by_autostart = std::env::args_os().any(|argument| argument == AUTOSTART_ARGUMENT);
+
     let app = tauri::Builder::default()
         .plugin(logging::plugin())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![AUTOSTART_ARGUMENT]),
+        ))
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             deeplink::stash_restore_links(app, &args);
             tray::show_main_window(app);
@@ -64,7 +72,7 @@ fn main() {
                 .skip_initial_state("main")
                 .build(),
         )
-        .setup(|app| {
+        .setup(move |app| {
             app.manage(settings::SettingsState::load(app.handle())?);
             let material = app.state::<settings::SettingsState>().window_material();
             let theme = app.state::<settings::SettingsState>().theme();
@@ -82,7 +90,14 @@ fn main() {
                 log::error!("native material failed: {error}");
             }
             tray::setup(app)?;
-            tray::show_main_window(app.handle());
+            if launched_by_autostart && app.state::<settings::SettingsState>().starts_silently() {
+                if let Err(error) = tray::start_silently(app.handle()) {
+                    log::error!("silent start failed: {error}");
+                    tray::show_main_window(app.handle());
+                }
+            } else {
+                tray::show_main_window(app.handle());
+            }
             Ok(())
         })
         .on_window_event(tray::handle_window_event)

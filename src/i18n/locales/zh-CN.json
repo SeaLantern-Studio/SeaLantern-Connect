@@ -63,8 +63,10 @@
     "restartHint": "液态玻璃将在下次启动 SeaLantern Connect 后生效，请退出后重新打开应用。",
     "rememberWindowState": "记住窗口位置和大小",
     "startup": "启动",
-    "startupHint": "设置启动画面的最短展示时间",
-    "splashDuration": "启动画面",
+    "startupHint": "设置开机自启、静默启动和启动画面的最短展示时间",
+    "launchAtLogin": "开机自启",
+    "silentStart": "静默启动",
+    "splashDuration": "开屏动画时间",
     "disabled": "关闭",
     "seconds": "{value} 秒"
   },

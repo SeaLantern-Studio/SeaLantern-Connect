@@ -63,8 +63,10 @@
     "restartHint": "Liquid Glass will take effect the next time SeaLantern Connect starts. Exit and reopen the app.",
     "rememberWindowState": "Remember window position and size",
     "startup": "Startup",
-    "startupHint": "Set the minimum splash screen duration",
-    "splashDuration": "Splash Screen",
+    "startupHint": "Configure launch at login, silent start, and the minimum splash screen duration",
+    "launchAtLogin": "Launch at login",
+    "silentStart": "Silent start",
+    "splashDuration": "Splash Animation Duration",
     "disabled": "Off",
     "seconds": "{value} seconds"
   },
