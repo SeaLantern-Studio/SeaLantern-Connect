@@ -22,7 +22,7 @@ const MC_PROBE_TIMEOUT: Duration = Duration::from_secs(1);
 const MC_HEALTH_INTERVAL: Duration = Duration::from_secs(5);
 const MC_HEALTH_FAILURES_MAX: u8 = 3;
 const JOIN_URI_PREFIX: &str = "sculk://join/v1/";
-const SHARE_URL_PREFIX: &str = "https://ideaflash.cn/#/join/v1/";
+const SHARE_URL_PREFIX: &str = "https://ideaflash.cn/#v1/";
 
 pub(crate) struct HostState {
     scanner: Mutex<Option<LanScanner>>,
@@ -689,7 +689,7 @@ mod tests {
         assert_eq!(snapshot.host_port, Some(25_565));
         assert_eq!(
             snapshot.share_uri.as_deref(),
-            Some("https://ideaflash.cn/#/join/v1/example")
+            Some("https://ideaflash.cn/#v1/example")
         );
         assert_eq!(snapshot.player_count, 0);
     }
@@ -698,7 +698,7 @@ mod tests {
     fn wraps_share_url() {
         assert_eq!(
             to_share_url("sculk://join/v1/payload_123-abc").as_deref(),
-            Some("https://ideaflash.cn/#/join/v1/payload_123-abc")
+            Some("https://ideaflash.cn/#v1/payload_123-abc")
         );
         assert_eq!(to_share_url("sculk://join/v1/"), None);
         assert_eq!(to_share_url("https://example.com/invite"), None);

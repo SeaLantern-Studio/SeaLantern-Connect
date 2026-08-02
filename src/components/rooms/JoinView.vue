@@ -227,7 +227,7 @@ function formatBytes(value: number) {
         class="invite-input"
         :class="{ invalid: validationError }"
         type="text"
-        placeholder="https://ideaflash.cn/#/join/v1/..."
+        placeholder="https://ideaflash.cn/#v1/..."
         @keydown.enter="canJoin && submitInvite()"
       >
         <template #prefix><Link :size="18" /></template>

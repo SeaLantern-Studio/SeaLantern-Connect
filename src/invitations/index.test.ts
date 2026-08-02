@@ -3,9 +3,7 @@ import { inviteFromDeepLinkUrls, isSameInvite, normalizeInvite } from ".";
 
 describe("normalizeInvite", () => {
   it("converts a web invitation into the sculk URI", () => {
-    expect(normalizeInvite("https://ideaflash.cn/#/join/v1/token-123")).toBe(
-      "sculk://join/v1/token-123",
-    );
+    expect(normalizeInvite("https://ideaflash.cn/#v1/token-123")).toBe("sculk://join/v1/token-123");
   });
 
   it("trims native invitations without changing them", () => {
@@ -19,14 +17,14 @@ describe("normalizeInvite", () => {
   });
 
   it("does not trust invitation wrappers from another host", () => {
-    expect(normalizeInvite("https://example.com/#/join/v1/token-123")).toBe(
-      "https://example.com/#/join/v1/token-123",
+    expect(normalizeInvite("https://example.com/#v1/token-123")).toBe(
+      "https://example.com/#v1/token-123",
     );
   });
 
   it("does not accept an insecure HTTP wrapper", () => {
-    expect(normalizeInvite("http://example.com/#/join/v1/token-123")).toBe(
-      "http://example.com/#/join/v1/token-123",
+    expect(normalizeInvite("http://example.com/#v1/token-123")).toBe(
+      "http://example.com/#v1/token-123",
     );
   });
 });
@@ -49,9 +47,9 @@ describe("inviteFromDeepLinkUrls", () => {
 
 describe("isSameInvite", () => {
   it("matches website and protocol forms", () => {
-    expect(
-      isSameInvite("https://ideaflash.cn/#/join/v1/token-123", "sculk://join/v1/token-123"),
-    ).toBe(true);
+    expect(isSameInvite("https://ideaflash.cn/#v1/token-123", "sculk://join/v1/token-123")).toBe(
+      true,
+    );
   });
 
   it("rejects missing or different invitations", () => {
