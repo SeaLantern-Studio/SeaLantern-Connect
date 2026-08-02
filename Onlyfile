@@ -55,3 +55,15 @@ clean():
     echo "前端已清除"
     cargo clean
     echo "后端已清除"
+
+# 查看项目版本号
+show():
+    pnpm sv
+
+# 更新版本号并推送
+publish(version):
+    pnpm cv {{ version }}
+    only ci
+    git commit -am "chore: 升级到 {{ version }}"
+    git tag {{ version }}
+    git push --atomic origin HEAD {{ version }}

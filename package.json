@@ -10,11 +10,13 @@
     "build": "vue-tsc -p src/tsconfig.json --noEmit && vite build -c src/vite.config.ts",
     "preview": "vite preview -c src/vite.config.ts",
     "test": "vitest run -c src/vite.config.ts",
+    "sv": "node scripts/version.mjs show",
+    "cv": "node scripts/version.mjs change",
     "tauri": "tauri",
-    "lint": "oxlint -c src/.oxlintrc.json src",
-    "lint:fix": "oxlint -c src/.oxlintrc.json --fix src",
-    "fmt": "oxfmt -c src/.oxfmtrc.json src package.json pnpm-workspace.yaml README.md",
-    "fmt:check": "oxfmt -c src/.oxfmtrc.json --check src package.json pnpm-workspace.yaml README.md"
+    "lint": "oxlint -c src/.oxlintrc.json src scripts/version.mjs",
+    "lint:fix": "oxlint -c src/.oxlintrc.json --fix src scripts/version.mjs",
+    "fmt": "oxfmt -c src/.oxfmtrc.json src scripts/version.mjs package.json pnpm-workspace.yaml README.md",
+    "fmt:check": "oxfmt -c src/.oxfmtrc.json --check src scripts/version.mjs package.json pnpm-workspace.yaml README.md"
   },
   "dependencies": {
     "@lucide/vue": "^1.28.0",
