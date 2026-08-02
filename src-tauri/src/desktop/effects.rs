@@ -70,7 +70,7 @@ pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Resu
             .map_err(|error| error.to_string())?;
         let effects = (material == "vibrancy").then(|| {
             EffectsBuilder::new()
-                .effect(Effect::WindowBackground)
+                .effect(Effect::UnderWindowBackground)
                 .build()
         });
         window
