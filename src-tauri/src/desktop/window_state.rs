@@ -98,11 +98,13 @@ impl MainWindowTransition<'_> {
     pub(crate) fn move_to(&mut self, next: MainWindowMode) -> Result<(), String> {
         let current = self.mode();
         if !current.allows(next) {
+            tracing::warn!("state rejected: {current:?} -> {next:?}");
             return Err(format!(
                 "invalid main window transition: {current:?} -> {next:?}"
             ));
         }
         self.state.set_mode(next);
+        tracing::debug!("state: {current:?} -> {next:?}");
         Ok(())
     }
 }
@@ -115,6 +117,7 @@ pub(crate) fn show(
         return Err("background window must be restored to hidden before showing".to_owned());
     }
     let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
+        tracing::error!("show failed: window missing");
         transition.move_to(MainWindowMode::Background)?;
         return Err("main window is unavailable".to_owned());
     };

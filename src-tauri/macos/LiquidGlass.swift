@@ -9,7 +9,9 @@ private func installLiquidGlass(on window: NSWindow) -> Bool {
     {
         return true
     }
-    guard let contentView = window.contentView else { return false }
+    guard let contentView = window.contentView else {
+        return false
+    }
 
     let glassView = NSGlassEffectView(frame: contentView.frame)
     glassView.identifier = glassIdentifier
@@ -32,7 +34,9 @@ private func removeLiquidGlass(from window: NSWindow) -> Bool {
         let glassView = window.contentView as? NSGlassEffectView,
         glassView.identifier == glassIdentifier,
         let contentView = glassView.contentView
-    else { return true }
+    else {
+        return true
+    }
 
     glassView.contentView = nil
     window.contentView = contentView
@@ -57,7 +61,9 @@ public func setLiquidGlass(
     _ windowPointer: UnsafeMutableRawPointer?,
     _ enabled: Int32
 ) -> Int32 {
-    guard let windowPointer else { return 0 }
+    guard let windowPointer else {
+        return 0
+    }
     let update = {
         let window = Unmanaged<NSWindow>.fromOpaque(windowPointer).takeUnretainedValue()
         if #available(macOS 26.0, *) {

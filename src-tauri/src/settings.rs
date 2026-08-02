@@ -291,7 +291,7 @@ pub fn set_theme(
     let window_material = state.window_material();
     state.update(|preferences| preferences.theme = theme.clone())?;
     if let Err(error) = effects::set_material(&app, &window_material, &theme) {
-        eprintln!("failed to update native window material: {error}");
+        tracing::error!("native material update failed: {error}");
     }
     Ok(())
 }
@@ -315,7 +315,7 @@ pub fn set_locale(
     }
     state.update(|preferences| preferences.locale = locale)?;
     if let Err(error) = tray::update_locale(&app) {
-        eprintln!("failed to update tray locale: {error}");
+        tracing::error!("tray locale update failed: {error}");
     }
     Ok(())
 }
@@ -388,7 +388,7 @@ pub fn set_personalization(
         preferences.window_material = window_material.clone();
     })?;
     if let Err(error) = effects::set_material(&app, &window_material, &theme) {
-        eprintln!("failed to update window material: {error}");
+        tracing::error!("window material update failed: {error}");
     }
     Ok(())
 }

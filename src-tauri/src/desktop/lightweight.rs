@@ -1,4 +1,7 @@
-use super::window_state::{MAIN_WINDOW_LABEL, MainWindowMode, MainWindowTransition};
+use super::effects;
+use super::window_state::{
+    self as window_lifecycle, MAIN_WINDOW_LABEL, MainWindowMode, MainWindowTransition,
+};
 use crate::settings::SettingsState;
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
@@ -13,17 +16,26 @@ pub(crate) fn leave(
     app: &AppHandle,
     transition: &mut MainWindowTransition<'_>,
 ) -> Result<(), String> {
+    tracing::debug!(
+        "lightweight leave: {:?}, window={}",
+        transition.mode(),
+        app.get_webview_window(MAIN_WINDOW_LABEL).is_some()
+    );
     if transition.mode() != MainWindowMode::Background {
+        tracing::debug!("lightweight leave skipped");
         return Ok(());
     }
 
     #[cfg(target_os = "macos")]
-    app.set_activation_policy(ActivationPolicy::Regular)
-        .map_err(|error| error.to_string())?;
+    {
+        app.set_activation_policy(ActivationPolicy::Regular)
+            .map_err(|error| error.to_string())?;
+    }
 
     let window = if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         window
     } else {
+        tracing::debug!("window rebuild");
         let config = app
             .config()
             .app
@@ -37,21 +49,35 @@ pub(crate) fn leave(
             .map_err(|error| error.to_string())?
     };
 
-    // Background -> Hidden must complete before any caller can request Visible.
+    // The state machine requires Background -> Hidden -> Visible.
     window.hide().map_err(|error| error.to_string())?;
     if app.state::<SettingsState>().remembers_window_state() {
         let _ = window.restore_state(window_state_flags());
     }
+    let settings = app.state::<SettingsState>();
+    let material = settings.window_material();
+    let theme = settings.theme();
+    tracing::debug!("material restore: {material}/{theme}");
+    if let Err(error) = effects::set_material(app, &material, &theme) {
+        tracing::error!("material restore failed: {error}");
+    }
     #[cfg(target_os = "windows")]
     let _ = window.set_skip_taskbar(false);
-    transition.move_to(MainWindowMode::Hidden)
+    transition.move_to(MainWindowMode::Hidden)?;
+    window_lifecycle::show(app, transition)
 }
 
 pub(crate) fn enter(
     app: &AppHandle,
     transition: &mut MainWindowTransition<'_>,
 ) -> Result<(), String> {
+    tracing::debug!(
+        "lightweight enter: {:?}, window={}",
+        transition.mode(),
+        app.get_webview_window(MAIN_WINDOW_LABEL).is_some()
+    );
     if transition.mode() == MainWindowMode::Background {
+        tracing::debug!("lightweight enter skipped");
         return Ok(());
     }
 
@@ -64,7 +90,9 @@ pub(crate) fn enter(
 
     transition.move_to(MainWindowMode::Background)?;
     #[cfg(target_os = "macos")]
-    app.set_activation_policy(ActivationPolicy::Accessory)
-        .map_err(|error| error.to_string())?;
+    {
+        app.set_activation_policy(ActivationPolicy::Accessory)
+            .map_err(|error| error.to_string())?;
+    }
     Ok(())
 }

@@ -4,6 +4,7 @@
 
 mod connection;
 mod desktop;
+mod logging;
 mod settings;
 
 use connection::{host, join};
@@ -30,6 +31,7 @@ fn exit_application(app: tauri::AppHandle) {
 }
 
 fn main() {
+    logging::init();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             deeplink::stash_restore_links(app, &args);
@@ -50,6 +52,9 @@ fn main() {
         )
         .setup(|app| {
             app.manage(settings::SettingsState::load(app.handle())?);
+            let material = app.state::<settings::SettingsState>().window_material();
+            let theme = app.state::<settings::SettingsState>().theme();
+            tracing::info!("startup: {material}/{theme}");
             deeplink::setup(app)?;
             join::setup(app);
             if app
@@ -59,14 +64,8 @@ fn main() {
             {
                 window.restore_state(window_state_flags())?;
             }
-            if let Err(error) = effects::set_material(
-                app.handle(),
-                app.state::<settings::SettingsState>()
-                    .window_material()
-                    .as_str(),
-                app.state::<settings::SettingsState>().theme().as_str(),
-            ) {
-                eprintln!("failed to apply native window effects: {error}");
+            if let Err(error) = effects::set_material(app.handle(), &material, &theme) {
+                tracing::error!("native material failed: {error}");
             }
             tray::setup(app)?;
             tray::show_main_window(app.handle());
@@ -103,12 +102,13 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|_app_handle, event| {
-        if let tauri::RunEvent::ExitRequested {
+    app.run(|_app_handle, event| match event {
+        tauri::RunEvent::ExitRequested {
             api, code: None, ..
-        } = event
-        {
-            api.prevent_exit();
+        } => api.prevent_exit(),
+        tauri::RunEvent::Exit => {
+            tracing::info!("exit");
         }
+        _ => {}
     });
 }

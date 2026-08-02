@@ -75,7 +75,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
             SHOW_MENU_ID => show_main_window(app),
             LIGHTWEIGHT_MENU_ID => {
                 if let Err(error) = toggle_lightweight_mode(app) {
-                    eprintln!("failed to toggle lightweight mode: {error}");
+                    tracing::error!("lightweight toggle failed: {error}");
                 }
             }
             QUIT_MENU_ID => {
@@ -122,6 +122,22 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
     if window.label() != MAIN_WINDOW_LABEL {
         return;
     }
+    match event {
+        WindowEvent::CloseRequested { .. } => {
+            tracing::debug!("close requested");
+        }
+        WindowEvent::Destroyed => {
+            tracing::debug!(
+                "destroyed: {:?}, registered={}",
+                window.state::<MainWindowState>().mode(),
+                window
+                    .app_handle()
+                    .get_webview_window(MAIN_WINDOW_LABEL)
+                    .is_some()
+            );
+        }
+        _ => {}
+    }
     let settings = window.state::<SettingsState>();
     if let WindowEvent::CloseRequested { api, .. } = event {
         let _ = settings.persist();
@@ -129,7 +145,7 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
             CloseAction::HideToTray => {
                 api.prevent_close();
                 if let Err(error) = window_lifecycle::hide(window.app_handle()) {
-                    eprintln!("failed to hide main window: {error}");
+                    tracing::error!("window hide failed: {error}");
                 } else {
                     schedule_auto_lightweight(window.app_handle());
                 }
@@ -149,7 +165,7 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
 pub(crate) fn show_main_window(app: &AppHandle) {
     app.state::<AutoDelay>().cancel();
     if let Err(error) = reveal_main_window(app) {
-        eprintln!("failed to show main window: {error}");
+        tracing::error!("tray show failed: {error}");
     }
 }
 
@@ -162,7 +178,7 @@ fn reveal_main_window(app: &AppHandle) -> Result<(), String> {
         transition.move_to(MainWindowMode::Background)?;
     }
     if transition.mode() == MainWindowMode::Background {
-        lightweight::leave(app, &mut transition)?;
+        return lightweight::leave(app, &mut transition);
     }
     window_lifecycle::show(app, &mut transition)
 }
@@ -206,7 +222,7 @@ pub(crate) fn schedule_auto_lightweight(app: &AppHandle) {
         }
         app.state::<AutoDelay>().cancel();
         if let Err(error) = lightweight::enter(&app, &mut transition) {
-            eprintln!("failed to enter lightweight mode automatically: {error}");
+            tracing::error!("automatic lightweight entry failed: {error}");
         }
     });
 }
