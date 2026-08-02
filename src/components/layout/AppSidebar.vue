@@ -28,8 +28,8 @@ const emit = defineEmits<{
 }>();
 
 const primaryItems = computed<NavItem[]>(() => [
-  { id: "join", label: t("navigation.joinRoom"), icon: LogIn },
   { id: "create", label: t("navigation.createRoom"), icon: HousePlus },
+  { id: "join", label: t("navigation.joinRoom"), icon: LogIn },
 ]);
 
 const utilityItems = computed<NavItem[]>(() => [

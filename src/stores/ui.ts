@@ -5,7 +5,7 @@ import type { IncomingInvite } from "../invitations";
 export type SectionId = "create" | "join" | "personalize" | "settings";
 
 export const useUiStore = defineStore("ui", () => {
-  const activeSection = ref<SectionId>("join");
+  const activeSection = ref<SectionId>("create");
   const sidebarCollapsed = ref(false);
   const closePromptOpen = ref(false);
   const incomingInvite = ref<IncomingInvite | null>(null);
