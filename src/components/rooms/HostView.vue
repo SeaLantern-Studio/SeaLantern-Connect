@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
+import { Cmz_Button, Cmz_Input, Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import {
   getLanScan,
   probeHostPort,
@@ -236,11 +236,17 @@ onUnmounted(() => {
       <div class="share-block">
         <span>{{ t("create.invite") }}</span>
         <strong>{{ status.shareUri ?? t("create.generatingInvite") }}</strong>
-        <button class="copy-button" type="button" :disabled="!status.shareUri" @click="copyInvite">
+        <Cmz_Button
+          class="copy-button"
+          variant="outline"
+          type="button"
+          :disabled="!status.shareUri"
+          @click="copyInvite"
+        >
           <Check v-if="copied" :size="16" />
           <Copy v-else :size="16" />
           {{ copied ? t("create.copied") : t("create.copyInvite") }}
-        </button>
+        </Cmz_Button>
       </div>
       <div class="host-summary">
         <div>
@@ -254,9 +260,16 @@ onUnmounted(() => {
       </div>
       <div class="connection-footer">
         <p>{{ status.message ?? t("create.ready") }}</p>
-        <button class="danger-button" type="button" :disabled="pending" @click="stopRoom">
+        <Cmz_Button
+          class="danger-button"
+          variant="outline"
+          type="button"
+          :disabled="pending"
+          :loading="pending"
+          @click="stopRoom"
+        >
           <Square :size="15" />{{ t("create.stop") }}
-        </button>
+        </Cmz_Button>
       </div>
     </section>
 
@@ -306,25 +319,27 @@ onUnmounted(() => {
 
       <div v-else class="form-field manual-port-field">
         <label for="host-port" class="field-label">{{ t("create.port") }}</label>
-        <input
+        <Cmz_Input
           id="host-port"
+          class="room-input"
           v-model="manualPort"
           type="number"
-          min="1"
-          max="65535"
-          inputmode="numeric"
+          :min="1"
+          :max="65535"
+          :hide-number-controls="true"
         />
       </div>
 
       <div class="form-field settings-field">
         <label for="max-players" class="field-label">{{ t("create.maxPlayers") }}</label>
-        <input
+        <Cmz_Input
           id="max-players"
+          class="room-input"
           v-model="maxPlayers"
           type="number"
-          min="1"
-          max="1000"
-          inputmode="numeric"
+          :min="1"
+          :max="1000"
+          :hide-number-controls="true"
           :placeholder="t('create.unlimited')"
         />
       </div>
@@ -343,11 +358,16 @@ onUnmounted(() => {
         <p v-if="commandError || occupied || status.message" class="field-error">
           {{ occupied ? t("create.occupied") : commandError || status.message }}
         </p>
-        <button class="primary-button" type="button" :disabled="!canCreate" @click="createRoom">
-          <LoaderCircle v-if="pending" class="spin" :size="17" />
-          <HousePlus v-else :size="17" />
+        <Cmz_Button
+          class="primary-button"
+          type="button"
+          :disabled="!canCreate"
+          :loading="pending"
+          @click="createRoom"
+        >
+          <HousePlus :size="17" />
           {{ t("create.create") }}
-        </button>
+        </Cmz_Button>
       </div>
     </section>
   </div>

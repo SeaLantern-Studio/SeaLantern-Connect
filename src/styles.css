@@ -968,38 +968,10 @@ h1 {
 .discovery-status-icon.failed {
   color: var(--danger);
 }
-.manual-port-field input,
-.settings-field input {
+.room-input {
   width: 100%;
-  height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
-  outline: 0;
-  color: var(--text);
-  background: var(--surface-soft);
-  user-select: text;
-  appearance: textfield;
-  -moz-appearance: textfield;
-  font-size: 0.9286rem;
-}
-.manual-port-field input,
-.settings-field input {
   max-width: 200px;
   justify-self: end;
-}
-.manual-port-field input::-webkit-inner-spin-button,
-.manual-port-field input::-webkit-outer-spin-button,
-.settings-field input::-webkit-inner-spin-button,
-.settings-field input::-webkit-outer-spin-button {
-  margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-}
-.manual-port-field input:focus,
-.settings-field input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
 }
 .create-actions {
   min-height: 36px;
@@ -1068,94 +1040,26 @@ h1 {
   font-size: 0.9286rem;
   font-weight: 500;
 }
-.invite-row {
-  height: 48px;
-  display: grid;
-  grid-template-columns: 20px 1fr 32px;
-  align-items: center;
-  gap: 10px;
-  padding: 0 8px 0 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
-  background: var(--surface-soft);
-  color: var(--muted);
-}
-.invite-row:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
-}
-.invite-row.invalid {
-  border-color: var(--danger);
-}
-.invite-row input {
+.invite-input {
   width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  color: var(--text);
-  background: transparent;
-  user-select: text;
 }
-.invite-row input::placeholder {
-  color: color-mix(in srgb, var(--muted) 72%, transparent);
-}
-.reset-invite-button {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: var(--cmz-radius-xs);
-  color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-}
-.reset-invite-button:hover:not(:disabled) {
-  color: var(--text);
-  background: var(--surface);
-}
-.primary-button,
-.secondary-button,
-.danger-button,
-.copy-button {
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 15px;
-  border: 1px solid transparent;
-  border-radius: var(--cmz-radius-sm);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9286rem;
-  white-space: nowrap;
+.invite-input.invalid .cmz-input-container,
+.join-port-input.invalid .cmz-input-container {
+  border-color: var(--danger);
+  box-shadow: none;
 }
 .primary-button {
-  color: #fff;
-  background: var(--primary-solid);
-}
-.primary-button:hover:not(:disabled) {
-  background: var(--primary-solid-hover);
+  --cmz-primary: var(--primary-solid);
+  --cmz-primary-dark: var(--primary-solid-hover);
 }
 button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-.secondary-button,
-.copy-button {
-  background: var(--surface);
-  border-color: var(--border);
-}
-.secondary-button:hover,
-.copy-button:hover:not(:disabled) {
-  background: var(--surface-soft);
-}
 .danger-button {
-  color: var(--danger);
-  background: transparent;
-  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  --cmz-primary: var(--danger);
+  --cmz-primary-dark: color-mix(in srgb, var(--danger) 82%, var(--text));
+  --cmz-primary-bg: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 .field-error {
   margin: 8px 0 0;
@@ -1256,37 +1160,7 @@ button:disabled {
   font-size: 0.8571rem;
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(7, 15, 24, 0.48);
-  backdrop-filter: blur(4px);
-}
-.close-action-dialog {
-  width: min(380px, 100%);
-}
-.confirm-dialog {
-  width: min(420px, 100%);
-  padding: 26px;
-  border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-lg);
-  background: var(--surface);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
-}
-.join-confirm-dialog {
-  width: min(560px, 100%);
-}
-.confirm-dialog h2 {
-  margin: 0 0 9px;
-  font-size: 1.2857rem;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-.confirm-dialog > p {
+.modal-copy {
   margin: 0;
   color: var(--muted);
   font-size: 0.9286rem;
@@ -1333,37 +1207,9 @@ button:disabled {
   background: var(--surface-soft);
   font-size: 0.8571rem;
 }
-.join-port-detail input {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  color: var(--text);
-  background: transparent;
-  user-select: text;
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-.join-port-detail input::-webkit-inner-spin-button,
-.join-port-detail input::-webkit-outer-spin-button {
-  margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-}
-.join-port-detail:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
-}
-.join-port-detail:has(input.invalid) {
-  border-color: var(--danger);
-  box-shadow: none;
-}
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 9px;
-  margin-top: 22px;
+.join-port-input {
+  width: calc((100% - 88px) / 2);
+  justify-self: end;
 }
 .spin {
   animation: spin 0.9s linear infinite;
@@ -1442,8 +1288,7 @@ button:disabled {
     max-width: none;
     justify-self: stretch;
   }
-  .manual-port-field input,
-  .settings-field input {
+  .room-input {
     max-width: none;
     justify-self: stretch;
   }

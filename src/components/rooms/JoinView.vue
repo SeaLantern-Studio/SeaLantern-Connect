@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
+import { Cmz_Button, Cmz_Input, Cmz_Modal, Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
 import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "lucide-vue-next";
 import {
   saveJoinPort as persistJoinPort,
@@ -221,35 +221,38 @@ function formatBytes(value: number) {
 
     <section v-if="!joining" class="join-panel">
       <label for="invite">{{ t("join.invite") }}</label>
-      <div class="invite-row" :class="{ invalid: validationError }">
-        <Link :size="18" />
-        <input
-          id="invite"
-          v-model="invite"
-          type="text"
-          spellcheck="false"
-          autocomplete="off"
-          placeholder="https://ideaflash.cn/#/join/v1/..."
-          @keydown.enter="canJoin && submitInvite()"
-        />
-        <button
-          class="reset-invite-button"
-          type="button"
-          :title="t('join.clearInput')"
-          :disabled="invite.length === 0"
-          @click="resetInvite"
-        >
-          <RotateCcw :size="16" />
-        </button>
-      </div>
+      <Cmz_Input
+        id="invite"
+        v-model="invite"
+        class="invite-input"
+        :class="{ invalid: validationError }"
+        type="text"
+        placeholder="https://ideaflash.cn/#/join/v1/..."
+        @keydown.enter="canJoin && submitInvite()"
+      >
+        <template #prefix><Link :size="18" /></template>
+        <template #suffix>
+          <Cmz_Button
+            variant="ghost"
+            size="sm"
+            :icon-only="true"
+            type="button"
+            :title="t('join.clearInput')"
+            :disabled="invite.length === 0"
+            @click="resetInvite"
+          >
+            <RotateCcw :size="16" />
+          </Cmz_Button>
+        </template>
+      </Cmz_Input>
       <p v-if="validationError" class="field-error">
         {{ validationError }}
       </p>
       <div class="join-actions">
         <div class="privacy-note">{{ t("join.privacy") }}</div>
-        <button class="primary-button" type="button" :disabled="!canJoin" @click="submitInvite">
+        <Cmz_Button class="primary-button" type="button" :disabled="!canJoin" @click="submitInvite">
           {{ t("join.continue") }}<ArrowRight :size="17" />
-        </button>
+        </Cmz_Button>
       </div>
     </section>
 
@@ -257,8 +260,9 @@ function formatBytes(value: number) {
       <div class="address-block">
         <span>{{ t("join.minecraftAddress") }}</span>
         <strong>{{ status.localAddress ?? t("join.allocatingPort") }}</strong>
-        <button
+        <Cmz_Button
           class="copy-button"
+          variant="outline"
           type="button"
           :disabled="!status.localAddress"
           @click="copyAddress"
@@ -266,7 +270,7 @@ function formatBytes(value: number) {
           <Check v-if="copied" :size="16" />
           <Copy v-else :size="16" />
           {{ copied ? t("join.copied") : t("join.copyAddress") }}
-        </button>
+        </Cmz_Button>
       </div>
       <div class="metrics">
         <div>
@@ -294,9 +298,15 @@ function formatBytes(value: number) {
       </div>
       <div class="connection-footer">
         <p>{{ status.message ?? t("join.syncing") }}</p>
-        <button class="danger-button" type="button" :disabled="stopDisabled" @click="stop">
+        <Cmz_Button
+          class="danger-button"
+          variant="outline"
+          type="button"
+          :disabled="stopDisabled"
+          @click="stop"
+        >
           <Unplug :size="16" />{{ stopLabel }}
-        </button>
+        </Cmz_Button>
       </div>
     </section>
 
@@ -306,60 +316,58 @@ function formatBytes(value: number) {
     </p>
   </div>
 
-  <div v-if="confirming" class="modal-backdrop" @click.self="confirming = false">
-    <section
-      class="confirm-dialog join-confirm-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-title"
-    >
-      <h2 id="confirm-title">{{ t("join.confirmTitle") }}</h2>
-      <p>{{ replacingConnection ? t("join.replaceHint") : t("join.confirmHint") }}</p>
-      <div class="invite-summary">
-        <span>{{ t("join.inviteProtocol") }}</span
-        ><strong>sculk / v1</strong>
+  <Cmz_Modal
+    :visible="confirming"
+    :title="t('join.confirmTitle')"
+    width="560px"
+    @close="confirming = false"
+  >
+    <p class="modal-copy">
+      {{ replacingConnection ? t("join.replaceHint") : t("join.confirmHint") }}
+    </p>
+    <div class="invite-summary">
+      <span>{{ t("join.inviteProtocol") }}</span
+      ><strong>sculk / v1</strong>
+    </div>
+    <div class="join-port-setting">
+      <div class="join-port-heading">
+        <span>{{ t("join.localPort") }}</span>
+        <Cmz_TabBar
+          class="mode-tabs compact"
+          :model-value="portMode"
+          :tabs="portModeTabs"
+          :level="2"
+          @update:model-value="setPortMode"
+        />
       </div>
-      <div class="join-port-setting">
-        <div class="join-port-heading">
-          <span>{{ t("join.localPort") }}</span>
-          <Cmz_TabBar
-            class="mode-tabs compact"
-            :model-value="portMode"
-            :tabs="portModeTabs"
-            :level="2"
-            @update:model-value="setPortMode"
-          />
-        </div>
-        <div class="join-port-detail">
-          <span v-if="portMode === 'auto'">{{ t("join.automaticPort") }}</span>
-          <input
-            v-else
-            v-model="manualPort"
-            :class="{ invalid: !validManualPort }"
-            type="number"
-            min="1"
-            max="65535"
-            inputmode="numeric"
-            :aria-label="t('join.localPortNumber')"
-            @change="saveJoinPort"
-          />
-        </div>
+      <div v-if="portMode === 'auto'" class="join-port-detail">
+        {{ t("join.automaticPort") }}
       </div>
-      <div class="dialog-actions">
-        <button class="secondary-button" type="button" @click="confirming = false">
-          {{ t("join.cancel") }}
-        </button>
-        <button
-          class="primary-button"
-          type="button"
-          :disabled="portMode === 'manual' && !validManualPort"
-          @click="join"
-        >
-          <Radio :size="17" />{{
-            replacingConnection ? t("join.confirmReplace") : t("join.confirm")
-          }}
-        </button>
-      </div>
-    </section>
-  </div>
+      <Cmz_Input
+        v-else
+        v-model="manualPort"
+        class="join-port-input"
+        :class="{ invalid: !validManualPort }"
+        type="number"
+        :min="1"
+        :max="65535"
+        :hide-number-controls="true"
+        :aria-label="t('join.localPortNumber')"
+        @change="saveJoinPort"
+      />
+    </div>
+    <template #footer>
+      <Cmz_Button variant="outline" type="button" @click="confirming = false">
+        {{ t("join.cancel") }}
+      </Cmz_Button>
+      <Cmz_Button
+        class="primary-button"
+        type="button"
+        :disabled="portMode === 'manual' && !validManualPort"
+        @click="join"
+      >
+        <Radio :size="17" />{{ replacingConnection ? t("join.confirmReplace") : t("join.confirm") }}
+      </Cmz_Button>
+    </template>
+  </Cmz_Modal>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { Cmz_Button, Cmz_Modal } from "cmzya-modern-ui";
 import { closeWindow, getInitialDeepLinks, onCloseActionRequested, onDeepLinks } from "@api";
 import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
@@ -156,34 +157,32 @@ onUnmounted(() => {
     </main>
   </div>
 
-  <div v-if="uiStore.closePromptOpen" class="modal-backdrop close-action-backdrop">
-    <section
-      class="confirm-dialog close-action-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="close-action-title"
-      aria-describedby="close-action-hint"
-    >
-      <h2 id="close-action-title">{{ t("window.closePromptTitle") }}</h2>
-      <p id="close-action-hint">{{ t("window.closePromptHint") }}</p>
-      <div class="dialog-actions">
-        <button
-          class="danger-button"
-          type="button"
-          :disabled="choosingCloseAction"
-          @click="chooseCloseAction('exit')"
-        >
-          {{ t("personalization.exitApplication") }}
-        </button>
-        <button
-          class="primary-button"
-          type="button"
-          :disabled="choosingCloseAction"
-          @click="chooseCloseAction('hide_to_tray')"
-        >
-          {{ t("personalization.hideToTray") }}
-        </button>
-      </div>
-    </section>
-  </div>
+  <Cmz_Modal
+    :visible="uiStore.closePromptOpen"
+    :title="t('window.closePromptTitle')"
+    width="380px"
+    :close-on-overlay="false"
+    @close="uiStore.closeClosePrompt"
+  >
+    <p class="modal-copy">{{ t("window.closePromptHint") }}</p>
+    <template #footer>
+      <Cmz_Button
+        class="danger-button"
+        variant="outline"
+        type="button"
+        :disabled="choosingCloseAction"
+        @click="chooseCloseAction('exit')"
+      >
+        {{ t("personalization.exitApplication") }}
+      </Cmz_Button>
+      <Cmz_Button
+        class="primary-button"
+        type="button"
+        :disabled="choosingCloseAction"
+        @click="chooseCloseAction('hide_to_tray')"
+      >
+        {{ t("personalization.hideToTray") }}
+      </Cmz_Button>
+    </template>
+  </Cmz_Modal>
 </template>
