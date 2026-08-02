@@ -1,4 +1,3 @@
-import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -26,8 +25,4 @@ export function isWindowMaximized(): Promise<boolean> {
 
 export function onWindowResized(callback: () => void): Promise<() => void> {
   return mainWindow.onResized(callback);
-}
-
-export function onCloseActionRequested(callback: () => void): Promise<() => void> {
-  return listen("close-action-requested", callback);
 }

@@ -1,5 +1,5 @@
 import { getThemeColors, type ColorThemeId, type ThemeColors } from ".";
-import type { ThemePreference, WindowMaterial } from "../models/preferences";
+import type { CustomTheme, ThemePreference, WindowMaterial } from "../models/preferences";
 
 const nativeMaterialColors: Record<"light" | "dark", ThemeColors> = {
   light: {
@@ -64,12 +64,15 @@ export function applyColorTheme(
   colorTheme: ColorThemeId,
   systemDark: boolean,
   windowMaterial: WindowMaterial,
+  customTheme: CustomTheme,
 ): void {
   const usesMaterialPalette = windowMaterial !== "solid";
   const dark = preference === "system" ? systemDark : preference === "dark";
   const colors = usesMaterialPalette
     ? nativeMaterialColors[dark ? "dark" : "light"]
-    : getThemeColors(colorTheme, dark ? "dark" : "light");
+    : colorTheme === "custom"
+      ? customTheme[dark ? "dark" : "light"]
+      : getThemeColors(colorTheme, dark ? "dark" : "light");
   const opacity = materialOpacity(windowMaterial, dark);
   const root = document.documentElement;
   const nativeMaterial =

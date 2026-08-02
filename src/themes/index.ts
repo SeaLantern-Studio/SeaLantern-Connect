@@ -5,7 +5,9 @@ import mossTheme from "./moss";
 import vellumTheme from "./vellum";
 import type { ColorPlan, ColorThemeId, ThemeColors, ThemeDefinition } from "./types";
 
-const themes: Record<ColorThemeId, ThemeDefinition> = {
+type PresetColorThemeId = Exclude<ColorThemeId, "custom">;
+
+const themes: Record<PresetColorThemeId, ThemeDefinition> = {
   inkstone: inkstoneTheme,
   celadon: celadonTheme,
   vellum: vellumTheme,
@@ -14,11 +16,15 @@ const themes: Record<ColorThemeId, ThemeDefinition> = {
 };
 
 export function getThemeOptions(): Array<{ label: string; value: ColorThemeId }> {
-  return Object.values(themes).map((theme) => ({ label: theme.name, value: theme.id }));
+  return [
+    ...Object.values(themes).map((theme) => ({ label: theme.name, value: theme.id })),
+    { label: "Custom", value: "custom" },
+  ];
 }
 
 export function getThemeColors(themeId: ColorThemeId, plan: ColorPlan): ThemeColors {
-  return (themes[themeId] ?? themes.inkstone)[plan];
+  const preset = themeId === "custom" ? themes.inkstone : themes[themeId];
+  return (preset ?? themes.inkstone)[plan];
 }
 
 export type { ColorPlan, ColorThemeId, ThemeColors, ThemeDefinition } from "./types";

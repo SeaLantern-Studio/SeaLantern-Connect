@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
-import {
-  disableAutostart,
-  enableAutostart,
-  getAutostartEnabled,
-  getSystemFonts,
-  supportsLiquidGlass,
-} from "@api";
+import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
+import { getSystemFonts, supportsLiquidGlass } from "@api";
 import { t } from "../../i18n";
 import type {
+  CustomTheme,
   PersonalizationUpdate,
   Preferences,
-  SplashDurationMs,
+  ThemeColors,
   ColorThemeId,
   WindowMaterial,
 } from "../../models/preferences";
@@ -29,9 +24,25 @@ const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const fontsLoading = ref(false);
 const systemFonts = ref<string[]>([]);
 const liquidGlassSupported = ref(false);
-const autostartEnabled = ref(false);
-const autostartLoading = ref(true);
-const autostartUpdating = ref(false);
+const customPlan = ref<keyof CustomTheme>(
+  props.preferences.theme === "dark" ||
+    (props.preferences.theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
+    ? "dark"
+    : "light",
+);
+const customColorFields: Array<{ key: keyof ThemeColors; label: string }> = [
+  { key: "bg", label: "background" },
+  { key: "bgSecondary", label: "surface" },
+  { key: "bgTertiary", label: "surfaceStrong" },
+  { key: "primary", label: "primary" },
+  { key: "primarySolid", label: "primarySolid" },
+  { key: "primarySolidHover", label: "primarySolidHover" },
+  { key: "secondary", label: "secondary" },
+  { key: "textPrimary", label: "textPrimary" },
+  { key: "textSecondary", label: "textSecondary" },
+  { key: "border", label: "border" },
+];
 const fontFamilyOptions = computed<SelectOption[]>(() => {
   return fontOptions(form.value.fontFamily, t("personalization.systemFont"));
 });
@@ -46,10 +57,9 @@ const themeOptions = computed<SelectOption[]>(() => [
   { label: t("personalization.light"), value: "light" },
   { label: t("personalization.dark"), value: "dark" },
 ]);
-const closeActionOptions = computed<SelectOption[]>(() => [
-  { label: t("personalization.askOnClose"), value: "ask" },
-  { label: t("personalization.exitApplication"), value: "exit" },
-  { label: t("personalization.hideToTray"), value: "hide_to_tray" },
+const customPlanOptions = computed<SelectOption[]>(() => [
+  { label: t("personalization.customThemeLight"), value: "light" },
+  { label: t("personalization.customThemeDark"), value: "dark" },
 ]);
 const windowMaterialOptions = computed<SelectOption[]>(() => {
   if (/Macintosh|Mac OS X/i.test(navigator.userAgent)) {
@@ -74,28 +84,29 @@ const windowMaterialOptions = computed<SelectOption[]>(() => {
   }
   return [{ label: t("personalization.windowMaterials.solid"), value: "solid" }];
 });
-const splashDurationOptions = computed<SelectOption[]>(() => [
-  { label: t("personalization.disabled"), value: 0 },
-  ...[500, 1000, 1500, 2000].map((durationMs) => ({
-    label: t("personalization.seconds", { value: durationMs / 1000 }),
-    value: durationMs,
-  })),
-]);
 const fontSizeProgress = computed(
   () => `${((form.value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
 );
 const usesSolidWindowMaterial = computed(() => form.value.windowMaterial === "solid");
+const usesCustomTheme = computed(
+  () => usesSolidWindowMaterial.value && form.value.colorTheme === "custom",
+);
+const customColors = computed(() => form.value.customTheme[customPlan.value]);
+
+function cloneCustomTheme(theme: CustomTheme): CustomTheme {
+  return {
+    light: { ...theme.light },
+    dark: { ...theme.dark },
+  };
+}
+
 function pickPreferences(preferences: Preferences): PersonalizationUpdate {
   return {
     theme: preferences.theme,
     colorTheme: preferences.colorTheme,
+    customTheme: cloneCustomTheme(preferences.customTheme),
     fontSize: preferences.fontSize,
     fontFamily: preferences.fontFamily,
-    splashDurationMs: preferences.splashDurationMs,
-    silentStart: preferences.silentStart,
-    locale: preferences.locale,
-    rememberWindowState: preferences.rememberWindowState,
-    closeAction: preferences.closeAction,
     windowMaterial: preferences.windowMaterial,
   };
 }
@@ -119,32 +130,17 @@ watch(
   (colorTheme) => (form.value.colorTheme = colorTheme),
 );
 watch(
+  () => props.preferences.customTheme,
+  (customTheme) => (form.value.customTheme = cloneCustomTheme(customTheme)),
+  { deep: true },
+);
+watch(
   () => props.preferences.fontSize,
   (fontSize) => (form.value.fontSize = fontSize),
 );
 watch(
   () => props.preferences.fontFamily,
   (fontFamily) => (form.value.fontFamily = fontFamily),
-);
-watch(
-  () => props.preferences.splashDurationMs,
-  (splashDurationMs) => (form.value.splashDurationMs = splashDurationMs),
-);
-watch(
-  () => props.preferences.silentStart,
-  (silentStart) => (form.value.silentStart = silentStart),
-);
-watch(
-  () => props.preferences.locale,
-  (locale) => (form.value.locale = locale),
-);
-watch(
-  () => props.preferences.rememberWindowState,
-  (rememberWindowState) => (form.value.rememberWindowState = rememberWindowState),
-);
-watch(
-  () => props.preferences.closeAction,
-  (closeAction) => (form.value.closeAction = closeAction),
 );
 watch(
   () => props.preferences.windowMaterial,
@@ -160,38 +156,7 @@ watch(
 onMounted(() => {
   void loadSystemFonts();
   void loadMaterialCapabilities();
-  void loadAutostart();
 });
-
-async function loadAutostart() {
-  autostartLoading.value = true;
-  try {
-    autostartEnabled.value = await getAutostartEnabled();
-  } catch (error) {
-    console.error("Failed to load autostart state", error);
-  } finally {
-    autostartLoading.value = false;
-  }
-}
-
-async function updateAutostart(value: boolean) {
-  if (autostartLoading.value || autostartUpdating.value) return;
-  const fallback = autostartEnabled.value;
-  autostartEnabled.value = value;
-  autostartUpdating.value = true;
-  try {
-    if (value) {
-      await enableAutostart();
-    } else {
-      await disableAutostart();
-    }
-  } catch (error) {
-    autostartEnabled.value = fallback;
-    console.error("Failed to update autostart state", error);
-  } finally {
-    autostartUpdating.value = false;
-  }
-}
 
 async function loadMaterialCapabilities() {
   try {
@@ -212,16 +177,6 @@ async function loadSystemFonts() {
   }
 }
 
-function updateRememberWindowState(value: boolean) {
-  form.value.rememberWindowState = value;
-  persist();
-}
-
-function updateSilentStart(value: boolean) {
-  form.value.silentStart = value;
-  persist();
-}
-
 function setWindowMaterial(value: string | number) {
   if (!windowMaterialOptions.value.some((option) => option.value === value)) return;
   form.value.windowMaterial = value as WindowMaterial;
@@ -240,6 +195,15 @@ function setColorTheme(value: string | number) {
   persist();
 }
 
+function setCustomPlan(value: string | number) {
+  if (value === "light" || value === "dark") customPlan.value = value;
+}
+
+function setCustomColor(field: keyof ThemeColors, event: Event) {
+  form.value.customTheme[customPlan.value][field] = (event.target as HTMLInputElement).value;
+  persist();
+}
+
 function setFontFamily(value: string | number) {
   if (typeof value !== "string") return;
   form.value.fontFamily = value;
@@ -251,20 +215,8 @@ function setFontSize(event: Event) {
   persist();
 }
 
-function setCloseAction(value: string | number) {
-  if (value !== "ask" && value !== "exit" && value !== "hide_to_tray") return;
-  form.value.closeAction = value;
-  persist();
-}
-
-function setSplashDuration(value: string | number) {
-  if (!splashDurationOptions.value.some((option) => option.value === value)) return;
-  form.value.splashDurationMs = value as SplashDurationMs;
-  persist();
-}
-
 function persist() {
-  emit("change", { ...form.value });
+  emit("change", { ...form.value, customTheme: cloneCustomTheme(form.value.customTheme) });
 }
 </script>
 
@@ -350,72 +302,43 @@ function persist() {
       </div>
     </section>
 
-    <section class="settings-section">
+    <section
+      class="settings-section custom-theme-section"
+      :class="{ disabled: !usesCustomTheme }"
+      :aria-disabled="!usesCustomTheme"
+    >
       <div class="settings-section-heading">
         <div>
-          <h2>{{ t("personalization.startup") }}</h2>
-          <p>{{ t("personalization.startupHint") }}</p>
-        </div>
-      </div>
-
-      <div class="preference-row switch-row">
-        <span>{{ t("personalization.launchAtLogin") }}</span>
-        <Cmz_Toggle
-          :model-value="autostartEnabled"
-          variant="switch"
-          size="sm"
-          :disabled="autostartLoading || autostartUpdating"
-          @update:model-value="updateAutostart"
-        />
-      </div>
-
-      <div v-if="autostartEnabled" class="preference-row switch-row">
-        <span>{{ t("personalization.silentStart") }}</span>
-        <Cmz_Toggle
-          :model-value="form.silentStart"
-          variant="switch"
-          size="sm"
-          @update:model-value="updateSilentStart"
-        />
-      </div>
-
-      <div class="preference-row">
-        <span>{{ t("personalization.splashDuration") }}</span>
-        <Cmz_Select
-          class="settings-select"
-          :model-value="form.splashDurationMs"
-          :options="splashDurationOptions"
-          @update:model-value="setSplashDuration"
-        />
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <div class="settings-section-heading">
-        <div>
-          <h2>{{ t("personalization.windowBehavior") }}</h2>
-          <p>{{ t("personalization.windowBehaviorHint") }}</p>
+          <h2>{{ t("personalization.customTheme") }}</h2>
+          <p>{{ t("personalization.customThemeHint") }}</p>
         </div>
       </div>
 
       <div class="preference-row">
-        <span>{{ t("personalization.closeAction") }}</span>
+        <span>{{ t("personalization.customThemePalette") }}</span>
         <Cmz_Select
           class="settings-select"
-          :model-value="form.closeAction"
-          :options="closeActionOptions"
-          @update:model-value="setCloseAction"
+          :model-value="customPlan"
+          :options="customPlanOptions"
+          :disabled="!usesCustomTheme"
+          @update:model-value="setCustomPlan"
         />
       </div>
 
-      <div class="preference-row switch-row">
-        <span>{{ t("personalization.rememberWindowState") }}</span>
-        <Cmz_Toggle
-          :model-value="form.rememberWindowState"
-          variant="switch"
-          size="sm"
-          @update:model-value="updateRememberWindowState"
-        />
+      <div class="custom-theme-grid">
+        <label v-for="field in customColorFields" :key="field.key" class="custom-color-field">
+          <span>{{ t(`personalization.customColors.${field.label}`) }}</span>
+          <span class="custom-color-control">
+            <input
+              type="color"
+              :value="customColors[field.key]"
+              :disabled="!usesCustomTheme"
+              :aria-label="t(`personalization.customColors.${field.label}`)"
+              @input="setCustomColor(field.key, $event)"
+            />
+            <code>{{ customColors[field.key].toUpperCase() }}</code>
+          </span>
+        </label>
       </div>
     </section>
   </div>

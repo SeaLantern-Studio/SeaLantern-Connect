@@ -7,7 +7,6 @@ export type SectionId = "create" | "join" | "personalize" | "settings";
 export const useUiStore = defineStore("ui", () => {
   const activeSection = ref<SectionId>("create");
   const sidebarCollapsed = ref(false);
-  const closePromptOpen = ref(false);
   const incomingInvite = ref<IncomingInvite | null>(null);
   let nextInviteId = 0;
   function navigate(section: string): void {
@@ -17,14 +16,6 @@ export const useUiStore = defineStore("ui", () => {
 
   function toggleSidebar(): void {
     sidebarCollapsed.value = !sidebarCollapsed.value;
-  }
-
-  function openClosePrompt(): void {
-    closePromptOpen.value = true;
-  }
-
-  function closeClosePrompt(): void {
-    closePromptOpen.value = false;
   }
 
   function importInvite(uri: string): void {
@@ -39,12 +30,9 @@ export const useUiStore = defineStore("ui", () => {
   return {
     activeSection,
     sidebarCollapsed,
-    closePromptOpen,
     incomingInvite,
     navigate,
     toggleSidebar,
-    openClosePrompt,
-    closeClosePrompt,
     importInvite,
     consumeIncomingInvite,
   };

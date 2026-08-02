@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { Cmz_Button, Cmz_Modal } from "cmzya-modern-ui";
-import { closeWindow, getInitialDeepLinks, onCloseActionRequested, onDeepLinks } from "@api";
+import { getInitialDeepLinks, onDeepLinks } from "@api";
 import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
@@ -13,7 +13,6 @@ import PersonalizationView from "./components/settings/PersonalizationView.vue";
 import SettingsView from "./components/settings/SettingsView.vue";
 import { t } from "./i18n";
 import { inviteFromDeepLinkUrls } from "./invitations";
-import type { CloseAction } from "./models/preferences";
 import { usePreferencesStore } from "./stores/preferences";
 import { useSessionStore } from "./stores/session";
 import { useUiStore } from "./stores/ui";
@@ -27,10 +26,8 @@ const { preferences } = storeToRefs(preferencesStore);
 const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
 const isInitializing = ref(true);
-const choosingCloseAction = ref(false);
 const materialRestartPromptOpen = ref(false);
 const exitingApplication = ref(false);
-let unlistenCloseAction: (() => void) | null = null;
 let unlistenDeepLinks: (() => void) | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
 let lastDeepLink: { uri: string; receivedAt: number } | null = null;
@@ -44,19 +41,6 @@ const pageTitle = computed(
       settings: t("navigation.settings"),
     })[activeSection.value],
 );
-
-async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Promise<void> {
-  if (choosingCloseAction.value) return;
-  choosingCloseAction.value = true;
-  try {
-    const saved = await preferencesStore.setCloseAction(closeAction);
-    if (!saved) return;
-    uiStore.closeClosePrompt();
-    await closeWindow();
-  } finally {
-    choosingCloseAction.value = false;
-  }
-}
 
 function updatePersonalization(
   update: Parameters<typeof preferencesStore.updatePersonalization>[0],
@@ -94,7 +78,6 @@ async function setupDeepLinks(): Promise<void> {
 
 onMounted(async () => {
   disableAutoHidingScrollbars = enableAutoHidingScrollbars();
-  unlistenCloseAction = await onCloseActionRequested(uiStore.openClosePrompt);
   await setupDeepLinks();
   await preferencesStore.load();
   preferencesStore.startSystemThemeListener();
@@ -107,7 +90,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disableAutoHidingScrollbars?.();
-  unlistenCloseAction?.();
   unlistenDeepLinks?.();
   sessionStore.dispose();
   preferencesStore.stopSystemThemeListener();
@@ -169,43 +151,13 @@ onUnmounted(() => {
             v-else
             :preferences="preferences"
             @change="preferencesStore.updateConnectionSettings"
+            @application-change="preferencesStore.updateApplicationSettings"
             @lightweight-change="preferencesStore.updateLightweightSettings"
           />
         </div>
       </Transition>
     </main>
   </div>
-
-  <Cmz_Modal
-    :visible="uiStore.closePromptOpen"
-    :title="t('window.closePromptTitle')"
-    width="380px"
-    :close-on-overlay="false"
-    @close="uiStore.closeClosePrompt"
-  >
-    <p class="modal-copy">{{ t("window.closePromptHint") }}</p>
-    <template #footer>
-      <div class="close-prompt-actions">
-        <Cmz_Button
-          class="danger-button"
-          variant="outline"
-          type="button"
-          :disabled="choosingCloseAction"
-          @click="chooseCloseAction('exit')"
-        >
-          {{ t("personalization.exitApplication") }}
-        </Cmz_Button>
-        <Cmz_Button
-          class="primary-button"
-          type="button"
-          :disabled="choosingCloseAction"
-          @click="chooseCloseAction('hide_to_tray')"
-        >
-          {{ t("personalization.hideToTray") }}
-        </Cmz_Button>
-      </div>
-    </template>
-  </Cmz_Modal>
 
   <Cmz_Modal
     :visible="materialRestartPromptOpen"

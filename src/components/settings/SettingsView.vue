@@ -1,20 +1,28 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Input, Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
+import { disableAutostart, enableAutostart, getAutostartEnabled } from "@api";
 import { t } from "../../i18n";
 import type {
+  ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
   LightweightSettingsUpdate,
   Preferences,
+  SplashDurationMs,
 } from "../../models/preferences";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{
   change: [update: ConnectionSettingsUpdate];
+  applicationChange: [update: ApplicationSettingsUpdate];
   lightweightChange: [update: LightweightSettingsUpdate];
 }>();
 
 const form = ref<ConnectionSettingsUpdate>(pickSettings(props.preferences));
+const applicationForm = ref<ApplicationSettingsUpdate>(pickApplicationSettings(props.preferences));
+const autostartEnabled = ref(false);
+const autostartLoading = ref(true);
+const autostartUpdating = ref(false);
 const reconnectUnlimited = ref(props.preferences.reconnectTimeoutSecs == null);
 const autoLightweightEnabled = ref(props.preferences.autoLightweightMinutes != null);
 const autoLightweightMinutes = ref(String(props.preferences.autoLightweightMinutes ?? 3));
@@ -32,6 +40,21 @@ const timeoutOptions = computed<SelectOption[]>(() =>
     value: seconds,
   })),
 );
+const splashDurationOptions = computed<SelectOption[]>(() => [
+  { label: t("connectionSettings.disabled"), value: 0 },
+  ...[500, 1000, 1500, 2000].map((durationMs) => ({
+    label: t("connectionSettings.seconds", { value: durationMs / 1000 }),
+    value: durationMs,
+  })),
+]);
+
+function pickApplicationSettings(preferences: Preferences): ApplicationSettingsUpdate {
+  return {
+    splashDurationMs: preferences.splashDurationMs,
+    silentStart: preferences.silentStart,
+    rememberWindowState: preferences.rememberWindowState,
+  };
+}
 
 function pickSettings(preferences: Preferences): ConnectionSettingsUpdate {
   return {
@@ -39,6 +62,67 @@ function pickSettings(preferences: Preferences): ConnectionSettingsUpdate {
     relayUrl: preferences.relayUrl,
     reconnectTimeoutSecs: preferences.reconnectTimeoutSecs ?? 30,
   };
+}
+
+watch(
+  () =>
+    [
+      props.preferences.splashDurationMs,
+      props.preferences.silentStart,
+      props.preferences.rememberWindowState,
+    ] as const,
+  ([splashDurationMs, silentStart, rememberWindowState]) => {
+    applicationForm.value = { splashDurationMs, silentStart, rememberWindowState };
+  },
+);
+
+onMounted(() => void loadAutostart());
+
+async function loadAutostart() {
+  autostartLoading.value = true;
+  try {
+    autostartEnabled.value = await getAutostartEnabled();
+  } catch (error) {
+    console.error("Failed to load autostart state", error);
+  } finally {
+    autostartLoading.value = false;
+  }
+}
+
+async function updateAutostart(value: boolean) {
+  if (autostartLoading.value || autostartUpdating.value) return;
+  const fallback = autostartEnabled.value;
+  autostartEnabled.value = value;
+  autostartUpdating.value = true;
+  try {
+    if (value) await enableAutostart();
+    else await disableAutostart();
+  } catch (error) {
+    autostartEnabled.value = fallback;
+    console.error("Failed to update autostart state", error);
+  } finally {
+    autostartUpdating.value = false;
+  }
+}
+
+function updateSilentStart(value: boolean) {
+  applicationForm.value.silentStart = value;
+  persistApplicationSettings();
+}
+
+function updateRememberWindowState(value: boolean) {
+  applicationForm.value.rememberWindowState = value;
+  persistApplicationSettings();
+}
+
+function setSplashDuration(value: string | number) {
+  if (!splashDurationOptions.value.some((option) => option.value === value)) return;
+  applicationForm.value.splashDurationMs = value as SplashDurationMs;
+  persistApplicationSettings();
+}
+
+function persistApplicationSettings() {
+  emit("applicationChange", { ...applicationForm.value });
 }
 
 function setReconnectTimeout(value: string | number) {
@@ -109,6 +193,61 @@ function persist() {
 
 <template>
   <div class="workspace settings-workspace">
+    <section class="settings-section">
+      <div class="settings-section-heading">
+        <div>
+          <h2>{{ t("connectionSettings.startup") }}</h2>
+          <p>{{ t("connectionSettings.startupHint") }}</p>
+        </div>
+      </div>
+      <div class="preference-row switch-row">
+        <span>{{ t("connectionSettings.autostart") }}</span>
+        <Cmz_Toggle
+          :model-value="autostartEnabled"
+          variant="switch"
+          size="sm"
+          :disabled="autostartLoading || autostartUpdating"
+          @update:model-value="updateAutostart"
+        />
+      </div>
+      <div v-if="autostartEnabled" class="preference-row switch-row">
+        <span>{{ t("connectionSettings.silentStart") }}</span>
+        <Cmz_Toggle
+          :model-value="applicationForm.silentStart"
+          variant="switch"
+          size="sm"
+          @update:model-value="updateSilentStart"
+        />
+      </div>
+      <div class="preference-row">
+        <span>{{ t("connectionSettings.splashDuration") }}</span>
+        <Cmz_Select
+          class="settings-select"
+          :model-value="applicationForm.splashDurationMs"
+          :options="splashDurationOptions"
+          @update:model-value="setSplashDuration"
+        />
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="settings-section-heading">
+        <div>
+          <h2>{{ t("connectionSettings.windowBehavior") }}</h2>
+          <p>{{ t("connectionSettings.windowBehaviorHint") }}</p>
+        </div>
+      </div>
+      <div class="preference-row switch-row">
+        <span>{{ t("connectionSettings.rememberWindowState") }}</span>
+        <Cmz_Toggle
+          :model-value="applicationForm.rememberWindowState"
+          variant="switch"
+          size="sm"
+          @update:model-value="updateRememberWindowState"
+        />
+      </div>
+    </section>
+
     <section class="settings-section">
       <div class="settings-section-heading">
         <div>

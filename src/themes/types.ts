@@ -1,20 +1,9 @@
-import type { ColorThemeId } from "../models/preferences";
+import type { ColorThemeId, ThemeColors } from "../models/preferences";
 
 export type ColorPlan = "light" | "dark" | "lightAcrylic" | "darkAcrylic";
 export type { ColorThemeId } from "../models/preferences";
 
-export interface ThemeColors {
-  bg: string;
-  bgSecondary: string;
-  bgTertiary: string;
-  primary: string;
-  primarySolid: string;
-  primarySolidHover: string;
-  secondary: string;
-  textPrimary: string;
-  textSecondary: string;
-  border: string;
-}
+export type { ThemeColors } from "../models/preferences";
 
 export interface ThemeDefinition {
   id: ColorThemeId;

@@ -20,11 +20,56 @@ const AUTO_LIGHTWEIGHT_MINUTES_RANGE: std::ops::RangeInclusive<u32> = 1..=1440;
 pub const RECONNECT_TIMEOUT_OPTIONS_SECS: [u64; 5] = [10, 15, 20, 30, 60];
 static SYSTEM_FONTS: OnceLock<Vec<String>> = OnceLock::new();
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CloseAction {
-    Ask,
-    Exit,
-    HideToTray,
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ThemeColors {
+    bg: String,
+    bg_secondary: String,
+    bg_tertiary: String,
+    primary: String,
+    primary_solid: String,
+    primary_solid_hover: String,
+    secondary: String,
+    text_primary: String,
+    text_secondary: String,
+    border: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct CustomTheme {
+    light: ThemeColors,
+    dark: ThemeColors,
+}
+
+impl Default for CustomTheme {
+    fn default() -> Self {
+        Self {
+            light: ThemeColors {
+                bg: "#f7f7f6".to_owned(),
+                bg_secondary: "#f0f0ef".to_owned(),
+                bg_tertiary: "#dedfe0".to_owned(),
+                primary: "#45505d".to_owned(),
+                primary_solid: "#45505d".to_owned(),
+                primary_solid_hover: "#36414d".to_owned(),
+                secondary: "#69727c".to_owned(),
+                text_primary: "#202326".to_owned(),
+                text_secondary: "#666b70".to_owned(),
+                border: "#d6d8da".to_owned(),
+            },
+            dark: ThemeColors {
+                bg: "#111214".to_owned(),
+                bg_secondary: "#191a1d".to_owned(),
+                bg_tertiary: "#25272b".to_owned(),
+                primary: "#aab4c0".to_owned(),
+                primary_solid: "#455666".to_owned(),
+                primary_solid_hover: "#536778".to_owned(),
+                secondary: "#c1c7cf".to_owned(),
+                text_primary: "#f1f1f2".to_owned(),
+                text_secondary: "#a6a8ae".to_owned(),
+                border: "#30343a".to_owned(),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -32,13 +77,13 @@ pub enum CloseAction {
 pub struct Preferences {
     theme: String,
     color_theme: String,
+    custom_theme: CustomTheme,
     font_size: u32,
     font_family: String,
     splash_duration_ms: u32,
     silent_start: bool,
     locale: String,
     remember_window_state: bool,
-    close_action: String,
     window_material: String,
     auto_lightweight_minutes: Option<u32>,
     host_uri_lifetime: String,
@@ -54,13 +99,13 @@ impl Default for Preferences {
         Self {
             theme: "system".to_owned(),
             color_theme: "inkstone".to_owned(),
+            custom_theme: CustomTheme::default(),
             font_size: 14,
             font_family: String::new(),
             splash_duration_ms: 1000,
             silent_start: false,
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
-            close_action: "ask".to_owned(),
             window_material: "solid".to_owned(),
             auto_lightweight_minutes: None,
             host_uri_lifetime: "always".to_owned(),
@@ -85,14 +130,18 @@ pub struct SettingsState {
 pub struct PersonalizationUpdate {
     theme: String,
     color_theme: String,
+    custom_theme: CustomTheme,
     font_size: u32,
     font_family: String,
+    window_material: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplicationSettingsUpdate {
     splash_duration_ms: u32,
     silent_start: bool,
-    locale: String,
     remember_window_state: bool,
-    close_action: String,
-    window_material: String,
 }
 
 #[derive(Deserialize)]
@@ -172,17 +221,6 @@ impl SettingsState {
             .lock()
             .map(|preferences| preferences.reconnect_timeout_secs.map(Duration::from_secs))
             .map_err(|_| "settings state is unavailable".to_owned())
-    }
-
-    pub fn close_action(&self) -> CloseAction {
-        self.preferences
-            .lock()
-            .map(|preferences| match preferences.close_action.as_str() {
-                "exit" => CloseAction::Exit,
-                "hide_to_tray" => CloseAction::HideToTray,
-                _ => CloseAction::Ask,
-            })
-            .unwrap_or(CloseAction::Ask)
     }
 
     pub fn remembers_window_state(&self) -> bool {
@@ -330,17 +368,6 @@ pub fn set_locale(
 }
 
 #[tauri::command]
-pub fn set_close_action(
-    close_action: String,
-    state: State<'_, SettingsState>,
-) -> Result<(), String> {
-    if !matches!(close_action.as_str(), "ask" | "exit" | "hide_to_tray") {
-        return Err("invalid close action".to_owned());
-    }
-    state.update(|preferences| preferences.close_action = close_action)
-}
-
-#[tauri::command]
 pub fn set_invite_lifetime(
     lifetime: String,
     state: State<'_, SettingsState>,
@@ -363,23 +390,14 @@ pub fn set_personalization(
     if !is_color_theme(&update.color_theme) {
         return Err("invalid color theme".to_owned());
     }
+    if !is_custom_theme(&update.custom_theme) {
+        return Err("invalid custom theme".to_owned());
+    }
     if !FONT_SIZE_RANGE.contains(&update.font_size) {
         return Err("invalid font size".to_owned());
     }
     let font_family = normalize_font_family(&update.font_family)
         .ok_or_else(|| "invalid font family".to_owned())?;
-    if !SPLASH_DURATION_OPTIONS_MS.contains(&update.splash_duration_ms) {
-        return Err("invalid splash duration".to_owned());
-    }
-    if !matches!(update.locale.as_str(), "zh-CN" | "en") {
-        return Err("invalid locale preference".to_owned());
-    }
-    if !matches!(
-        update.close_action.as_str(),
-        "ask" | "exit" | "hide_to_tray"
-    ) {
-        return Err("invalid close action".to_owned());
-    }
     if !is_window_material(&update.window_material) {
         return Err("invalid window material".to_owned());
     }
@@ -388,19 +406,30 @@ pub fn set_personalization(
     state.update(|preferences| {
         preferences.theme = update.theme;
         preferences.color_theme = update.color_theme;
+        preferences.custom_theme = update.custom_theme;
         preferences.font_size = update.font_size;
         preferences.font_family = font_family;
-        preferences.splash_duration_ms = update.splash_duration_ms;
-        preferences.silent_start = update.silent_start;
-        preferences.locale = update.locale;
-        preferences.remember_window_state = update.remember_window_state;
-        preferences.close_action = update.close_action;
         preferences.window_material = window_material.clone();
     })?;
     if let Err(error) = effects::set_material(&app, &window_material, &theme) {
         log::error!("window material update failed: {error}");
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn set_application_settings(
+    update: ApplicationSettingsUpdate,
+    state: State<'_, SettingsState>,
+) -> Result<(), String> {
+    if !SPLASH_DURATION_OPTIONS_MS.contains(&update.splash_duration_ms) {
+        return Err("invalid splash duration".to_owned());
+    }
+    state.update(|preferences| {
+        preferences.splash_duration_ms = update.splash_duration_ms;
+        preferences.silent_start = update.silent_start;
+        preferences.remember_window_state = update.remember_window_state;
+    })
 }
 
 #[tauri::command]
@@ -455,16 +484,16 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nlocale={}\nremember_window_state={}\nclose_action={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\ncustom_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nlocale={}\nremember_window_state={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
+        serde_json::to_string(&preferences.custom_theme).map_err(|error| error.to_string())?,
         preferences.font_size,
         preferences.font_family,
         preferences.splash_duration_ms,
         preferences.silent_start,
         preferences.locale,
         preferences.remember_window_state,
-        preferences.close_action,
         preferences.window_material,
         preferences
             .auto_lightweight_minutes
@@ -513,6 +542,12 @@ fn parse_preferences(content: &str) -> Preferences {
             if let Some(color_theme) = normalize_color_theme(value) {
                 preferences.color_theme = color_theme.to_owned();
             }
+        } else if let Some(value) = line.strip_prefix("custom_theme=") {
+            if let Ok(theme) = serde_json::from_str::<CustomTheme>(value.trim())
+                && is_custom_theme(&theme)
+            {
+                preferences.custom_theme = theme;
+            }
         } else if let Some(value) = line.strip_prefix("font_size=") {
             preferences.font_size = value
                 .trim()
@@ -540,11 +575,6 @@ fn parse_preferences(content: &str) -> Preferences {
             }
         } else if let Some(value) = line.strip_prefix("remember_window_state=") {
             preferences.remember_window_state = value.trim() == "true";
-        } else if let Some(value) = line.strip_prefix("close_action=") {
-            let value = value.trim();
-            if matches!(value, "ask" | "exit" | "hide_to_tray") {
-                preferences.close_action = value.to_owned();
-            }
         } else if let Some(value) = line.strip_prefix("window_material=") {
             let value = value.trim();
             if is_window_material(value) {
@@ -586,8 +616,33 @@ fn parse_preferences(content: &str) -> Preferences {
 fn is_color_theme(value: &str) -> bool {
     matches!(
         value,
-        "celadon" | "inkstone" | "vellum" | "moss" | "gloaming"
+        "celadon" | "inkstone" | "vellum" | "moss" | "gloaming" | "custom"
     )
+}
+
+fn is_custom_theme(theme: &CustomTheme) -> bool {
+    [&theme.light, &theme.dark].into_iter().all(|colors| {
+        [
+            &colors.bg,
+            &colors.bg_secondary,
+            &colors.bg_tertiary,
+            &colors.primary,
+            &colors.primary_solid,
+            &colors.primary_solid_hover,
+            &colors.secondary,
+            &colors.text_primary,
+            &colors.text_secondary,
+            &colors.border,
+        ]
+        .into_iter()
+        .all(|color| {
+            color.len() == 7
+                && color.starts_with('#')
+                && color[1..]
+                    .chars()
+                    .all(|character| character.is_ascii_hexdigit())
+        })
+    })
 }
 
 fn normalize_font_family(value: &str) -> Option<String> {
@@ -602,6 +657,7 @@ fn normalize_color_theme(value: &str) -> Option<&'static str> {
         "vellum" | "warm" | "sunset" => Some("vellum"),
         "moss" | "mountain" | "sage" | "ocean" => Some("moss"),
         "gloaming" | "mauve" | "rose" => Some("gloaming"),
+        "custom" => Some("custom"),
         _ => None,
     }
 }
@@ -634,7 +690,7 @@ mod tests {
     #[test]
     fn parses_preferences() {
         let preferences = parse_preferences(
-            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nsilent_start=true\nlocale=en\nremember_window_state=false\nclose_action=exit\nwindow_material=acrylic\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
+            "theme=dark\ncolor_theme=moss\nfont_size=17\nfont_family=Microsoft YaHei\nsplash_duration_ms=2000\nsilent_start=true\nlocale=en\nremember_window_state=false\nwindow_material=acrylic\nauto_lightweight_minutes=10\njoin_uri=sculk://join/v1/example\njoin_port=25566\nreconnect_timeout_secs=30\nrelay_custom=true\nrelay_url=https://relay.example.com\nwindow_x=100\nwindow_y=200\nwindow_width=960\nwindow_height=640\nwindow_maximized=true\n",
         );
 
         assert_eq!(preferences.theme, "dark");
@@ -645,7 +701,6 @@ mod tests {
         assert!(preferences.silent_start);
         assert_eq!(preferences.locale, "en");
         assert!(!preferences.remember_window_state);
-        assert_eq!(preferences.close_action, "exit");
         assert_eq!(preferences.window_material, "acrylic");
         assert_eq!(preferences.auto_lightweight_minutes, Some(10));
         assert_eq!(preferences.join_uri, "sculk://join/v1/example");
@@ -658,7 +713,7 @@ mod tests {
     #[test]
     fn ignores_unknown_theme() {
         let preferences = parse_preferences(
-            "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nclose_action=minimize\nauto_lightweight_minutes=0\nreconnect_timeout_secs=45\n",
+            "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nauto_lightweight_minutes=0\nreconnect_timeout_secs=45\n",
         );
 
         assert_eq!(preferences.theme, "system");
@@ -666,7 +721,6 @@ mod tests {
         assert_eq!(preferences.font_size, 14);
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
-        assert_eq!(preferences.close_action, "ask");
         assert_eq!(preferences.auto_lightweight_minutes, None);
         assert_eq!(preferences.reconnect_timeout_secs, None);
     }
@@ -676,6 +730,18 @@ mod tests {
         let preferences = parse_preferences("window_material=liquid_glass\n");
 
         assert_eq!(preferences.window_material, "liquid_glass");
+    }
+
+    #[test]
+    fn parses_custom_theme() {
+        let mut custom_theme = CustomTheme::default();
+        custom_theme.light.primary = "#123456".to_owned();
+        let encoded = serde_json::to_string(&custom_theme).expect("custom theme should serialize");
+        let preferences =
+            parse_preferences(&format!("color_theme=custom\ncustom_theme={encoded}\n"));
+
+        assert_eq!(preferences.color_theme, "custom");
+        assert_eq!(preferences.custom_theme, custom_theme);
     }
 
     #[test]

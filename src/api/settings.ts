@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
-  CloseAction,
+  ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
   HostUriLifetime,
   Locale,
@@ -30,16 +30,16 @@ export function saveLocale(locale: Locale): Promise<void> {
   return invoke("set_locale", { locale });
 }
 
-export function saveCloseAction(closeAction: CloseAction): Promise<void> {
-  return invoke("set_close_action", { closeAction });
-}
-
 export function saveInviteLifetime(lifetime: HostUriLifetime): Promise<void> {
   return invoke("set_invite_lifetime", { lifetime });
 }
 
 export function savePersonalization(update: PersonalizationUpdate): Promise<void> {
   return invoke("set_personalization", { update });
+}
+
+export function saveApplicationSettings(update: ApplicationSettingsUpdate): Promise<void> {
+  return invoke("set_application_settings", { update });
 }
 
 export function saveConnectionSettings(update: ConnectionSettingsUpdate): Promise<void> {

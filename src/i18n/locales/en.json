@@ -5,8 +5,8 @@
     "joinRoom": "Join Room",
     "personalization": "Personalization",
     "settings": "Settings",
-    "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand",
+    "collapseSidebar": "Collapse",
     "main": "Main navigation",
     "connectionRunning": "Connection is running"
   },
@@ -15,9 +15,7 @@
     "minimize": "Minimize",
     "restore": "Restore",
     "maximize": "Maximize",
-    "close": "Close",
-    "closePromptTitle": "When closing the window",
-    "closePromptHint": "Choose what the app should do when the window closes; this choice is saved automatically"
+    "close": "Close"
   },
   "personalization": {
     "appearance": "Appearance",
@@ -36,7 +34,25 @@
       "inkstone": "Inkstone",
       "vellum": "Vellum",
       "moss": "Moss",
-      "gloaming": "Gloaming"
+      "gloaming": "Gloaming",
+      "custom": "Custom"
+    },
+    "customTheme": "Custom Theme",
+    "customThemeHint": "Adjust the colors used by light and dark modes separately",
+    "customThemePalette": "Edit palette",
+    "customThemeLight": "Light",
+    "customThemeDark": "Dark",
+    "customColors": {
+      "background": "Background",
+      "surface": "Surface",
+      "surfaceStrong": "Strong surface",
+      "primary": "Primary",
+      "primarySolid": "Solid primary",
+      "primarySolidHover": "Solid primary hover",
+      "secondary": "Secondary",
+      "textPrimary": "Primary text",
+      "textSecondary": "Secondary text",
+      "border": "Border"
     },
     "language": "Language",
     "simplifiedChinese": "简体中文",
@@ -45,12 +61,7 @@
     "followSystem": "System",
     "light": "Light",
     "dark": "Dark",
-    "windowBehavior": "Window Behavior",
-    "windowBehaviorHint": "Choose what closing the window does and whether its state is remembered",
-    "closeAction": "When closing",
-    "askOnClose": "Ask when closing",
     "exitApplication": "Exit app",
-    "hideToTray": "Hide to tray",
     "windowMaterial": "Window Material",
     "windowMaterials": {
       "solid": "Solid",
@@ -60,18 +71,19 @@
       "liquidGlass": "Liquid Glass"
     },
     "restartTitle": "Restart to apply window material",
-    "restartHint": "Liquid Glass will take effect the next time SeaLantern Connect starts. Exit and reopen the app.",
-    "rememberWindowState": "Remember window position and size",
-    "startup": "Startup",
-    "startupHint": "Configure launch at login, silent start, and the minimum splash screen duration",
-    "launchAtLogin": "Launch at login",
-    "silentStart": "Silent start",
-    "splashDuration": "Splash Animation Duration",
-    "disabled": "Off",
-    "seconds": "{value} seconds"
+    "restartHint": "Liquid Glass will take effect the next time SeaLantern Connect starts. Exit and reopen the app."
   },
   "connectionSettings": {
     "hint": "Configure relay and reconnection behavior; new connections use these settings",
+    "startup": "Startup",
+    "startupHint": "Configure launch at login, silent start, and the minimum splash screen duration",
+    "autostart": "Launch at login",
+    "silentStart": "Silent start",
+    "splashDuration": "Splash Animation",
+    "disabled": "Off",
+    "windowBehavior": "Window Behavior",
+    "windowBehaviorHint": "Remember window state; closing the window keeps the app in the tray",
+    "rememberWindowState": "Remember window position and size",
     "lightweightSection": "Lightweight Mode",
     "lightweightHint": "Release interface resources after the window has been hidden for a while",
     "autoLightweight": "Enter lightweight mode automatically",

@@ -3,8 +3,8 @@ import { ref } from "vue";
 import * as preferencesApi from "@api";
 import { setLocale } from "../i18n";
 import type {
+  ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
-  CloseAction,
   HostUriLifetime,
   LightweightSettingsUpdate,
   Locale,
@@ -15,16 +15,43 @@ import type {
 import { applyColorTheme } from "../themes/apply";
 import { applyTypography, DEFAULT_FONT_SIZE } from "../ui/typography";
 
+const defaultCustomTheme = {
+  light: {
+    bg: "#f7f7f6",
+    bgSecondary: "#f0f0ef",
+    bgTertiary: "#dedfe0",
+    primary: "#45505d",
+    primarySolid: "#45505d",
+    primarySolidHover: "#36414d",
+    secondary: "#69727c",
+    textPrimary: "#202326",
+    textSecondary: "#666b70",
+    border: "#d6d8da",
+  },
+  dark: {
+    bg: "#111214",
+    bgSecondary: "#191a1d",
+    bgTertiary: "#25272b",
+    primary: "#aab4c0",
+    primarySolid: "#455666",
+    primarySolidHover: "#536778",
+    secondary: "#c1c7cf",
+    textPrimary: "#f1f1f2",
+    textSecondary: "#a6a8ae",
+    border: "#30343a",
+  },
+};
+
 const defaults: Preferences = {
   theme: "system",
   colorTheme: "inkstone",
+  customTheme: defaultCustomTheme,
   fontSize: DEFAULT_FONT_SIZE,
   fontFamily: "",
   splashDurationMs: 1000,
   silentStart: false,
   locale: "zh-CN",
   rememberWindowState: true,
-  closeAction: "ask",
   windowMaterial: "solid",
   autoLightweightMinutes: null,
   hostUriLifetime: "always",
@@ -42,6 +69,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
   let localeSaveQueue = Promise.resolve();
   let personalizationSaveQueue = Promise.resolve();
   let personalizationRevision = 0;
+  let applicationSaveQueue = Promise.resolve();
   let connectionSaveQueue = Promise.resolve();
   let lightweightSaveQueue = Promise.resolve();
 
@@ -51,6 +79,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
       preferences.value.colorTheme,
       systemTheme.matches,
       preferences.value.windowMaterial,
+      preferences.value.customTheme,
     );
   }
 
@@ -111,8 +140,8 @@ export const usePreferencesStore = defineStore("preferences", () => {
 
   function updatePersonalization(update: PersonalizationUpdate): void {
     const snapshot = { ...update };
+    snapshot.customTheme = structuredClone(update.customTheme);
     Object.assign(preferences.value, snapshot);
-    setLocale(snapshot.locale);
     applyPersonalizationStyles();
     const revision = ++personalizationRevision;
     personalizationSaveQueue = personalizationSaveQueue
@@ -123,23 +152,27 @@ export const usePreferencesStore = defineStore("preferences", () => {
       .catch((error) => console.error("Failed to save personalization", error));
   }
 
+  function updateApplicationSettings(update: ApplicationSettingsUpdate): void {
+    const snapshot = { ...update };
+    Object.assign(preferences.value, snapshot);
+    applicationSaveQueue = applicationSaveQueue
+      .then(() => preferencesApi.saveApplicationSettings(snapshot))
+      .catch((error) => console.error("Failed to save application settings", error));
+  }
+
   async function exitForMaterialChange(): Promise<boolean> {
     const current = preferences.value;
     const snapshot: PersonalizationUpdate = {
       theme: current.theme,
       colorTheme: current.colorTheme,
+      customTheme: structuredClone(current.customTheme),
       fontSize: current.fontSize,
       fontFamily: current.fontFamily,
-      splashDurationMs: current.splashDurationMs,
-      silentStart: current.silentStart,
-      locale: current.locale,
-      rememberWindowState: current.rememberWindowState,
-      closeAction: current.closeAction,
       windowMaterial: current.windowMaterial,
     };
     personalizationRevision += 1;
     try {
-      await personalizationSaveQueue;
+      await Promise.all([personalizationSaveQueue, applicationSaveQueue]);
       await preferencesApi.savePersonalization(snapshot);
       await preferencesApi.exitApplication();
       return true;
@@ -163,17 +196,6 @@ export const usePreferencesStore = defineStore("preferences", () => {
     lightweightSaveQueue = lightweightSaveQueue
       .then(() => preferencesApi.saveLightweightSettings(snapshot))
       .catch((error) => console.error("Failed to save lightweight settings", error));
-  }
-
-  async function setCloseAction(closeAction: CloseAction): Promise<boolean> {
-    try {
-      await preferencesApi.saveCloseAction(closeAction);
-      preferences.value.closeAction = closeAction;
-      return true;
-    } catch (error) {
-      console.error("Failed to save close action", error);
-      return false;
-    }
   }
 
   async function setHostUriLifetime(lifetime: HostUriLifetime): Promise<boolean> {
@@ -210,10 +232,10 @@ export const usePreferencesStore = defineStore("preferences", () => {
     setTheme,
     changeLocale,
     updatePersonalization,
+    updateApplicationSettings,
     exitForMaterialChange,
     updateConnectionSettings,
     updateLightweightSettings,
-    setCloseAction,
     setHostUriLifetime,
     startSystemThemeListener,
     stopSystemThemeListener,

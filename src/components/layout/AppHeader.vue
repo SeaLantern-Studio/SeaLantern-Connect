@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { Check, Copy, Languages, Minus, Monitor, Moon, Square, Sun, X } from "@lucide/vue";
+import { Copy, Minus, Monitor, Moon, Square, Sun, X } from "@lucide/vue";
 import {
   closeWindow,
   isWindowMaximized,
@@ -24,30 +24,19 @@ defineEmits<{
 
 const isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
 const isMaximized = ref(false);
-const languageMenuOpen = ref(false);
-const languageSelector = ref<HTMLElement | null>(null);
 let unlistenResize: (() => void) | null = null;
 
-const languageOptions = computed<{ key: Locale; label: string }[]>(() => [
-  { key: "zh-CN", label: t("personalization.simplifiedChinese") },
-  { key: "en", label: t("personalization.english") },
-]);
+const languageIndicator = computed(() => (props.locale === "zh-CN" ? "中" : "EN"));
+const languageSwitchTitle = computed(() =>
+  props.locale === "zh-CN" ? t("personalization.english") : t("personalization.simplifiedChinese"),
+);
 
 const themeIndicatorOffset = computed(() => {
   const index = ["system", "light", "dark"].indexOf(props.theme);
   return Math.max(index, 0) * 26;
 });
 
-function closeLanguageMenu() {
-  languageMenuOpen.value = false;
-}
-
-function handleDocumentPointerDown(event: PointerEvent) {
-  if (!languageSelector.value?.contains(event.target as Node)) closeLanguageMenu();
-}
-
 onMounted(async () => {
-  document.addEventListener("pointerdown", handleDocumentPointerDown);
   isMaximized.value = await isWindowMaximized();
   unlistenResize = await onWindowResized(async () => {
     isMaximized.value = await isWindowMaximized();
@@ -55,7 +44,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener("pointerdown", handleDocumentPointerDown);
   unlistenResize?.();
 });
 </script>
@@ -64,46 +52,15 @@ onUnmounted(() => {
   <header class="titlebar" :class="{ 'macos-overlay': isMacOS }" data-tauri-drag-region>
     <h1 class="page-title" data-tauri-drag-region>{{ title }}</h1>
     <div class="titlebar-actions">
-      <div ref="languageSelector" class="header-language-selector">
-        <button
-          class="header-language-button"
-          type="button"
-          :title="t('personalization.language')"
-          aria-haspopup="menu"
-          :aria-expanded="languageMenuOpen"
-          @click="languageMenuOpen = !languageMenuOpen"
-        >
-          <Languages :size="16" />
-        </button>
-        <div
-          v-if="languageMenuOpen"
-          class="header-language-menu"
-          role="menu"
-          @keydown.esc.stop="closeLanguageMenu"
-        >
-          <button
-            v-for="option in languageOptions"
-            :key="option.key"
-            class="header-language-item"
-            :class="{ active: locale === option.key }"
-            type="button"
-            role="menuitemradio"
-            :aria-checked="locale === option.key"
-            @click="
-              $emit('changeLocale', option.key);
-              closeLanguageMenu();
-            "
-          >
-            <span class="header-language-label">{{ option.label }}</span>
-            <Check
-              class="header-language-check"
-              :class="{ visible: locale === option.key }"
-              :size="16"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
+      <button
+        class="header-language-button"
+        type="button"
+        :title="languageSwitchTitle"
+        :aria-label="languageSwitchTitle"
+        @click="$emit('changeLocale', locale === 'zh-CN' ? 'en' : 'zh-CN')"
+      >
+        <span aria-hidden="true">{{ languageIndicator }}</span>
+      </button>
       <div class="theme-switcher" role="group" :aria-label="t('personalization.theme')">
         <div
           class="theme-indicator"

@@ -15,9 +15,7 @@
     "minimize": "最小化",
     "restore": "还原",
     "maximize": "最大化",
-    "close": "关闭",
-    "closePromptTitle": "关闭窗口时",
-    "closePromptHint": "请选择关闭窗口后的行为，此选择会自动保存"
+    "close": "关闭"
   },
   "personalization": {
     "appearance": "外观",
@@ -36,7 +34,25 @@
       "inkstone": "砚墨",
       "vellum": "素笺",
       "moss": "苔痕",
-      "gloaming": "暮霭"
+      "gloaming": "暮霭",
+      "custom": "自定义"
+    },
+    "customTheme": "自定义主题",
+    "customThemeHint": "分别调整浅色和深色模式使用的颜色",
+    "customThemePalette": "编辑配色",
+    "customThemeLight": "浅色",
+    "customThemeDark": "深色",
+    "customColors": {
+      "background": "背景",
+      "surface": "表面",
+      "surfaceStrong": "强调表面",
+      "primary": "主色",
+      "primarySolid": "实心主色",
+      "primarySolidHover": "实心主色悬浮",
+      "secondary": "辅助色",
+      "textPrimary": "主要文字",
+      "textSecondary": "次要文字",
+      "border": "边框"
     },
     "language": "界面语言",
     "simplifiedChinese": "简体中文",
@@ -45,12 +61,7 @@
     "followSystem": "跟随系统",
     "light": "浅色",
     "dark": "深色",
-    "windowBehavior": "窗口行为",
-    "windowBehaviorHint": "设置关闭窗口时的行为和窗口状态记忆",
-    "closeAction": "关闭窗口时",
-    "askOnClose": "关闭时询问",
     "exitApplication": "退出应用",
-    "hideToTray": "隐藏到托盘",
     "windowMaterial": "窗口材质",
     "windowMaterials": {
       "solid": "纯色",
@@ -60,18 +71,19 @@
       "liquidGlass": "液态玻璃"
     },
     "restartTitle": "重启以应用窗口材质",
-    "restartHint": "液态玻璃将在下次启动 SeaLantern Connect 后生效，请退出后重新打开应用。",
-    "rememberWindowState": "记住窗口位置和大小",
-    "startup": "启动",
-    "startupHint": "设置开机自启、静默启动和启动画面的最短展示时间",
-    "launchAtLogin": "开机自启",
-    "silentStart": "静默启动",
-    "splashDuration": "开屏动画时间",
-    "disabled": "关闭",
-    "seconds": "{value} 秒"
+    "restartHint": "液态玻璃将在下次启动 SeaLantern Connect 后生效，请退出后重新打开应用。"
   },
   "connectionSettings": {
     "hint": "配置中继节点和断线重连策略",
+    "startup": "启动",
+    "startupHint": "设置开机自启、静默启动和启动画面的最短展示时间",
+    "autostart": "开机自启",
+    "silentStart": "静默启动",
+    "splashDuration": "开屏动画",
+    "disabled": "关闭",
+    "windowBehavior": "窗口行为",
+    "windowBehaviorHint": "设置窗口状态记忆；关闭窗口时应用将保留在托盘",
+    "rememberWindowState": "记住窗口位置和大小",
     "lightweightSection": "轻量模式",
     "lightweightHint": "窗口隐藏一段时间后自动释放界面资源",
     "autoLightweight": "自动进入轻量模式",

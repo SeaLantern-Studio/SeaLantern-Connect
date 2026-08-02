@@ -3,10 +3,10 @@ use super::lightweight;
 use super::window_state::{
     self as window_lifecycle, MAIN_WINDOW_LABEL, MainWindowMode, MainWindowState,
 };
-use crate::settings::{CloseAction, SettingsState};
+use crate::settings::SettingsState;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{App, AppHandle, Emitter, Manager, Window as TauriWindow, WindowEvent, Wry};
+use tauri::{App, AppHandle, Manager, Window as TauriWindow, WindowEvent, Wry};
 
 const SHOW_MENU_ID: &str = "tray-show";
 const LIGHTWEIGHT_MENU_ID: &str = "tray-lightweight";
@@ -141,23 +141,11 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
     let settings = window.state::<SettingsState>();
     if let WindowEvent::CloseRequested { api, .. } = event {
         let _ = settings.persist();
-        match settings.close_action() {
-            CloseAction::HideToTray => {
-                api.prevent_close();
-                if let Err(error) = window_lifecycle::hide(window.app_handle()) {
-                    log::error!("window hide failed: {error}");
-                } else {
-                    schedule_auto_lightweight(window.app_handle());
-                }
-            }
-            CloseAction::Ask => {
-                api.prevent_close();
-                let _ = window.emit("close-action-requested", ());
-            }
-            CloseAction::Exit => {
-                api.prevent_close();
-                window.app_handle().exit(0);
-            }
+        api.prevent_close();
+        if let Err(error) = window_lifecycle::hide(window.app_handle()) {
+            log::error!("window hide failed: {error}");
+        } else {
+            schedule_auto_lightweight(window.app_handle());
         }
     }
 }
