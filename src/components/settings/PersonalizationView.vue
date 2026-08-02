@@ -226,15 +226,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("personalization.themeSection") }}</h2>
-          <p>
-            {{
-              t(
-                usesSolidWindowMaterial
-                  ? "personalization.appearanceHint"
-                  : "personalization.nativeMaterialHint",
-              )
-            }}
-          </p>
         </div>
       </div>
 
@@ -310,7 +301,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("personalization.customTheme") }}</h2>
-          <p>{{ t("personalization.customThemeHint") }}</p>
         </div>
       </div>
 

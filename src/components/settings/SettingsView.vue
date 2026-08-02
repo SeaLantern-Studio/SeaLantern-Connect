@@ -197,7 +197,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("connectionSettings.startup") }}</h2>
-          <p>{{ t("connectionSettings.startupHint") }}</p>
         </div>
       </div>
       <div class="preference-row switch-row">
@@ -234,7 +233,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("connectionSettings.windowBehavior") }}</h2>
-          <p>{{ t("connectionSettings.windowBehaviorHint") }}</p>
         </div>
       </div>
       <div class="preference-row switch-row">
@@ -252,7 +250,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("connectionSettings.lightweightSection") }}</h2>
-          <p>{{ t("connectionSettings.lightweightHint") }}</p>
         </div>
       </div>
       <div class="preference-row switch-row">
@@ -288,7 +285,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("connectionSettings.relaySection") }}</h2>
-          <p>{{ t("connectionSettings.relayHint") }}</p>
         </div>
       </div>
       <div class="preference-row">
@@ -319,7 +315,6 @@ function persist() {
       <div class="settings-section-heading">
         <div>
           <h2>{{ t("connectionSettings.reconnectSection") }}</h2>
-          <p>{{ t("connectionSettings.reconnectHint") }}</p>
         </div>
       </div>
       <div class="preference-row">
