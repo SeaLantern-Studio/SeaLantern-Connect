@@ -24,7 +24,7 @@ No public IP or manual port forwarding is required.
 - **Invite links**: Share a link that friends can open to join.
 - **Reliable connections**: Automatic connection, reconnection, and clear status updates.
 - **Lightweight mode**: Stay quietly available in the background when not in use.
-- **Native look and feel**: Mica and Acrylic on Windows, with vibrancy on macOS.
+- **Native look and feel**: Mica and Acrylic on Windows, with Vibrancy and Liquid Glass on macOS.
 - **Personalization**: Bilingual UI, light and dark modes, color themes, and font options.
 
 ## Development
@@ -37,6 +37,12 @@ Start the dev server:
 
 ```bash
 only dev
+```
+
+Enable DEBUG-level logging:
+
+```bash
+only dev debug
 ```
 
 Build the application:
