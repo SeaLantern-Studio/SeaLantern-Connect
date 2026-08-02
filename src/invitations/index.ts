@@ -9,6 +9,10 @@ export function normalizeInvite(value: string): string {
   return fragment ? `sculk://join/v1/${fragment[1]}` : trimmed;
 }
 
+export function isSameInvite(left: string | null, right: string | null): boolean {
+  return left !== null && right !== null && normalizeInvite(left) === normalizeInvite(right);
+}
+
 export function inviteFromDeepLinkUrls(urls: string[]): string | null {
   for (const url of urls) {
     const invite = normalizeInvite(url);

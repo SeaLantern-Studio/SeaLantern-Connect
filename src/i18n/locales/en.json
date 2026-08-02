@@ -107,6 +107,7 @@
     "disconnect": "Disconnect",
     "connectionFailed": "Connection did not complete:",
     "retryHint": "Check the invitation and network, then try again",
+    "ownInvite": "You cannot join a room you created",
     "occupied": "Stop the current room or connection first",
     "confirmTitle": "Join this Minecraft world?",
     "confirmHint": "SeaLantern Connect will create a temporary local address and advertise the room in multiplayer",

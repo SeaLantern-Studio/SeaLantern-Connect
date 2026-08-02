@@ -9,7 +9,7 @@ import {
   stopTunnel,
   validateInvite,
 } from "@api";
-import { normalizeInvite, type IncomingInvite } from "../../invitations";
+import { isSameInvite, normalizeInvite, type IncomingInvite } from "../../invitations";
 import type { ConnectStatus } from "../../models/tunnel";
 import { t } from "../../i18n";
 
@@ -110,7 +110,8 @@ async function importIncomingInvite(uri: string) {
   validationError.value = "";
   commandError.value = "";
   invite.value = normalized;
-  if (joining.value && props.status.shareUri === normalized) return;
+  if (rejectOwnInvite(normalized)) return;
+  if (joining.value && isSameInvite(props.status.shareUri, normalized)) return;
   try {
     await validateInvite(normalized);
     confirming.value = true;
@@ -144,6 +145,7 @@ function waitForIdle(timeoutMs = 20_000): Promise<void> {
 
 async function join() {
   if (portMode.value === "manual" && !validManualPort.value) return;
+  if (rejectOwnInvite(invite.value)) return;
   confirming.value = false;
   commandError.value = "";
   try {
@@ -155,6 +157,17 @@ async function join() {
   } catch (error) {
     commandError.value = String(error);
   }
+}
+
+function rejectOwnInvite(uri: string): boolean {
+  const ownInvite =
+    props.status.mode === "host" &&
+    props.status.phase !== "idle" &&
+    isSameInvite(props.status.shareUri, uri);
+  if (!ownInvite) return false;
+  confirming.value = false;
+  commandError.value = t("join.ownInvite");
+  return true;
 }
 
 async function saveJoinPort() {
@@ -289,7 +302,7 @@ function formatBytes(value: number) {
 
     <p v-if="commandError || status.error || occupied" class="error-banner">
       {{ t("join.connectionFailed") }}
-      {{ occupied ? t("join.occupied") : commandError || status.message || t("join.retryHint") }}
+      {{ commandError || (occupied ? t("join.occupied") : status.message || t("join.retryHint")) }}
     </p>
   </div>
 

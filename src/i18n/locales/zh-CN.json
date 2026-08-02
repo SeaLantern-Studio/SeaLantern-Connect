@@ -107,6 +107,7 @@
     "disconnect": "断开",
     "connectionFailed": "连接未完成：",
     "retryHint": "请检查邀请和网络后重试",
+    "ownInvite": "不能加入自己创建的房间",
     "occupied": "请先停止当前房间或连接",
     "confirmTitle": "加入这个 Minecraft 世界？",
     "confirmHint": "连接后，SeaLantern Connect 会在本机创建一个临时地址，并在多人游戏列表中广播房间",
