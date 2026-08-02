@@ -150,12 +150,8 @@ button {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  color: var(--text);
   background: transparent;
-}
-:root[data-window-material="acrylic"][data-theme="light"] .sidebar-brand-name small,
-:root[data-window-material="acrylic"][data-theme="light"] .nav-item,
-:root[data-window-material="acrylic"][data-theme="light"] .collapse-button {
-  color: #454545;
 }
 :root[data-window-material="acrylic"][data-theme="light"] .nav-separator {
   background: rgba(45, 45, 45, 0.28);
@@ -197,7 +193,7 @@ button {
   text-overflow: ellipsis;
 }
 .sidebar-brand-name small {
-  color: var(--muted);
+  color: inherit;
   font-size: 0.7143rem;
   font-weight: 500;
   line-height: 1.1;
@@ -247,7 +243,7 @@ button {
   padding: 0 14px;
   border: 0;
   border-radius: var(--cmz-radius-md);
-  color: var(--muted);
+  color: inherit;
   background: transparent;
   cursor: pointer;
   text-align: left;
@@ -304,7 +300,7 @@ button {
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .collapse-button {
-  color: color-mix(in srgb, var(--muted) 82%, transparent);
+  color: inherit;
 }
 .connection-dot {
   width: 7px;
@@ -813,9 +809,9 @@ button {
   width: 16px;
   height: 16px;
   margin-top: -6px;
-  border: 2px solid color-mix(in srgb, var(--primary) 76%, var(--text));
+  border: 2px solid color-mix(in srgb, var(--text) 72%, var(--primary-solid));
   border-radius: var(--cmz-radius-full);
-  background: var(--surface);
+  background: var(--primary-solid);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 18%, transparent);
   transition:
     border-color 150ms ease,
@@ -823,7 +819,8 @@ button {
     transform 150ms ease;
 }
 .settings-slider:hover::-webkit-slider-thumb {
-  border-color: var(--primary);
+  border-color: var(--text);
+  background: var(--primary-solid-hover);
   transform: scale(1.06);
 }
 .settings-slider:focus-visible::-webkit-slider-thumb {
@@ -845,10 +842,14 @@ button {
 .settings-slider::-moz-range-thumb {
   width: 12px;
   height: 12px;
-  border: 2px solid color-mix(in srgb, var(--primary) 76%, var(--text));
+  border: 2px solid color-mix(in srgb, var(--text) 72%, var(--primary-solid));
   border-radius: var(--cmz-radius-full);
-  background: var(--surface);
+  background: var(--primary-solid);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 18%, transparent);
+}
+.settings-slider:hover::-moz-range-thumb {
+  border-color: var(--text);
+  background: var(--primary-solid-hover);
 }
 .settings-slider:focus-visible::-moz-range-thumb {
   box-shadow:

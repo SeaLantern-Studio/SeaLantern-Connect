@@ -601,7 +601,10 @@ fn is_invite_lifetime(value: &str) -> bool {
 }
 
 fn is_window_material(value: &str) -> bool {
-    matches!(value, "solid" | "mica" | "acrylic" | "vibrancy")
+    matches!(
+        value,
+        "solid" | "mica" | "acrylic" | "vibrancy" | "liquid_glass"
+    )
 }
 
 #[cfg(test)]
@@ -652,6 +655,13 @@ mod tests {
         assert_eq!(preferences.close_action, "ask");
         assert_eq!(preferences.auto_lightweight_minutes, None);
         assert_eq!(preferences.reconnect_timeout_secs, None);
+    }
+
+    #[test]
+    fn parses_liquid_glass_material() {
+        let preferences = parse_preferences("window_material=liquid_glass\n");
+
+        assert_eq!(preferences.window_material, "liquid_glass");
     }
 
     #[test]

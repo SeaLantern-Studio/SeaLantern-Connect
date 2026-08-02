@@ -1,10 +1,15 @@
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const mainWindow = getCurrentWindow();
 
 export function closeWindow(): Promise<void> {
   return mainWindow.close();
+}
+
+export function exitApplication(): Promise<void> {
+  return invoke("exit_application");
 }
 
 export function minimizeWindow(): Promise<void> {

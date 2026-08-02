@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
-import { getSystemFonts } from "@api";
+import { getSystemFonts, supportsLiquidGlass } from "@api";
 import { t } from "../../i18n";
 import type {
   PersonalizationUpdate,
@@ -22,6 +22,7 @@ const emit = defineEmits<{
 const form = ref<PersonalizationUpdate>(pickPreferences(props.preferences));
 const fontsLoading = ref(false);
 const systemFonts = ref<string[]>([]);
+const liquidGlassSupported = ref(false);
 const fontFamilyOptions = computed<SelectOption[]>(() => {
   return fontOptions(form.value.fontFamily, t("personalization.systemFont"));
 });
@@ -43,10 +44,17 @@ const closeActionOptions = computed<SelectOption[]>(() => [
 ]);
 const windowMaterialOptions = computed<SelectOption[]>(() => {
   if (/Macintosh|Mac OS X/i.test(navigator.userAgent)) {
-    return [
+    const options: SelectOption[] = [
       { label: t("personalization.windowMaterials.solid"), value: "solid" },
       { label: t("personalization.windowMaterials.vibrancy"), value: "vibrancy" },
     ];
+    if (liquidGlassSupported.value) {
+      options.push({
+        label: t("personalization.windowMaterials.liquidGlass"),
+        value: "liquid_glass",
+      });
+    }
+    return options;
   }
   if (/Windows/i.test(navigator.userAgent)) {
     return [
@@ -137,7 +145,16 @@ watch(
 
 onMounted(() => {
   void loadSystemFonts();
+  void loadMaterialCapabilities();
 });
+
+async function loadMaterialCapabilities() {
+  try {
+    liquidGlassSupported.value = await supportsLiquidGlass();
+  } catch (error) {
+    console.error("Failed to load native material capabilities", error);
+  }
+}
 
 async function loadSystemFonts() {
   fontsLoading.value = true;

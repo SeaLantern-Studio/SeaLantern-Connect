@@ -18,6 +18,10 @@ export function getSystemFonts(): Promise<string[]> {
   return invoke("get_system_fonts");
 }
 
+export function supportsLiquidGlass(): Promise<boolean> {
+  return invoke("supports_liquid_glass");
+}
+
 export function saveTheme(theme: ThemePreference): Promise<void> {
   return invoke("set_theme", { theme });
 }

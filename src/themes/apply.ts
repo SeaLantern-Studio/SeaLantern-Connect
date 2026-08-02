@@ -50,6 +50,10 @@ function materialOpacity(
         : { surface: 0.18, soft: 0.26, strong: 0.22 };
     case "vibrancy":
       return { surface: 0.14, soft: 0.08, strong: 0.18 };
+    case "liquid_glass":
+      return dark
+        ? { surface: 0.42, soft: 0.32, strong: 0.56 }
+        : { surface: 0.55, soft: 0.38, strong: 0.68 };
     default:
       return { surface: 1, soft: 1, strong: 1 };
   }

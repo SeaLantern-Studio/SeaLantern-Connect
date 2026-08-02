@@ -28,6 +28,8 @@ const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
 const isInitializing = ref(true);
 const choosingCloseAction = ref(false);
+const materialRestartPromptOpen = ref(false);
+const exitingApplication = ref(false);
 let unlistenCloseAction: (() => void) | null = null;
 let unlistenDeepLinks: (() => void) | null = null;
 let disableAutoHidingScrollbars: (() => void) | null = null;
@@ -54,6 +56,22 @@ async function chooseCloseAction(closeAction: Exclude<CloseAction, "ask">): Prom
   } finally {
     choosingCloseAction.value = false;
   }
+}
+
+function updatePersonalization(
+  update: Parameters<typeof preferencesStore.updatePersonalization>[0],
+) {
+  const enteringLiquidGlass =
+    preferences.value.windowMaterial !== "liquid_glass" && update.windowMaterial === "liquid_glass";
+  preferencesStore.updatePersonalization(update);
+  if (enteringLiquidGlass) materialRestartPromptOpen.value = true;
+}
+
+async function exitForMaterialChange(): Promise<void> {
+  if (exitingApplication.value) return;
+  exitingApplication.value = true;
+  const exited = await preferencesStore.exitForMaterialChange();
+  if (!exited) exitingApplication.value = false;
 }
 
 function importDeepLink(urls: string[]): void {
@@ -145,7 +163,7 @@ onUnmounted(() => {
           <PersonalizationView
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
-            @change="preferencesStore.updatePersonalization"
+            @change="updatePersonalization"
           />
           <SettingsView
             v-else
@@ -186,6 +204,26 @@ onUnmounted(() => {
           {{ t("personalization.hideToTray") }}
         </Cmz_Button>
       </div>
+    </template>
+  </Cmz_Modal>
+
+  <Cmz_Modal
+    :visible="materialRestartPromptOpen"
+    :title="t('personalization.restartTitle')"
+    width="400px"
+    :close-on-overlay="false"
+    @close="materialRestartPromptOpen = false"
+  >
+    <p class="modal-copy">{{ t("personalization.restartHint") }}</p>
+    <template #footer>
+      <Cmz_Button
+        class="primary-button"
+        type="button"
+        :disabled="exitingApplication"
+        @click="exitForMaterialChange"
+      >
+        {{ t("personalization.exitApplication") }}
+      </Cmz_Button>
     </template>
   </Cmz_Modal>
 </template>

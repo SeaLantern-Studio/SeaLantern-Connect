@@ -40,6 +40,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
   let themeSaveQueue = Promise.resolve();
   let localeSaveQueue = Promise.resolve();
   let personalizationSaveQueue = Promise.resolve();
+  let personalizationRevision = 0;
   let connectionSaveQueue = Promise.resolve();
   let lightweightSaveQueue = Promise.resolve();
 
@@ -112,9 +113,38 @@ export const usePreferencesStore = defineStore("preferences", () => {
     Object.assign(preferences.value, snapshot);
     setLocale(snapshot.locale);
     applyPersonalizationStyles();
+    const revision = ++personalizationRevision;
     personalizationSaveQueue = personalizationSaveQueue
-      .then(() => preferencesApi.savePersonalization(snapshot))
+      .then(() => {
+        if (revision !== personalizationRevision) return;
+        return preferencesApi.savePersonalization(snapshot);
+      })
       .catch((error) => console.error("Failed to save personalization", error));
+  }
+
+  async function exitForMaterialChange(): Promise<boolean> {
+    const current = preferences.value;
+    const snapshot: PersonalizationUpdate = {
+      theme: current.theme,
+      colorTheme: current.colorTheme,
+      fontSize: current.fontSize,
+      fontFamily: current.fontFamily,
+      splashDurationMs: current.splashDurationMs,
+      locale: current.locale,
+      rememberWindowState: current.rememberWindowState,
+      closeAction: current.closeAction,
+      windowMaterial: current.windowMaterial,
+    };
+    personalizationRevision += 1;
+    try {
+      await personalizationSaveQueue;
+      await preferencesApi.savePersonalization(snapshot);
+      await preferencesApi.exitApplication();
+      return true;
+    } catch (error) {
+      console.error("Failed to exit application", error);
+      return false;
+    }
   }
 
   function updateConnectionSettings(update: ConnectionSettingsUpdate): void {
@@ -178,6 +208,7 @@ export const usePreferencesStore = defineStore("preferences", () => {
     setTheme,
     changeLocale,
     updatePersonalization,
+    exitForMaterialChange,
     updateConnectionSettings,
     updateLightweightSettings,
     setCloseAction,

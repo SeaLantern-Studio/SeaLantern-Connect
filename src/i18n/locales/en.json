@@ -56,8 +56,11 @@
       "solid": "Solid",
       "mica": "Mica",
       "acrylic": "Acrylic",
-      "vibrancy": "Vibrancy"
+      "vibrancy": "Vibrancy",
+      "liquidGlass": "Liquid Glass"
     },
+    "restartTitle": "Restart to apply window material",
+    "restartHint": "Liquid Glass will take effect the next time SeaLantern Connect starts. Exit and reopen the app.",
     "rememberWindowState": "Remember window position and size",
     "startup": "Startup",
     "startupHint": "Set the minimum splash screen duration",
