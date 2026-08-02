@@ -185,6 +185,39 @@
     "occupied": "请先停止当前连接",
     "create": "创建房间"
   },
+  "connection": {
+    "connectedToHost": "已连接到房主",
+    "playerJoined": "玩家 {player} 已加入",
+    "playerLeft": "玩家 {player} 已离开",
+    "disconnected": "连接已断开",
+    "reconnecting": "正在重新连接，第 {attempt} 次尝试",
+    "restored": "连接已恢复",
+    "pathChanged": "已切换到{route}，延迟 {latency} ms"
+  },
+  "errors": {
+    "unexpected": "操作失败，请检查网络和设置后重试",
+    "connectionOccupied": "请先停止当前房间或连接",
+    "minecraftPortRange": "Minecraft 端口必须在 1 到 65535 之间",
+    "localPortRange": "本地端口必须在 1 到 65535 之间",
+    "minecraftUnavailable": "端口 {port} 上没有可用的 Minecraft 世界，请确认世界已开启局域网联机",
+    "invalidInviteLifetime": "无效的房间邀请有效期",
+    "minecraftWorldClosed": "Minecraft 世界已关闭，房间已自动停止",
+    "nodeStartupTimedOut": "节点启动超时，请检查中继设置",
+    "category": {
+      "invalid_join_uri": "无效的联机邀请",
+      "invalid_endpoint": "连接地址无效",
+      "authorization_denied": "连接授权被拒绝",
+      "host_unreachable": "无法连接到房主",
+      "target_unavailable": "目标 Minecraft 世界不可用",
+      "local_port_unavailable": "本地端口不可用",
+      "identity_unavailable": "无法获取连接身份",
+      "operation_conflict": "当前操作与现有连接冲突",
+      "resource_limit": "连接资源已达上限",
+      "invalid_configuration": "连接配置无效",
+      "internal": "连接服务发生内部错误",
+      "unknown": "连接发生未知错误"
+    }
+  },
   "splash": {
     "subtitle": "Minecraft Java Edition 联机客户端",
     "starting": "正在启动"

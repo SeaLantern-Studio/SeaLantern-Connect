@@ -12,7 +12,7 @@ import {
 } from "@api";
 import type { HostUriLifetime } from "../../models/preferences";
 import type { ConnectStatus } from "../../models/tunnel";
-import { t } from "../../i18n";
+import { backendMessage, t } from "../../i18n";
 import {
   Check,
   CircleAlert,
@@ -72,6 +72,9 @@ const validMaxPlayers = computed(() => {
 const canCreate = computed(
   () => !pending.value && !occupied.value && validPort.value && validMaxPlayers.value,
 );
+const localizedStatusMessage = computed(() =>
+  props.status.message ? backendMessage(props.status.message) : null,
+);
 
 function setPortMode(value: string | number) {
   if (value !== "auto" && value !== "manual") return;
@@ -92,7 +95,7 @@ async function beginScan(restart = false) {
     scan.value = await startLanScan(restart);
     startPolling();
   } catch (error) {
-    scanError.value = String(error);
+    scanError.value = backendMessage(error);
   }
 }
 
@@ -108,7 +111,7 @@ function startPolling() {
         stopPolling();
       }
     } catch (error) {
-      scanError.value = String(error);
+      scanError.value = backendMessage(error);
       stopPolling();
     }
   }, 800);
@@ -123,7 +126,7 @@ function startMonitoring() {
       const available = await probeHostPort(port);
       if (!available) void beginScan(true);
     } catch (error) {
-      scanError.value = String(error);
+      scanError.value = backendMessage(error);
     }
   }, 5000);
 }
@@ -149,7 +152,7 @@ async function stopScan() {
   try {
     await stopLanScan();
   } catch (error) {
-    scanError.value = String(error);
+    scanError.value = backendMessage(error);
   }
 }
 
@@ -164,7 +167,7 @@ async function createRoom() {
       props.uriLifetime,
     );
   } catch (error) {
-    commandError.value = String(error);
+    commandError.value = backendMessage(error);
   } finally {
     pending.value = false;
   }
@@ -176,7 +179,7 @@ async function stopRoom() {
   try {
     await stopTunnel();
   } catch (error) {
-    commandError.value = String(error);
+    commandError.value = backendMessage(error);
   } finally {
     pending.value = false;
   }
@@ -259,7 +262,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="connection-footer">
-        <p>{{ status.message ?? t("create.ready") }}</p>
+        <p>{{ localizedStatusMessage ?? t("create.ready") }}</p>
         <Cmz_Button
           class="danger-button"
           variant="outline"
@@ -356,7 +359,7 @@ onUnmounted(() => {
 
       <div class="create-actions">
         <p v-if="commandError || occupied || status.message" class="field-error">
-          {{ occupied ? t("create.occupied") : commandError || status.message }}
+          {{ occupied ? t("create.occupied") : commandError || localizedStatusMessage }}
         </p>
         <Cmz_Button
           class="primary-button"

@@ -11,7 +11,7 @@ import {
 } from "@api";
 import { isSameInvite, normalizeInvite, type IncomingInvite } from "../../invitations";
 import type { ConnectStatus } from "../../models/tunnel";
-import { t } from "../../i18n";
+import { backendMessage, t } from "../../i18n";
 
 const props = defineProps<{
   status: ConnectStatus;
@@ -60,6 +60,12 @@ const phaseLabel = computed(() => {
   if (props.status.phase === "stopping") return t("join.stopping");
   return t("join.idle");
 });
+const localizedStatusMessage = computed(() =>
+  props.status.message ? backendMessage(props.status.message) : null,
+);
+const localizedStatusError = computed(() =>
+  props.status.error ? backendMessage(props.status.error) : null,
+);
 
 watch(
   () => props.savedInvite,
@@ -155,7 +161,7 @@ async function join() {
     }
     await startJoin(invite.value, portMode.value === "auto" ? null : Number(manualPort.value));
   } catch (error) {
-    commandError.value = String(error);
+    commandError.value = backendMessage(error);
   }
 }
 
@@ -186,7 +192,7 @@ async function stop() {
   try {
     await stopJoin();
   } catch (error) {
-    commandError.value = String(error);
+    commandError.value = backendMessage(error);
   } finally {
     stopPending.value = false;
   }
@@ -297,7 +303,7 @@ function formatBytes(value: number) {
         </div>
       </div>
       <div class="connection-footer">
-        <p>{{ status.message ?? t("join.syncing") }}</p>
+        <p>{{ localizedStatusMessage ?? t("join.syncing") }}</p>
         <Cmz_Button
           class="danger-button"
           variant="outline"
@@ -312,7 +318,12 @@ function formatBytes(value: number) {
 
     <p v-if="commandError || status.error || occupied" class="error-banner">
       {{ t("join.connectionFailed") }}
-      {{ commandError || (occupied ? t("join.occupied") : status.message || t("join.retryHint")) }}
+      {{
+        commandError ||
+        (occupied
+          ? t("join.occupied")
+          : localizedStatusMessage || localizedStatusError || t("join.retryHint"))
+      }}
     </p>
   </div>
 

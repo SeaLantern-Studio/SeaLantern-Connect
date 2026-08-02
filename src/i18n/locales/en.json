@@ -185,6 +185,39 @@
     "occupied": "Stop the current connection first",
     "create": "Create room"
   },
+  "connection": {
+    "connectedToHost": "Connected to the host",
+    "playerJoined": "Player {player} joined",
+    "playerLeft": "Player {player} left",
+    "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting, attempt {attempt}",
+    "restored": "Connection restored",
+    "pathChanged": "Switched to {route}, {latency} ms latency"
+  },
+  "errors": {
+    "unexpected": "The operation failed. Check your network and settings, then try again.",
+    "connectionOccupied": "Stop the current room or connection first",
+    "minecraftPortRange": "Minecraft port must be between 1 and 65535",
+    "localPortRange": "Local port must be between 1 and 65535",
+    "minecraftUnavailable": "No Minecraft world is available on port {port}. Make sure the world is open to LAN.",
+    "invalidInviteLifetime": "Invalid room invitation lifetime",
+    "minecraftWorldClosed": "The Minecraft world was closed, so the room stopped automatically",
+    "nodeStartupTimedOut": "Node startup timed out. Check relay settings.",
+    "category": {
+      "invalid_join_uri": "The invitation is invalid",
+      "invalid_endpoint": "The connection address is invalid",
+      "authorization_denied": "Connection authorization was denied",
+      "host_unreachable": "The host could not be reached",
+      "target_unavailable": "The target Minecraft world is unavailable",
+      "local_port_unavailable": "The local port is unavailable",
+      "identity_unavailable": "Connection identity is unavailable",
+      "operation_conflict": "This operation conflicts with the current connection",
+      "resource_limit": "The connection resource limit was reached",
+      "invalid_configuration": "The connection configuration is invalid",
+      "internal": "The connection service encountered an internal error",
+      "unknown": "An unknown connection error occurred"
+    }
+  },
   "splash": {
     "subtitle": "Minecraft Java Edition multiplayer client",
     "starting": "Starting"
