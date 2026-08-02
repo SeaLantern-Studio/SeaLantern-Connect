@@ -15,13 +15,11 @@ A lightweight companion client for [SeaLantern](https://github.com/SeaLantern-St
 
 ## What it does
 
-SeaLantern Connect makes Minecraft multiplayer easier than ever.
+Minecraft multiplayer should be simple: create a room, share a link, and start playing.
 
 No public IP, no port forwarding. Just open your world to LAN, share an invite link, and let your friends join instantly.
 
 Features include invite management, automatic connection, reconnect support, connection status monitoring, lightweight mode, and customizable themes with bilingual UI support.
-
-Minecraft multiplayer should be simple: create a room, share a link, and start playing.
 
 ## Development
 
