@@ -1,4 +1,4 @@
-const LOG_LEVEL_ENV: &str = "RUST_LOG";
+const LOG_LEVEL_ENV: &str = "SL_LOG";
 const APP_LOG_TARGET: &str = "sealantern_connect";
 const LOG_FILE_NAME: &str = "sealantern-connect";
 const MAX_LOG_FILE_SIZE: u128 = 10_000_000;
