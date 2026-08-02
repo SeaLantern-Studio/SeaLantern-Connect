@@ -15,17 +15,13 @@ A lightweight companion client for [SeaLantern](https://github.com/SeaLantern-St
 
 ## What it does
 
-After a host opens a single-player Minecraft world to LAN, SeaLantern Connect can discover its port, create a P2P room, and generate a shareable HTTPS invitation on the official website. Hosts can configure invitation refresh intervals and maximum player counts.
+SeaLantern Connect makes Minecraft multiplayer easier than ever.
 
-Players can open the invitation page and click to launch SeaLantern Connect, or paste either the HTTPS share link or the raw `sculk://` invitation. The app asks for confirmation before joining or switching rooms. A successfully used invitation is saved locally and automatically filled into the input the next time the app starts.
+No public IP, no port forwarding. Just open your world to LAN, share an invite link, and let your friends join instantly.
 
-It establishes a direct P2P tunnel to the host, then exposes the remote world as a LAN server in your Minecraft multiplayer menu.
+Features include invite management, automatic connection, reconnect support, connection status monitoring, lightweight mode, and customizable themes with bilingual UI support.
 
-You can also connect manually using the local address shown in the app.
-
-> No public IP. No router port forwarding. No fuss.
-
-The app also shows direct or relay routes, latency and traffic statistics, supports reconnection, system tray and lightweight modes, and provides Chinese and English interfaces with customizable themes.
+Minecraft multiplayer should be simple: create a room, share a link, and start playing.
 
 ## Development
 
