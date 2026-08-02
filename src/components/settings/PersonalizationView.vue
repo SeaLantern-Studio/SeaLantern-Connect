@@ -270,6 +270,7 @@ function persist() {
         <span>{{ t("personalization.fontSize") }}</span>
         <div class="font-size-control">
           <input
+            id="font-size-slider"
             class="settings-slider"
             type="range"
             :min="MIN_FONT_SIZE"
@@ -277,9 +278,11 @@ function persist() {
             step="1"
             :value="form.fontSize"
             :style="{ '--slider-progress': fontSizeProgress }"
+            :aria-label="t('personalization.fontSize')"
+            :aria-valuetext="`${form.fontSize}px`"
             @input="setFontSize"
           />
-          <output>{{ form.fontSize }}px</output>
+          <output for="font-size-slider">{{ form.fontSize }}px</output>
         </div>
       </div>
 
