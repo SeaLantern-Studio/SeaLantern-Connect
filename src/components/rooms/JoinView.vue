@@ -30,6 +30,7 @@ const confirming = ref(false);
 const portMode = ref<"auto" | "manual">("auto");
 const manualPort = ref(String(props.savedPort));
 const copied = ref(false);
+const stopPending = ref(false);
 const portModeTabs = computed<TabBarItem[]>(() => [
   { key: "auto", label: t("join.automatic") },
   { key: "manual", label: t("join.manual") },
@@ -41,6 +42,12 @@ const busy = computed(
   () => joining.value && (props.status.phase === "starting" || props.status.phase === "stopping"),
 );
 const connected = computed(() => joining.value && props.status.phase === "active");
+const stopDisabled = computed(() => props.status.phase === "stopping" || stopPending.value);
+const stopLabel = computed(() => {
+  if (props.status.phase === "starting") return t("join.cancelConnection");
+  if (props.status.phase === "stopping") return t("join.cancelling");
+  return t("join.disconnect");
+});
 const replacingConnection = computed(() => props.status.phase !== "idle");
 const canJoin = computed(() => invite.value.trim().length > 0 && props.status.phase === "idle");
 const validManualPort = computed(() => {
@@ -160,11 +167,15 @@ async function saveJoinPort() {
 }
 
 async function stop() {
+  if (stopDisabled.value) return;
   commandError.value = "";
+  stopPending.value = true;
   try {
     await stopJoin();
   } catch (error) {
     commandError.value = String(error);
+  } finally {
+    stopPending.value = false;
   }
 }
 
@@ -270,8 +281,8 @@ function formatBytes(value: number) {
       </div>
       <div class="connection-footer">
         <p>{{ status.message ?? t("join.syncing") }}</p>
-        <button class="danger-button" type="button" :disabled="busy" @click="stop">
-          <Unplug :size="16" />{{ t("join.disconnect") }}
+        <button class="danger-button" type="button" :disabled="stopDisabled" @click="stop">
+          <Unplug :size="16" />{{ stopLabel }}
         </button>
       </div>
     </section>

@@ -102,6 +102,8 @@
     "sent": "Sent",
     "received": "Received",
     "syncing": "Synchronizing connection status...",
+    "cancelConnection": "Cancel connection",
+    "cancelling": "Cancelling",
     "disconnect": "Disconnect",
     "connectionFailed": "Connection did not complete:",
     "retryHint": "Check the invitation and network, then try again",

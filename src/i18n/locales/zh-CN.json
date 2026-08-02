@@ -102,6 +102,8 @@
     "sent": "发送",
     "received": "接收",
     "syncing": "正在同步连接状态...",
+    "cancelConnection": "取消连接",
+    "cancelling": "正在取消",
     "disconnect": "断开",
     "connectionFailed": "连接未完成：",
     "retryHint": "请检查邀请和网络后重试",
