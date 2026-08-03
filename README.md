@@ -68,4 +68,4 @@ macOS 只能通过安装到 `/Applications` 的已打包应用测试协议唤起
 
 ## 许可证
 
-[GNU Affero General Public License v3.0](LICENSE)
+[Apache License 2.0](LICENSE)

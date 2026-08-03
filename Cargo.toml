@@ -8,7 +8,7 @@ description = "A lightweight Minecraft Java Edition join client powered by sculk
 repository = "https://github.com/SeaLantern-Studio/SeaLantern-Connect"
 authors = ["SeaLantern-Studio"]
 edition = "2024"
-license = "AGPL-3.0-only"
+license = "Apache-2.0"
 
 [profile.release]
 opt-level = "z"

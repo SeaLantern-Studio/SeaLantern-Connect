@@ -67,4 +67,4 @@ On macOS, protocol activation can only be tested with a bundled app installed in
 
 ## License
 
-[GNU Affero General Public License v3.0](LICENSE)
+[Apache License 2.0](LICENSE)

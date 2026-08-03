@@ -2,7 +2,7 @@
   "name": "sealantern-connect",
   "version": "0.5.3",
   "private": true,
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "repository": "https://github.com/SeaLantern-Studio/SeaLantern-Connect",
   "type": "module",
   "scripts": {

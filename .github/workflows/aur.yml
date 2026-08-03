@@ -135,7 +135,7 @@ jobs:
           pkgdesc='Lightweight Minecraft Java Edition P2P multiplayer client powered by sculk'
           arch=('x86_64' 'aarch64')
           url='https://github.com/${REPOSITORY}'
-          license=('AGPL-3.0-only')
+          license=('Apache-2.0')
           depends=('glibc' 'gcc-libs' 'webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'librsvg')
           options=('!strip')
           source_x86_64=('${AUR_PKGBASE}-${PKGVER}-x86_64.deb::${AMD64_URL}')
@@ -175,7 +175,7 @@ jobs:
           ${TAB}url = https://github.com/${REPOSITORY}
           ${TAB}arch = x86_64
           ${TAB}arch = aarch64
-          ${TAB}license = AGPL-3.0-only
+          ${TAB}license = Apache-2.0
           ${TAB}depends = glibc
           ${TAB}depends = gcc-libs
           ${TAB}depends = webkit2gtk-4.1
