@@ -63,6 +63,7 @@ show():
 # 更新版本号并推送
 publish(version):
     pnpm cv {{ version }}
+    pnpm notice
     only ci
     git commit -am "chore: 升级到 {{ version }}"
     git tag {{ version }}

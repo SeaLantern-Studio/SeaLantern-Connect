@@ -34,7 +34,8 @@
     "targets": "all",
     "copyright": "Copyright © 2026 SeaLantern-Studio",
     "resources": {
-      "../LICENSE": "LICENSE"
+      "../LICENSE": "LICENSE",
+      "../NOTICE": "NOTICE"
     },
     "icon": [
       "icons/32x32.png",
