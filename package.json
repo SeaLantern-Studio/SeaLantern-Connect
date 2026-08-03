@@ -9,7 +9,7 @@
     "dev": "vite dev -c src/vite.config.ts",
     "build": "svelte-kit sync && vite build -c src/vite.config.ts",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "svelte-kit sync && vitest run",
     "notice": "node scripts/notice.mjs",
     "sv": "node scripts/version.mjs show",
     "cv": "node scripts/version.mjs change",
