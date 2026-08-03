@@ -122,7 +122,7 @@ fn main() {
             frp::get_frp_client_status,
             frp::download_frp_client,
             frp::get_frp_session_status,
-            frp::login_frp,
+            frp::login_sakurafrp,
             frp::login_openfrp,
             frp::open_sakura_keys,
             frp::open_sakura_purchase,

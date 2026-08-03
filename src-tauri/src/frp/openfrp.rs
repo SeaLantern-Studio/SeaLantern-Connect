@@ -133,15 +133,25 @@ fn required_str<'a>(value: &'a Value, path: &str) -> Result<&'a str, String> {
 }
 
 pub(super) async fn account(credential: &str) -> Result<String, String> {
-    let value = post("getUserInfo", credential, None).await?;
-    if value.get("flag").and_then(Value::as_bool) != Some(true) {
-        return Err(api_message(&value, "OpenFRP authorization was rejected"));
-    }
+    let value = user_info(credential).await?;
     Ok(["/data/username", "/data/name", "/data/user"]
         .iter()
         .find_map(|path| value.pointer(path).and_then(Value::as_str))
         .unwrap_or("OpenFRP")
         .to_owned())
+}
+
+pub(super) async fn token(credential: &str) -> Result<String, String> {
+    let value = user_info(credential).await?;
+    required_str(&value, "/data/token").map(str::to_owned)
+}
+
+async fn user_info(credential: &str) -> Result<Value, String> {
+    let value = post("getUserInfo", credential, None).await?;
+    if value.get("flag").and_then(Value::as_bool) != Some(true) {
+        return Err(api_message(&value, "OpenFRP authorization was rejected"));
+    }
+    Ok(value)
 }
 
 pub(super) async fn tunnels(credential: &str) -> Result<Vec<FrpTunnel>, String> {
@@ -162,30 +172,47 @@ pub(super) async fn tunnels(credential: &str) -> Result<Vec<FrpTunnel>, String> 
                 .unwrap_or("OpenFRP tunnel")
                 .to_owned(),
             node: item
-                .get("node")
+                .get("friendlyNode")
+                .or_else(|| item.get("node"))
                 .or_else(|| item.get("nodeName"))
                 .map(|value| value_string(Some(value))),
             local_port: value_u16(item.get("localPort").or_else(|| item.get("local_port"))),
-            remote_endpoint: item
-                .get("remotePort")
-                .or_else(|| item.get("remote_port"))
-                .map(|value| value_string(Some(value))),
-            online: item.get("status").and_then(Value::as_bool).unwrap_or(false),
+            remote_endpoint: endpoint(item),
+            online: item.get("online").and_then(Value::as_bool).unwrap_or(false),
         })
         .collect())
 }
 
+fn endpoint(item: &Value) -> Option<String> {
+    item.get("connectAddress")
+        .or_else(|| item.get("connect_address"))
+        .or_else(|| item.get("remote"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+}
+
 pub(super) async fn nodes(credential: &str) -> Result<Vec<FrpNode>, String> {
-    let value = post("getNodeList", credential, None).await?;
+    let (value, user) =
+        tokio::try_join!(post("getNodeList", credential, None), user_info(credential))?;
     if value.get("flag").and_then(Value::as_bool) != Some(true) {
         return Err(api_message(&value, "failed to load OpenFRP nodes"));
     }
+    let group = user
+        .pointer("/data/group")
+        .and_then(Value::as_str)
+        .ok_or("OpenFRP returned incomplete account information")?;
+    let realname = user
+        .pointer("/data/realname")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     Ok(value
         .pointer("/data/list")
         .and_then(Value::as_array)
         .into_iter()
         .flatten()
-        .filter(|node| node.get("status").and_then(Value::as_u64) == Some(200))
+        .filter(|node| usable(node, group, realname))
         .map(|node| FrpNode {
             id: value_string(node.get("id")),
             name: node
@@ -199,8 +226,44 @@ pub(super) async fn nodes(credential: &str) -> Result<Vec<FrpNode>, String> {
                 .filter(|value| !value.is_empty())
                 .map(str::to_owned),
             vip: false,
+            allow_port: port_range(node),
         })
         .collect())
+}
+
+fn usable(node: &Value, group: &str, realname: bool) -> bool {
+    value_u16(node.get("status")) == Some(200)
+        && node
+            .pointer("/protocolSupport/tcp")
+            .and_then(Value::as_bool)
+            == Some(true)
+        && node.get("fullyLoaded").and_then(Value::as_bool) != Some(true)
+        && node
+            .get("group")
+            .and_then(Value::as_str)
+            .is_some_and(|groups| groups.split(';').any(|item| item.trim() == group))
+        && (realname || node.get("needRealname").and_then(Value::as_bool) != Some(true))
+        && address_ok(node.get("hostname"))
+        && port_ok(node.get("port"))
+}
+
+fn address_ok(value: Option<&Value>) -> bool {
+    value
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .is_some_and(|value| !value.is_empty() && !value.contains("无权查询"))
+}
+
+fn port_ok(value: Option<&Value>) -> bool {
+    value_u16(value).is_some() || address_ok(value)
+}
+
+fn port_range(node: &Value) -> Option<String> {
+    node.get("allowPort")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
 }
 
 pub(super) async fn create(credential: &str, request: &CreateFrpTunnel) -> Result<(), String> {
@@ -241,7 +304,7 @@ pub(super) async fn remove(credential: &str, tunnel_id: &str) -> Result<(), Stri
 }
 
 pub(super) async fn client() -> Result<ClientDownload, String> {
-    let manifest: Value = reqwest::Client::new()
+    let manifest: Value = http_client()?
         .get("https://api.openfrp.net/commonQuery/get?key=software")
         .send()
         .await
@@ -306,7 +369,7 @@ pub(super) async fn client() -> Result<ClientDownload, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{STANDARD, URL_SAFE, decrypt};
+    use super::{STANDARD, URL_SAFE, decrypt, endpoint, port_range, usable};
     use base64::Engine;
     use crypto_box::aead::Aead;
     use crypto_box::{Nonce, SalsaBox, SecretKey};
@@ -326,5 +389,45 @@ mod tests {
             decrypt(&server_key, &STANDARD.encode(payload), &client).unwrap(),
             "Bearer test"
         );
+    }
+
+    #[test]
+    fn reads_endpoint() {
+        let tunnel = serde_json::json!({
+            "connectAddress": "cn.example.com:25565",
+            "remotePort": 25565
+        });
+        assert_eq!(endpoint(&tunnel).as_deref(), Some("cn.example.com:25565"));
+        assert_eq!(endpoint(&serde_json::json!({ "remotePort": 25565 })), None);
+    }
+
+    #[test]
+    fn filters_nodes() {
+        let node = serde_json::json!({
+            "status": 200,
+            "group": "normal;vip",
+            "hostname": "node.example.com",
+            "port": 7000,
+            "needRealname": false,
+            "fullyLoaded": false,
+            "protocolSupport": { "tcp": true }
+        });
+        assert!(usable(&node, "normal", false));
+        assert!(!usable(&node, "svip", false));
+
+        let mut loaded = node.clone();
+        loaded["fullyLoaded"] = true.into();
+        assert!(!usable(&loaded, "normal", false));
+
+        let mut hidden = node;
+        hidden["hostname"] = "您无权查询此节点的地址".into();
+        assert!(!usable(&hidden, "normal", false));
+    }
+
+    #[test]
+    fn reads_port_range() {
+        let node = serde_json::json!({ "allowPort": "(50000,60000)" });
+        assert_eq!(port_range(&node).as_deref(), Some("(50000,60000)"));
+        assert_eq!(port_range(&serde_json::json!({ "allowPort": null })), None);
     }
 }

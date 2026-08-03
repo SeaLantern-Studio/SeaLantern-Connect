@@ -36,7 +36,7 @@ fn filename(provider: FrpProvider) -> &'static str {
 
 pub(super) fn directory(app: &AppHandle, provider: FrpProvider) -> Result<PathBuf, String> {
     app.path()
-        .app_data_dir()
+        .app_local_data_dir()
         .map(|path| path.join("frp").join(provider.directory()))
         .map_err(|error| error.to_string())
 }

@@ -25,7 +25,8 @@ pub(super) async fn account(credential: &str) -> Result<String, String> {
 }
 
 pub(super) async fn tunnels(credential: &str) -> Result<Vec<FrpTunnel>, String> {
-    let value: Value = reqwest::Client::new()
+    let client = reqwest::Client::new();
+    let value: Value = client
         .get("https://api.natfrp.com/v4/tunnels")
         .query(&[("token", credential)])
         .send()
@@ -39,21 +40,65 @@ pub(super) async fn tunnels(credential: &str) -> Result<Vec<FrpTunnel>, String> 
     let tunnels = value
         .as_array()
         .ok_or("SakuraFRP returned an invalid tunnel list")?;
+    let nodes: Value = client
+        .get("https://api.natfrp.com/v4/nodes")
+        .query(&[("token", credential)])
+        .send()
+        .await
+        .map_err(|error| error.to_string())?
+        .error_for_status()
+        .map_err(|error| error.to_string())?
+        .json()
+        .await
+        .map_err(|error| error.to_string())?;
     Ok(tunnels
         .iter()
-        .map(|item| FrpTunnel {
-            id: value_string(item.get("id")),
-            name: item
-                .get("name")
+        .map(|item| {
+            let node_id = value_string(item.get("node"));
+            let node = nodes.get(&node_id);
+            let host = node
+                .and_then(|node| node.get("host"))
+                .and_then(Value::as_str);
+            let node_name = node
+                .and_then(|node| node.get("name"))
                 .and_then(Value::as_str)
-                .unwrap_or("SakuraFRP tunnel")
-                .to_owned(),
-            node: item.get("node").map(|value| value_string(Some(value))),
-            local_port: value_u16(item.get("local_port")),
-            remote_endpoint: item.get("remote").map(|value| value_string(Some(value))),
-            online: item.get("online").and_then(Value::as_bool).unwrap_or(false),
+                .unwrap_or(&node_id)
+                .to_owned();
+            let remote = item.get("remote").map(|value| value_string(Some(value)));
+            FrpTunnel {
+                id: value_string(item.get("id")),
+                name: item
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .unwrap_or("SakuraFRP tunnel")
+                    .to_owned(),
+                node: Some(node_name),
+                local_port: value_u16(item.get("local_port")),
+                remote_endpoint: endpoint(host, remote.as_deref()),
+                online: item.get("online").and_then(Value::as_bool).unwrap_or(false),
+            }
         })
         .collect())
+}
+
+fn endpoint(host: Option<&str>, remote: Option<&str>) -> Option<String> {
+    let remote = remote?.trim();
+    if remote.is_empty() {
+        return None;
+    }
+    if remote.parse::<u16>().is_err() {
+        return Some(remote.to_owned());
+    }
+    let host = host?.trim();
+    if host.is_empty() {
+        return None;
+    }
+    let host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.to_owned()
+    };
+    Some(format!("{host}:{remote}"))
 }
 
 pub(super) async fn nodes(credential: &str) -> Result<Vec<FrpNode>, String> {
@@ -95,6 +140,7 @@ pub(super) async fn nodes(credential: &str) -> Result<Vec<FrpNode>, String> {
                 })
                 .unwrap_or(0)
                 > 0,
+            allow_port: None,
         })
         .collect())
 }
@@ -197,7 +243,7 @@ pub(super) async fn client() -> Result<ClientDownload, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_game_node;
+    use super::{endpoint, is_game_node};
 
     #[test]
     fn filters_nodes() {
@@ -205,5 +251,18 @@ mod tests {
         assert!(is_game_node(&serde_json::json!({ "flag": 2188 })));
         assert!(is_game_node(&serde_json::json!({ "flag": 2220 })));
         assert!(!is_game_node(&serde_json::json!({ "flag": 46 })));
+    }
+
+    #[test]
+    fn builds_endpoint() {
+        assert_eq!(
+            endpoint(Some("node.example.com"), Some("25565")).as_deref(),
+            Some("node.example.com:25565")
+        );
+        assert_eq!(
+            endpoint(Some("node.example.com"), Some("custom.example.com:25565")).as_deref(),
+            Some("custom.example.com:25565")
+        );
+        assert_eq!(endpoint(None, Some("25565")), None);
     }
 }

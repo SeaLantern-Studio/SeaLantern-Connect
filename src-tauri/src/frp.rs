@@ -4,9 +4,10 @@ mod sakurafrp;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
 
@@ -16,6 +17,9 @@ const CREDENTIAL_SERVICE: &str = "SeaLantern Connect FRP";
 const OPENFRP_PREMIUM_URL: &str = "https://console.openfrp.net/premium";
 const SAKURA_KEYS_URL: &str = "https://www.natfrp.com/user/";
 const SAKURA_PURCHASE_URL: &str = "https://www.natfrp.com/purchase/buy";
+const MAX_OUTPUT_LINES: usize = 120;
+
+type OutputMap = Arc<Mutex<HashMap<FrpProvider, VecDeque<String>>>>;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -36,6 +40,13 @@ impl FrpProvider {
         match self {
             Self::OpenFrp => "OpenFRP",
             Self::SakuraFrp => "SakuraFRP",
+        }
+    }
+
+    fn log_target(self) -> &'static str {
+        match self {
+            Self::OpenFrp => crate::logging::OPENFRP_LOG_TARGET,
+            Self::SakuraFrp => crate::logging::SAKURAFRP_LOG_TARGET,
         }
     }
 }
@@ -64,6 +75,8 @@ pub(crate) struct FrpState {
     credentials: Mutex<HashMap<FrpProvider, String>>,
     accounts: Mutex<HashMap<FrpProvider, String>>,
     processes: Mutex<HashMap<FrpProvider, Child>>,
+    tunnel_ids: Mutex<HashMap<FrpProvider, String>>,
+    outputs: OutputMap,
 }
 
 impl FrpState {
@@ -73,6 +86,8 @@ impl FrpState {
             credentials: Mutex::new(HashMap::new()),
             accounts: Mutex::new(HashMap::new()),
             processes: Mutex::new(HashMap::new()),
+            tunnel_ids: Mutex::new(HashMap::new()),
+            outputs: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -122,6 +137,8 @@ pub(crate) struct FrpSessionStatus {
     authenticated: bool,
     account_name: Option<String>,
     running: bool,
+    tunnel_id: Option<String>,
+    output: Vec<String>,
 }
 
 #[derive(Clone, Serialize)]
@@ -142,6 +159,7 @@ pub(crate) struct FrpNode {
     name: String,
     description: Option<String>,
     vip: bool,
+    allow_port: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -216,19 +234,16 @@ pub(crate) async fn get_frp_session_status(
 }
 
 #[tauri::command]
-pub(crate) async fn login_frp(
+pub(crate) async fn login_sakurafrp(
     state: State<'_, FrpState>,
-    provider: FrpProvider,
     credential: String,
 ) -> Result<FrpSessionStatus, String> {
-    let credential = clean_credential(provider, &credential);
+    let provider = FrpProvider::SakuraFrp;
+    let credential = clean_token(&credential);
     if credential.is_empty() {
         return Err("provider credential is required".to_owned());
     }
-    let account = match provider {
-        FrpProvider::OpenFrp => openfrp::account(&credential).await?,
-        FrpProvider::SakuraFrp => sakurafrp::account(&credential).await?,
-    };
+    let account = sakurafrp::account(&credential).await?;
     remember_session(&state, provider, credential, account)?;
     session_status(&state, provider)
 }
@@ -281,6 +296,16 @@ pub(crate) fn logout_frp(
         .lock()
         .map_err(|_| "FRP account state is unavailable".to_owned())?
         .remove(&provider);
+    state
+        .tunnel_ids
+        .lock()
+        .map_err(|_| "FRP tunnel state is unavailable".to_owned())?
+        .remove(&provider);
+    state
+        .outputs
+        .lock()
+        .map_err(|_| "FRP output state is unavailable".to_owned())?
+        .remove(&provider);
     if let Err(error) = remove_saved(provider) {
         log::warn!(
             "failed to remove saved {} credential: {error}",
@@ -317,7 +342,7 @@ pub(crate) async fn create_frp_tunnel(
     provider: FrpProvider,
     request: CreateFrpTunnel,
 ) -> Result<Vec<FrpTunnel>, String> {
-    validate_tunnel(&request)?;
+    validate_tunnel(provider, &request)?;
     let credential = credential(&state, provider)?;
     match provider {
         FrpProvider::OpenFrp => openfrp::create(&credential, &request).await?,
@@ -344,11 +369,23 @@ pub(crate) async fn delete_frp_tunnel(
         FrpProvider::OpenFrp => openfrp::remove(&credential, tunnel_id).await?,
         FrpProvider::SakuraFrp => sakurafrp::remove(&credential, tunnel_id).await?,
     }
+    {
+        let mut tunnel_ids = state
+            .tunnel_ids
+            .lock()
+            .map_err(|_| "FRP tunnel state is unavailable".to_owned())?;
+        if tunnel_ids
+            .get(&provider)
+            .is_some_and(|active| active == tunnel_id)
+        {
+            tunnel_ids.remove(&provider);
+        }
+    }
     tunnels(provider, &credential).await
 }
 
 #[tauri::command]
-pub(crate) fn start_frp_tunnel(
+pub(crate) async fn start_frp_tunnel(
     app: AppHandle,
     state: State<'_, FrpState>,
     provider: FrpProvider,
@@ -361,7 +398,11 @@ pub(crate) fn start_frp_tunnel(
     if !executable.is_file() {
         return Err("the provider client is not installed".to_owned());
     }
-    let token = credential(&state, provider)?;
+    let credential = credential(&state, provider)?;
+    let token = match provider {
+        FrpProvider::OpenFrp => openfrp::token(&credential).await?,
+        FrpProvider::SakuraFrp => credential,
+    };
     let mut processes = state
         .processes
         .lock()
@@ -385,15 +426,31 @@ pub(crate) fn start_frp_tunnel(
             command.args(["-f", &format!("{token}:{}", tunnel_id.trim())]);
         }
     }
-    let process = command
+    let mut process = command
         .current_dir(client::directory(&app, provider)?)
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| error.to_string())?;
+    state
+        .outputs
+        .lock()
+        .map_err(|_| "FRP output state is unavailable".to_owned())?
+        .insert(provider, VecDeque::new());
+    if let Some(stdout) = process.stdout.take() {
+        capture_output(stdout, provider, state.outputs.clone());
+    }
+    if let Some(stderr) = process.stderr.take() {
+        capture_output(stderr, provider, state.outputs.clone());
+    }
     log::info!("started {} tunnel process", provider.display_name());
     processes.insert(provider, process);
+    state
+        .tunnel_ids
+        .lock()
+        .map_err(|_| "FRP tunnel state is unavailable".to_owned())?
+        .insert(provider, tunnel_id.trim().to_owned());
     drop(processes);
     session_status(&state, provider)
 }
@@ -531,22 +588,97 @@ fn session_status(state: &FrpState, provider: FrpProvider) -> Result<FrpSessionS
         .processes
         .lock()
         .map_err(|_| "FRP process state is unavailable".to_owned())?;
-    let running = match processes.get_mut(&provider) {
-        Some(process) => process
-            .try_wait()
-            .map_err(|error| error.to_string())?
-            .is_none(),
-        None => false,
+    let (running, exit_status) = match processes.get_mut(&provider) {
+        Some(process) => match process.try_wait().map_err(|error| error.to_string())? {
+            Some(status) => (false, Some(status)),
+            None => (true, None),
+        },
+        None => (false, None),
     };
     if !running {
         processes.remove(&provider);
     }
+    drop(processes);
+    if let Some(status) = exit_status {
+        push_output(
+            &state.outputs,
+            provider,
+            format!("frpc exited with status {status}"),
+        );
+    }
+    let tunnel_id = state
+        .tunnel_ids
+        .lock()
+        .map_err(|_| "FRP tunnel state is unavailable".to_owned())?
+        .get(&provider)
+        .cloned();
+    let output = state
+        .outputs
+        .lock()
+        .map_err(|_| "FRP output state is unavailable".to_owned())?
+        .get(&provider)
+        .map(|lines| lines.iter().cloned().collect())
+        .unwrap_or_default();
     Ok(FrpSessionStatus {
         provider,
         authenticated: account_name.is_some(),
         account_name,
         running,
+        tunnel_id,
+        output,
     })
+}
+
+fn capture_output<R>(reader: R, provider: FrpProvider, outputs: OutputMap)
+where
+    R: Read + Send + 'static,
+{
+    std::thread::spawn(move || {
+        for line in BufReader::new(reader).lines() {
+            match line {
+                Ok(line) => {
+                    let line = strip_ansi(&line);
+                    if line.trim().is_empty() {
+                        continue;
+                    }
+                    log::info!(target: provider.log_target(), "{line}");
+                    push_output(&outputs, provider, line);
+                }
+                Err(error) => {
+                    log::warn!("failed to read {} output: {error}", provider.display_name());
+                    break;
+                }
+            }
+        }
+    });
+}
+
+fn strip_ansi(value: &str) -> String {
+    let mut result = String::with_capacity(value.len());
+    let mut chars = value.chars().peekable();
+    while let Some(character) = chars.next() {
+        if character != '\u{1b}' || chars.next_if_eq(&'[').is_none() {
+            result.push(character);
+            continue;
+        }
+        for character in chars.by_ref() {
+            if ('@'..='~').contains(&character) {
+                break;
+            }
+        }
+    }
+    result
+}
+
+fn push_output(outputs: &OutputMap, provider: FrpProvider, line: String) {
+    let Ok(mut outputs) = outputs.lock() else {
+        return;
+    };
+    let lines = outputs.entry(provider).or_default();
+    if lines.len() >= MAX_OUTPUT_LINES {
+        lines.pop_front();
+    }
+    lines.push_back(line);
 }
 
 fn stop_process(state: &FrpState, provider: FrpProvider) -> Result<(), String> {
@@ -563,27 +695,37 @@ fn stop_process(state: &FrpState, provider: FrpProvider) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_tunnel(request: &CreateFrpTunnel) -> Result<(), String> {
+fn validate_tunnel(provider: FrpProvider, request: &CreateFrpTunnel) -> Result<(), String> {
     if request.node_id.trim().is_empty() {
         return Err("an FRP node must be selected".to_owned());
     }
-    if request.name.trim().is_empty() || request.name.chars().count() > 32 {
-        return Err("the tunnel name must contain 1 to 32 characters".to_owned());
+    if !valid_tunnel_name(request.name.trim()) {
+        return Err(
+            "the tunnel name must be 2 to 32 characters, start with a letter, and contain only letters, numbers, underscores, or hyphens"
+                .to_owned(),
+        );
     }
-    if !request.remote_port.is_empty() && request.remote_port.parse::<u16>().is_err() {
-        return Err("the remote port must be empty or between 1 and 65535".to_owned());
+    let remote_port = request.remote_port.trim();
+    if remote_port.is_empty() && provider == FrpProvider::OpenFrp {
+        return Err("OpenFRP TCP tunnels require a remote port".to_owned());
+    }
+    if !remote_port.is_empty() && !remote_port.parse::<u16>().is_ok_and(|port| port > 0) {
+        return Err("the remote port must be between 1 and 65535".to_owned());
     }
     Ok(())
 }
 
-fn clean_credential(provider: FrpProvider, value: &str) -> String {
+fn valid_tunnel_name(name: &str) -> bool {
+    let bytes = name.as_bytes();
+    (2..=32).contains(&bytes.len())
+        && bytes[0].is_ascii_alphabetic()
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+}
+
+fn clean_token(value: &str) -> String {
     let mut value = value.trim();
-    if provider == FrpProvider::OpenFrp
-        && let Some((name, content)) = value.split_once(':')
-        && name.trim().eq_ignore_ascii_case("authorization")
-    {
-        value = content.trim();
-    }
     if value.len() >= 2
         && ((value.starts_with('"') && value.ends_with('"'))
             || (value.starts_with('\'') && value.ends_with('\'')))
@@ -620,21 +762,23 @@ fn api_message(value: &Value, fallback: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{FrpProvider, clean_credential};
-
-    #[test]
-    fn cleans_openfrp_auth() {
-        assert_eq!(
-            clean_credential(FrpProvider::OpenFrp, " Authorization: 'Bearer token' "),
-            "Bearer token"
-        );
-    }
+    use super::{clean_token, strip_ansi, valid_tunnel_name};
 
     #[test]
     fn keeps_sakura_token() {
-        assert_eq!(
-            clean_credential(FrpProvider::SakuraFrp, "key:value"),
-            "key:value"
-        );
+        assert_eq!(clean_token("key:value"), "key:value");
+    }
+
+    #[test]
+    fn checks_tunnel_name() {
+        assert!(valid_tunnel_name("SeaLantern_1"));
+        assert!(!valid_tunnel_name("1server"));
+        assert!(!valid_tunnel_name("a"));
+        assert!(!valid_tunnel_name("中文"));
+    }
+
+    #[test]
+    fn strips_ansi() {
+        assert_eq!(strip_ansi("\u{1b}[0mready \u{1b}[1;34mnow"), "ready now");
     }
 }
