@@ -2,7 +2,14 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { IncomingInvite } from "@domain/invitations";
 
-export type SectionId = "create" | "join" | "openfrp" | "sakurafrp" | "personalize" | "settings";
+export type SectionId =
+  | "create"
+  | "join"
+  | "openfrp"
+  | "sakurafrp"
+  | "personalize"
+  | "settings"
+  | "about";
 
 const ACTIVE_SECTION_STORAGE_KEY = "sealantern.active-section";
 const sectionIds: readonly SectionId[] = [
@@ -12,6 +19,7 @@ const sectionIds: readonly SectionId[] = [
   "sakurafrp",
   "personalize",
   "settings",
+  "about",
 ];
 
 function isSectionId(value: string): value is SectionId {

@@ -4,6 +4,7 @@ import {
   Cloud,
   Flower2,
   HousePlus,
+  Info,
   LogIn,
   Palette,
   PanelLeftClose,
@@ -47,6 +48,12 @@ const utilityItems = computed<NavItem[]>(() => [
   { id: "personalize", label: t("navigation.personalization"), icon: Palette },
   { id: "settings", label: t("navigation.settings"), icon: Settings },
 ]);
+
+const aboutItem = computed<NavItem>(() => ({
+  id: "about",
+  label: t("navigation.about"),
+  icon: Info,
+}));
 
 function updateNavIndicator() {
   if (indicatorFrame != null) cancelAnimationFrame(indicatorFrame);
@@ -105,28 +112,29 @@ onUnmounted(() => {
     <nav ref="sidebarNav" class="sidebar-nav" :aria-label="t('navigation.main')">
       <div ref="navIndicator" class="nav-active-indicator" aria-hidden="true"></div>
       <div class="nav-group">
-        <button
-          v-for="item in primaryItems"
-          :key="item.id"
-          class="nav-item"
-          :class="{ active: active === item.id }"
-          type="button"
-          :title="item.label"
-          @click="emit('navigate', item.id)"
-        >
-          <component :is="item.icon" class="nav-icon" :size="19" />
-          <span class="nav-label">{{ item.label }}</span>
-          <span
-            v-if="
-              p2pState !== 'idle' &&
-              ((item.id === 'join' && tunnelMode === 'join') ||
-                (item.id === 'create' && tunnelMode === 'host'))
-            "
-            class="p2p-dot"
-            :class="p2pState"
-            :aria-label="t('navigation.p2pRunning')"
-          ></span>
-        </button>
+        <template v-for="item in primaryItems" :key="item.id">
+          <div v-if="item.id === 'openfrp'" class="nav-separator" aria-hidden="true"></div>
+          <button
+            class="nav-item"
+            :class="{ active: active === item.id }"
+            type="button"
+            :title="item.label"
+            @click="emit('navigate', item.id)"
+          >
+            <component :is="item.icon" class="nav-icon" :size="19" />
+            <span class="nav-label">{{ item.label }}</span>
+            <span
+              v-if="
+                p2pState !== 'idle' &&
+                ((item.id === 'join' && tunnelMode === 'join') ||
+                  (item.id === 'create' && tunnelMode === 'host'))
+              "
+              class="p2p-dot"
+              :class="p2pState"
+              :aria-label="t('navigation.p2pRunning')"
+            ></span>
+          </button>
+        </template>
       </div>
 
       <div class="nav-group nav-group-bottom">
@@ -141,6 +149,16 @@ onUnmounted(() => {
         >
           <component :is="item.icon" class="nav-icon" :size="19" />
           <span class="nav-label">{{ item.label }}</span>
+        </button>
+        <button
+          class="nav-item"
+          :class="{ active: active === aboutItem.id }"
+          type="button"
+          :title="aboutItem.label"
+          @click="emit('navigate', aboutItem.id)"
+        >
+          <component :is="aboutItem.icon" class="nav-icon" :size="19" />
+          <span class="nav-label">{{ aboutItem.label }}</span>
         </button>
         <div class="nav-separator"></div>
         <button

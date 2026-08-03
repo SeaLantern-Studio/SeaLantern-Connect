@@ -7,6 +7,7 @@ import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppSidebar from "./components/layout/AppSidebar.vue";
+import About from "./views/About.vue";
 import Host from "./views/Host.vue";
 import Join from "./views/Join.vue";
 import FrpProvider from "./views/FrpProvider.vue";
@@ -42,6 +43,7 @@ const pageTitle = computed(
       sakurafrp: t("navigation.createSakuraFrp"),
       personalize: t("navigation.personalization"),
       settings: t("navigation.settings"),
+      about: t("navigation.about"),
     })[activeSection.value],
 );
 
@@ -155,12 +157,13 @@ onUnmounted(() => {
             :provider="activeSection === 'openfrp' ? 'open_frp' : 'sakura_frp'"
           />
           <Settings
-            v-else
+            v-else-if="activeSection === 'settings'"
             :preferences="preferences"
             @change="preferencesStore.updateConnectionSettings"
             @application-change="preferencesStore.updateApplicationSettings"
             @lightweight-change="preferencesStore.updateLightweightSettings"
           />
+          <About v-else />
         </div>
       </Transition>
     </main>

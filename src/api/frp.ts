@@ -28,8 +28,8 @@ export function getFrpSessionStatus(provider: FrpProvider): Promise<FrpSessionSt
   return invoke("get_frp_session_status", { provider });
 }
 
-export function loginFrp(provider: FrpProvider, credential: string): Promise<FrpSessionStatus> {
-  return invoke("login_frp", { provider, credential });
+export function loginSakuraFrp(credential: string): Promise<FrpSessionStatus> {
+  return invoke("login_sakurafrp", { credential });
 }
 
 export function loginOpenFrp(): Promise<FrpSessionStatus> {

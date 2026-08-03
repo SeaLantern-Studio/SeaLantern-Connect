@@ -1,3 +1,4 @@
+export * from "./app";
 export * from "./autostart";
 export * from "./deeplink";
 export * from "./frp";
