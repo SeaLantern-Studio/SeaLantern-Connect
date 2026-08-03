@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { getStatus, onStatus } from "@api";
-import { emptyConnectStatus, type ConnectStatus } from "@models/connection";
+import { getP2pStatus, onP2pStatus } from "@api";
+import { emptyP2pStatus, type P2pStatus } from "@models/p2p";
 
 export const useSessionStore = defineStore("session", () => {
-  const status = ref<ConnectStatus>({ ...emptyConnectStatus });
+  const status = ref<P2pStatus>({ ...emptyP2pStatus });
   let unlisten: (() => void) | null = null;
 
   const busy = computed(
@@ -18,9 +18,9 @@ export const useSessionStore = defineStore("session", () => {
   });
 
   async function initialize(): Promise<void> {
-    status.value = await getStatus();
+    status.value = await getP2pStatus();
     unlisten?.();
-    unlisten = await onStatus((next) => (status.value = next));
+    unlisten = await onP2pStatus((next) => (status.value = next));
   }
 
   function dispose(): void {

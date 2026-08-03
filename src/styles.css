@@ -306,17 +306,17 @@ button {
 .collapse-button {
   color: inherit;
 }
-.connection-dot {
+.p2p-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--muted);
 }
-.connection-dot.busy {
+.p2p-dot.busy {
   background: var(--primary);
   animation: pulse 1.2s ease-in-out infinite;
 }
-.connection-dot.active {
+.p2p-dot.active {
   background: var(--success);
 }
 .sidebar.collapsed .sidebar-brand {
@@ -336,7 +336,7 @@ button {
   gap: 0;
   padding-inline: 14px;
 }
-.sidebar.collapsed .nav-item .connection-dot {
+.sidebar.collapsed .nav-item .p2p-dot {
   position: absolute;
   margin: 0 0 19px 20px;
 }
@@ -882,6 +882,327 @@ h1 {
   display: grid;
   gap: 20px;
 }
+.frp-view {
+  width: min(760px, calc(100% - 48px));
+  margin: auto;
+  display: grid;
+  gap: 20px;
+}
+.frp-provider-header {
+  display: block;
+}
+.frp-provider-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.5714rem;
+  font-weight: 600;
+}
+.frp-provider-header p,
+.frp-download-prompt p,
+.frp-provider-section > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.frp-provider-section {
+  overflow: hidden;
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.frp-section-heading,
+.frp-download-prompt,
+.frp-checking {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.frp-section-heading,
+.frp-download-prompt {
+  justify-content: space-between;
+}
+.frp-section-heading > div {
+  display: grid;
+  gap: 3px;
+}
+.frp-section-heading span {
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.frp-section-heading strong,
+.frp-download-prompt strong {
+  font-size: 0.9286rem;
+  font-weight: 600;
+}
+.frp-checking {
+  min-height: 54px;
+  color: var(--muted);
+}
+.frp-download-prompt > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.frp-download-prompt .cmz-button {
+  flex: none;
+}
+.frp-account-name {
+  max-width: 240px;
+  overflow: hidden;
+  color: var(--text) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.frp-connect-main {
+  max-width: 580px;
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+.sakura-connect-main {
+  width: 100%;
+  max-width: none;
+}
+.frp-connect-main > strong,
+.frp-provider-footer strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.frp-connect-main > p,
+.frp-provider-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8571rem;
+  line-height: 1.55;
+}
+.frp-provider-footer small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  opacity: 0.82;
+}
+.frp-connect-main > .form-error {
+  color: var(--danger);
+}
+.frp-credential-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.frp-provider-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 4px -24px -22px;
+  padding: 18px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-soft) 58%, transparent);
+}
+.frp-provider-footer > div {
+  display: grid;
+  gap: 5px;
+}
+.frp-provider-footer > .frp-provider-links {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.frp-provider-footer button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 0;
+  color: var(--primary-solid);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.frp-provider-footer button:hover {
+  text-decoration: underline;
+}
+.sakura-key-link {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  color: var(--primary-solid);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sakura-key-link:hover {
+  text-decoration: underline;
+}
+.sakura-login-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+}
+.frp-tunnel-toolbar,
+.frp-session-actions,
+.frp-tunnel-toolbar > div {
+  display: flex;
+  align-items: center;
+}
+.frp-tunnel-toolbar,
+.frp-session-actions {
+  justify-content: space-between;
+  gap: 12px;
+}
+.frp-tunnel-toolbar > div {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-md);
+  background: var(--surface-soft);
+}
+.frp-tunnel-toolbar > strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.frp-tunnel-toolbar .icon-button {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  border-radius: var(--cmz-radius-sm);
+  background: transparent;
+  box-shadow: none;
+}
+.frp-tunnel-toolbar .icon-button:hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.frp-tunnel-toolbar .frp-delete-button:not(:disabled):hover {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+.frp-tunnel-list {
+  max-height: 272px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-md);
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+.frp-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-md);
+  background: var(--surface-soft);
+}
+.frp-create-form label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.frp-create-form label > span {
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.frp-create-form .settings-select {
+  width: 100%;
+  max-width: none;
+  justify-self: stretch;
+}
+.frp-node-select {
+  width: 100%;
+  min-width: 0;
+}
+.frp-create-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+.frp-tunnel-row {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) minmax(72px, auto);
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  color: var(--text);
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--cmz-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+.frp-tunnel-row:hover {
+  border-color: color-mix(in srgb, var(--border) 82%, var(--text) 8%);
+  background: var(--surface);
+}
+.frp-tunnel-row.selected {
+  border-color: color-mix(in srgb, var(--primary-solid) 38%, var(--border));
+  background: color-mix(in srgb, var(--primary-solid) 7%, var(--surface));
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--primary-solid) 8%, transparent);
+}
+.frp-tunnel-row:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.frp-tunnel-row > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.frp-tunnel-row strong,
+.frp-tunnel-row small,
+.frp-tunnel-row code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.frp-tunnel-row strong {
+  font-size: 0.9286rem;
+  font-weight: 600;
+}
+.frp-tunnel-row small,
+.frp-tunnel-row code {
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.frp-tunnel-row code {
+  text-align: right;
+}
+.frp-tunnel-state {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.frp-tunnel-state.online {
+  background: var(--success);
+}
+.frp-session-actions > span {
+  color: var(--muted);
+  font-size: 0.8571rem;
+}
+.frp-session-actions > span.active {
+  color: var(--success);
+}
 .form-field {
   display: grid;
   grid-template-columns: 148px minmax(0, 1fr);
@@ -1331,7 +1652,7 @@ button:disabled {
     gap: 0;
     padding-inline: 12px;
   }
-  .nav-item .connection-dot {
+  .nav-item .p2p-dot {
     position: absolute;
     margin: 0 0 19px 20px;
   }
@@ -1356,6 +1677,24 @@ button:disabled {
   .settings-input {
     max-width: none;
     justify-self: stretch;
+  }
+  .frp-provider-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .frp-provider-footer > .frp-provider-links {
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+  .sakura-login-row {
+    grid-template-columns: 1fr;
+  }
+  .sakura-key-link {
+    justify-self: start;
+  }
+  .frp-tunnel-list {
+    grid-template-columns: 1fr;
   }
   .font-size-control {
     max-width: none;

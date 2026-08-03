@@ -1,5 +1,6 @@
 export * from "./autostart";
 export * from "./deeplink";
-export * from "./rooms";
+export * from "./frp";
+export * from "./p2p";
 export * from "./settings";
 export * from "./window";

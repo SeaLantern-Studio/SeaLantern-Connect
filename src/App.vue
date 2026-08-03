@@ -9,6 +9,7 @@ import AppHeader from "./components/layout/AppHeader.vue";
 import AppSidebar from "./components/layout/AppSidebar.vue";
 import Host from "./views/Host.vue";
 import Join from "./views/Join.vue";
+import FrpProvider from "./views/FrpProvider.vue";
 import Personalization from "./views/Personalization.vue";
 import Settings from "./views/Settings.vue";
 import { t } from "@i18n";
@@ -21,7 +22,7 @@ import { enableAutoHidingScrollbars } from "./effects/scrollbars";
 const sessionStore = useSessionStore();
 const preferencesStore = usePreferencesStore();
 const uiStore = useUiStore();
-const { status, state: connectionState } = storeToRefs(sessionStore);
+const { status, state: p2pState } = storeToRefs(sessionStore);
 const { preferences } = storeToRefs(preferencesStore);
 const { activeSection, sidebarCollapsed } = storeToRefs(uiStore);
 const showSplash = ref(true);
@@ -37,6 +38,8 @@ const pageTitle = computed(
     ({
       create: t("navigation.createRoom"),
       join: t("navigation.joinRoom"),
+      openfrp: t("navigation.createOpenFrp"),
+      sakurafrp: t("navigation.createSakuraFrp"),
       personalize: t("navigation.personalization"),
       settings: t("navigation.settings"),
     })[activeSection.value],
@@ -111,7 +114,7 @@ onUnmounted(() => {
   <div v-if="!showSplash" class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
     <AppSidebar
       :active="activeSection"
-      :connection-state="connectionState"
+      :p2p-state="p2pState"
       :tunnel-mode="status.mode"
       :collapsed="sidebarCollapsed"
       @navigate="uiStore.navigate"
@@ -146,6 +149,10 @@ onUnmounted(() => {
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
             @change="updatePersonalization"
+          />
+          <FrpProvider
+            v-else-if="activeSection === 'openfrp' || activeSection === 'sakurafrp'"
+            :provider="activeSection === 'openfrp' ? 'open_frp' : 'sakura_frp'"
           />
           <Settings
             v-else

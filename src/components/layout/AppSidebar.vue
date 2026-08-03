@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { HousePlus, LogIn, Palette, PanelLeftClose, PanelLeftOpen, Settings } from "@lucide/vue";
+import {
+  Cloud,
+  Flower2,
+  HousePlus,
+  LogIn,
+  Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
 import { t } from "@i18n";
 
@@ -12,7 +21,7 @@ interface NavItem {
 
 const props = defineProps<{
   active: string;
-  connectionState: "idle" | "busy" | "active";
+  p2pState: "idle" | "busy" | "active";
   tunnelMode: "host" | "join" | null;
   collapsed: boolean;
 }>();
@@ -30,6 +39,8 @@ const emit = defineEmits<{
 const primaryItems = computed<NavItem[]>(() => [
   { id: "create", label: t("navigation.createRoom"), icon: HousePlus },
   { id: "join", label: t("navigation.joinRoom"), icon: LogIn },
+  { id: "openfrp", label: t("navigation.createOpenFrp"), icon: Cloud },
+  { id: "sakurafrp", label: t("navigation.createSakuraFrp"), icon: Flower2 },
 ]);
 
 const utilityItems = computed<NavItem[]>(() => [
@@ -107,13 +118,13 @@ onUnmounted(() => {
           <span class="nav-label">{{ item.label }}</span>
           <span
             v-if="
-              connectionState !== 'idle' &&
+              p2pState !== 'idle' &&
               ((item.id === 'join' && tunnelMode === 'join') ||
                 (item.id === 'create' && tunnelMode === 'host'))
             "
-            class="connection-dot"
-            :class="connectionState"
-            :aria-label="t('navigation.connectionRunning')"
+            class="p2p-dot"
+            :class="p2pState"
+            :aria-label="t('navigation.p2pRunning')"
           ></span>
         </button>
       </div>

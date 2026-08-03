@@ -1,19 +1,19 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { HostUriLifetime } from "@models/preferences";
-import type { ConnectStatus } from "@models/connection";
+import type { P2pStatus } from "@models/p2p";
 
 export interface LanScanSnapshot {
   scanning: boolean;
   port: number | null;
 }
 
-export function getStatus(): Promise<ConnectStatus> {
-  return invoke("get_status");
+export function getP2pStatus(): Promise<P2pStatus> {
+  return invoke("get_p2p_status");
 }
 
-export function onStatus(callback: (status: ConnectStatus) => void): Promise<() => void> {
-  return listen<ConnectStatus>("connect-status", (event) => callback(event.payload));
+export function onP2pStatus(callback: (status: P2pStatus) => void): Promise<() => void> {
+  return listen<P2pStatus>("p2p-status", (event) => callback(event.payload));
 }
 
 export function startLanScan(restart = false): Promise<LanScanSnapshot> {

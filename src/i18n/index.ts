@@ -43,7 +43,7 @@ export function backendMessage(error: unknown): string {
   );
   if (portMatch) return t("errors.minecraftUnavailable", { port: portMatch[1] });
 
-  const reconnectMatch = message.match(/^reconnecting, attempt (\d+)$/);
+  const reconnectMatch = message.match(/^restoring P2P link, attempt (\d+)$/);
   if (reconnectMatch) return t("connection.reconnecting", { attempt: reconnectMatch[1] });
 
   const playerJoinedMatch = message.match(/^player (.+) joined$/);
@@ -52,9 +52,9 @@ export function backendMessage(error: unknown): string {
   const playerLeftMatch = message.match(/^player (.+) left$/);
   if (playerLeftMatch) return t("connection.playerLeft", { player: playerLeftMatch[1] });
 
-  if (message.startsWith("disconnected: ")) return t("connection.disconnected");
+  if (message.startsWith("P2P link closed: ")) return t("connection.disconnected");
 
-  const pathMatch = message.match(/^using a (relay|direct) connection with (\d+) ms latency$/);
+  const pathMatch = message.match(/^using a (relay|direct) P2P path with (\d+) ms latency$/);
   if (pathMatch) {
     return t("connection.pathChanged", {
       route: pathMatch[1] === "relay" ? t("join.relay") : t("join.direct"),
@@ -63,15 +63,15 @@ export function backendMessage(error: unknown): string {
   }
 
   const knownMessages: Record<string, string> = {
-    "stop the current room or connection first": "errors.connectionOccupied",
+    "stop the current P2P session first": "errors.connectionOccupied",
     "Minecraft port must be between 1 and 65535": "errors.minecraftPortRange",
     "local port must be between 1 and 65535": "errors.localPortRange",
     "invalid room invitation lifetime": "errors.invalidInviteLifetime",
     "the Minecraft world was closed, so the room stopped automatically":
       "errors.minecraftWorldClosed",
     "node startup timed out; check relay settings": "errors.nodeStartupTimedOut",
-    "connected to the host": "connection.connectedToHost",
-    "connection restored": "connection.restored",
+    "P2P link established": "connection.connectedToHost",
+    "P2P link restored": "connection.restored",
   };
   const category = message.replace(/^Error: /, "");
   const errorCategory = `errors.category.${category}`;

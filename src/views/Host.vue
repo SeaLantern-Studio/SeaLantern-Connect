@@ -11,7 +11,7 @@ import {
   type LanScanSnapshot,
 } from "@api";
 import type { HostUriLifetime } from "@models/preferences";
-import type { ConnectStatus, HostPeer } from "@models/connection";
+import type { P2pPeer, P2pStatus } from "@models/p2p";
 import { backendMessage, t } from "@i18n";
 import {
   Check,
@@ -24,7 +24,7 @@ import {
 } from "@lucide/vue";
 
 const props = defineProps<{
-  status: ConnectStatus;
+  status: P2pStatus;
   uriLifetime: HostUriLifetime;
 }>();
 const emit = defineEmits<{
@@ -197,7 +197,7 @@ function compactPeerId(id: string) {
   return id.length > 18 ? `${id.slice(0, 10)}...${id.slice(-6)}` : id;
 }
 
-function peerRoute(peer: HostPeer) {
+function peerRoute(peer: P2pPeer) {
   if (peer.route === "direct") return t("join.direct");
   if (peer.route === "relay") return t("join.relay");
   return t("join.detecting");
