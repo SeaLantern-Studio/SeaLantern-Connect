@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, BufReader, Read};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
@@ -18,6 +20,8 @@ const OPENFRP_PREMIUM_URL: &str = "https://console.openfrp.net/premium";
 const SAKURA_KEYS_URL: &str = "https://www.natfrp.com/user/";
 const SAKURA_PURCHASE_URL: &str = "https://www.natfrp.com/purchase/buy";
 const MAX_OUTPUT_LINES: usize = 120;
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 type OutputMap = Arc<Mutex<HashMap<FrpProvider, VecDeque<String>>>>;
 
@@ -426,6 +430,8 @@ pub(crate) async fn start_frp_tunnel(
             command.args(["-f", &format!("{token}:{}", tunnel_id.trim())]);
         }
     }
+    #[cfg(target_os = "windows")]
+    command.creation_flags(CREATE_NO_WINDOW);
     let mut process = command
         .current_dir(client::directory(&app, provider)?)
         .stdin(Stdio::null())
