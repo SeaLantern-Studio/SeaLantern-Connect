@@ -10,9 +10,9 @@ import {
   stopTunnel,
   type LanScanSnapshot,
 } from "@api";
-import type { HostUriLifetime } from "../../models/preferences";
-import type { ConnectStatus } from "../../models/tunnel";
-import { backendMessage, t } from "../../i18n";
+import type { HostUriLifetime } from "@models/preferences";
+import type { ConnectStatus, HostPeer } from "@models/connection";
+import { backendMessage, t } from "@i18n";
 import {
   Check,
   CircleAlert,
@@ -75,6 +75,7 @@ const canCreate = computed(
 const localizedStatusMessage = computed(() =>
   props.status.message ? backendMessage(props.status.message) : null,
 );
+const hostPeers = computed(() => props.status.hostPeers);
 
 function setPortMode(value: string | number) {
   if (value !== "auto" && value !== "manual") return;
@@ -192,6 +193,16 @@ async function copyInvite() {
   window.setTimeout(() => (copied.value = false), 1600);
 }
 
+function compactPeerId(id: string) {
+  return id.length > 18 ? `${id.slice(0, 10)}...${id.slice(-6)}` : id;
+}
+
+function peerRoute(peer: HostPeer) {
+  if (peer.route === "direct") return t("join.direct");
+  if (peer.route === "relay") return t("join.relay");
+  return t("join.detecting");
+}
+
 onMounted(() => {
   if (props.status.phase === "idle") void beginScan();
 });
@@ -261,6 +272,19 @@ onUnmounted(() => {
           <strong>{{ status.hostPort ?? "--" }}</strong>
         </div>
       </div>
+      <section v-if="hostPeers.length > 0" class="host-peer-section">
+        <div class="host-peer-heading">
+          <span>{{ t("create.playerConnections") }}</span>
+          <strong>{{ hostPeers.length }}</strong>
+        </div>
+        <div class="host-peer-list">
+          <div v-for="peer in hostPeers" :key="peer.id" class="host-peer-row">
+            <code :title="peer.id">{{ compactPeerId(peer.id) }}</code>
+            <span>{{ peerRoute(peer) }}</span>
+            <strong>{{ peer.rttMs == null ? "--" : `${peer.rttMs} ms` }}</strong>
+          </div>
+        </div>
+      </section>
       <div class="connection-footer">
         <p>{{ localizedStatusMessage ?? t("create.ready") }}</p>
         <Cmz_Button

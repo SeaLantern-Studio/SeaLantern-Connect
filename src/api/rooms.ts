@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { HostUriLifetime } from "../models/preferences";
-import type { ConnectStatus } from "../models/tunnel";
+import type { HostUriLifetime } from "@models/preferences";
+import type { ConnectStatus } from "@models/connection";
 
 export interface LanScanSnapshot {
   scanning: boolean;

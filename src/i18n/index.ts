@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import en from "./locales/en.json";
 import zhCN from "./locales/zh-CN.json";
-import type { Locale } from "../models/preferences";
+import type { Locale } from "@models/preferences";
 
 type TranslationNode = string | { [key: string]: TranslationNode };
 

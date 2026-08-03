@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Select, type SelectOption } from "cmzya-modern-ui";
 import { getSystemFonts, supportsLiquidGlass } from "@api";
-import { t } from "../../i18n";
+import { t } from "@i18n";
 import type {
   CustomTheme,
   PersonalizationUpdate,
@@ -10,10 +10,10 @@ import type {
   ThemeColors,
   ColorThemeId,
   WindowMaterial,
-} from "../../models/preferences";
-import { getThemeOptions } from "../../themes";
-import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../../ui/typography";
-import FontSelect from "./FontSelect.vue";
+} from "@models/preferences";
+import { getThemeOptions } from "@themes";
+import { applyTypography, MAX_FONT_SIZE, MIN_FONT_SIZE } from "../themes/typography";
+import FontSelect from "@components/FontSelect.vue";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{

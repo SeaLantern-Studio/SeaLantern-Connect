@@ -1,5 +1,11 @@
 export type ConnectPhase = "idle" | "starting" | "active" | "stopping";
 
+export interface HostPeer {
+  id: string;
+  route: "direct" | "relay" | null;
+  rttMs: number | null;
+}
+
 export interface ConnectStatus {
   phase: ConnectPhase;
   mode: "host" | "join" | null;
@@ -11,6 +17,7 @@ export interface ConnectStatus {
   rttMs: number | null;
   txBytes: number;
   rxBytes: number;
+  hostPeers: HostPeer[];
   error: string | null;
   message: string | null;
 }
@@ -26,6 +33,7 @@ export const emptyConnectStatus: ConnectStatus = {
   rttMs: null,
   txBytes: 0,
   rxBytes: 0,
+  hostPeers: [],
   error: null,
   message: null,
 };

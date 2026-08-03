@@ -8,7 +8,7 @@ import type {
   PersonalizationUpdate,
   Preferences,
   ThemePreference,
-} from "../models/preferences";
+} from "@models/preferences";
 
 export function getPreferences(): Promise<Preferences> {
   return invoke("get_preferences");

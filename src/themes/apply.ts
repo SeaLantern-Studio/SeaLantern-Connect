@@ -1,5 +1,5 @@
 import { getThemeColors, type ColorThemeId, type ThemeColors } from ".";
-import type { CustomTheme, ThemePreference, WindowMaterial } from "../models/preferences";
+import type { CustomTheme, ThemePreference, WindowMaterial } from "@models/preferences";
 
 const nativeMaterialColors: Record<"light" | "dark", ThemeColors> = {
   light: {

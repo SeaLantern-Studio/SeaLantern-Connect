@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { HousePlus, LogIn, Palette, PanelLeftClose, PanelLeftOpen, Settings } from "@lucide/vue";
 import logoUrl from "../../assets/logo.png";
-import { t } from "../../i18n";
+import { t } from "@i18n";
 
 interface NavItem {
   id: string;

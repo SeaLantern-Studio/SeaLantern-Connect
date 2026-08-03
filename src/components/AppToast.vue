@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { CircleAlert, CircleCheck, Info, X } from "@lucide/vue";
-import { t } from "../i18n";
-import { dismissToast, pauseToast, resumeToast, toastItems, type ToastTone } from "../ui/toast";
+import { t } from "@i18n";
+import { type ToastTone, useToastStore } from "../stores/toast";
+
+const toastStore = useToastStore();
 
 function iconFor(tone: ToastTone) {
   if (tone === "success") return CircleCheck;
@@ -19,13 +21,13 @@ function iconFor(tone: ToastTone) {
     aria-relevant="additions"
   >
     <div
-      v-for="item in toastItems"
+      v-for="item in toastStore.items"
       :key="item.id"
       class="toast-item"
       :class="`toast-item-${item.tone}`"
       :role="item.tone === 'error' ? 'alert' : 'status'"
-      @pointerenter="pauseToast(item.id)"
-      @pointerleave="resumeToast(item.id)"
+      @pointerenter="toastStore.pause(item.id)"
+      @pointerleave="toastStore.resume(item.id)"
     >
       <span class="toast-icon" aria-hidden="true">
         <component :is="iconFor(item.tone)" :size="17" :stroke-width="2.2" />
@@ -36,7 +38,7 @@ function iconFor(tone: ToastTone) {
         type="button"
         :title="t('common.dismiss')"
         :aria-label="t('common.dismiss')"
-        @click="dismissToast(item.id)"
+        @click="toastStore.dismiss(item.id)"
       >
         <X :size="15" />
       </button>

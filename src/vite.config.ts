@@ -11,6 +11,11 @@ export default defineConfig(async () => ({
   resolve: {
     alias: {
       "@api": "/api/index.ts",
+      "@components": "/components",
+      "@i18n": "/i18n/index.ts",
+      "@domain": "/domain",
+      "@themes": "/themes/index.ts",
+      "@models": "/models",
     },
   },
 

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import * as preferencesApi from "@api";
-import { setLocale } from "../i18n";
+import { setLocale } from "@i18n";
 import type {
   ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
@@ -11,9 +11,9 @@ import type {
   PersonalizationUpdate,
   Preferences,
   ThemePreference,
-} from "../models/preferences";
+} from "@models/preferences";
 import { applyColorTheme } from "../themes/apply";
-import { applyTypography, DEFAULT_FONT_SIZE } from "../ui/typography";
+import { applyTypography, DEFAULT_FONT_SIZE } from "../themes/typography";
 
 const defaultCustomTheme = {
   light: {

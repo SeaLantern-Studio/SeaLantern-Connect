@@ -8,8 +8,8 @@ import {
   onWindowResized,
   toggleMaximize,
 } from "@api";
-import { t } from "../../i18n";
-import type { Locale, ThemePreference } from "../../models/preferences";
+import { t } from "@i18n";
+import type { Locale, ThemePreference } from "@models/preferences";
 
 const props = defineProps<{
   title: string;

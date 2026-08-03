@@ -27,7 +27,14 @@
         "project": "./src/tsconfig.json"
       },
       "alias": {
-        "map": [["@", "./src"]],
+        "map": [
+          ["@", "./src"],
+          ["@components", "./src/components"],
+          ["@i18n", "./src/i18n"],
+          ["@domain", "./src/domain"],
+          ["@themes", "./src/themes"],
+          ["@models", "./src/models"]
+        ],
         "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue"]
       }
     },

@@ -88,8 +88,17 @@ pub(crate) struct ConnectSnapshot {
     pub(crate) rtt_ms: Option<u64>,
     pub(crate) tx_bytes: u64,
     pub(crate) rx_bytes: u64,
+    pub(crate) host_peers: Vec<HostPeerSnapshot>,
     pub(crate) error: Option<&'static str>,
     pub(crate) message: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct HostPeerSnapshot {
+    pub(crate) id: String,
+    pub(crate) route: Option<&'static str>,
+    pub(crate) rtt_ms: Option<u64>,
 }
 
 impl ConnectSnapshot {
@@ -105,6 +114,7 @@ impl ConnectSnapshot {
             rtt_ms: None,
             tx_bytes: 0,
             rx_bytes: 0,
+            host_peers: Vec::new(),
             error: None,
             message,
         }

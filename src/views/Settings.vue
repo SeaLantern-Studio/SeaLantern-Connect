@@ -2,14 +2,14 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { Cmz_Input, Cmz_Select, Cmz_Toggle, type SelectOption } from "cmzya-modern-ui";
 import { disableAutostart, enableAutostart, getAutostartEnabled } from "@api";
-import { t } from "../../i18n";
+import { t } from "@i18n";
 import type {
   ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
   LightweightSettingsUpdate,
   Preferences,
   SplashDurationMs,
-} from "../../models/preferences";
+} from "@models/preferences";
 
 const props = defineProps<{ preferences: Preferences }>();
 const emit = defineEmits<{

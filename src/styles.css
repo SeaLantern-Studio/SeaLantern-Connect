@@ -17,6 +17,7 @@
   --text: #0f172a;
   --muted: #475569;
   --success: #22c55e;
+  --warning: #f59e0b;
   --danger: #ef4444;
   --shadow: 0 16px 44px rgba(30, 55, 75, 0.11);
   --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -64,6 +65,7 @@
   --text: #f1f5f9;
   --muted: #94a3b8;
   --success: #34d399;
+  --warning: #fbbf24;
   --danger: #f87171;
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
   --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -1034,6 +1036,51 @@ h1 {
 .host-summary strong {
   font-size: 1.0714rem;
 }
+.host-peer-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.host-peer-heading span {
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.host-peer-heading strong {
+  font-size: 0.9286rem;
+  font-variant-numeric: tabular-nums;
+}
+.host-peer-section {
+  display: grid;
+  gap: 9px;
+}
+.host-peer-list {
+  border-top: 1px solid var(--border);
+}
+.host-peer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 72px;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8571rem;
+}
+.host-peer-row code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.host-peer-row span {
+  color: var(--muted);
+}
+.host-peer-row strong {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 .join-panel label {
   display: block;
   margin-bottom: 9px;
@@ -1134,6 +1181,32 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 1rem;
+}
+.latency-chart {
+  min-width: 0;
+  padding: 14px 14px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-md);
+  background: var(--surface-soft);
+}
+.latency-chart-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.latency-chart-heading span {
+  color: var(--muted);
+  font-size: 0.7857rem;
+}
+.latency-chart-heading strong {
+  font-size: 0.9286rem;
+  font-variant-numeric: tabular-nums;
+}
+.latency-chart-canvas {
+  width: 100%;
+  height: 156px;
+  margin-top: 4px;
 }
 .connection-footer {
   min-height: 36px;

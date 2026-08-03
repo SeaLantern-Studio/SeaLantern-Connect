@@ -1,4 +1,4 @@
-use crate::connection::{self, ConnectMode, ConnectSnapshot, ConnectState};
+use crate::connection::{self, ConnectMode, ConnectSnapshot, ConnectState, HostPeerSnapshot};
 use crate::settings::SettingsState;
 use sculk::ErrorCategory;
 use sculk::minecraft::lan::LanScanner;
@@ -9,6 +9,7 @@ use sculk::tunnel::{
     NodeOptions, SculkNode, SecretKey, ServiceId, TokenRefreshPolicy, TunnelEvent,
 };
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -32,6 +33,7 @@ pub(crate) struct HostState {
     uri: Mutex<Option<String>>,
     port: Mutex<Option<u16>>,
     message: Mutex<Option<String>>,
+    peers: Mutex<BTreeMap<String, HostPeerSnapshot>>,
     generation: AtomicU64,
 }
 
@@ -45,6 +47,7 @@ impl HostState {
             uri: Mutex::new(None),
             port: Mutex::new(None),
             message: Mutex::new(None),
+            peers: Mutex::new(BTreeMap::new()),
             generation: AtomicU64::new(0),
         }
     }
@@ -59,12 +62,60 @@ impl HostState {
             self.uri.lock().ok().and_then(|uri| uri.clone()),
             self.message.lock().ok().and_then(|message| message.clone()),
             self.port.lock().ok().and_then(|port| *port),
+            self.peers(),
         )
     }
 
     fn set_message(&self, message: Option<String>) {
         if let Ok(mut current) = self.message.lock() {
             *current = message;
+        }
+    }
+
+    fn peers(&self) -> Vec<HostPeerSnapshot> {
+        self.peers
+            .lock()
+            .map(|peers| peers.values().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn clear_peers(&self) {
+        if let Ok(mut peers) = self.peers.lock() {
+            peers.clear();
+        }
+    }
+
+    fn apply_event(&self, event: &TunnelEvent) {
+        let Ok(mut peers) = self.peers.lock() else {
+            return;
+        };
+        match event {
+            TunnelEvent::PlayerJoined { id } => {
+                let id = id.to_string();
+                peers.entry(id.clone()).or_insert(HostPeerSnapshot {
+                    id,
+                    route: None,
+                    rtt_ms: None,
+                });
+            }
+            TunnelEvent::PlayerLeft { id, .. } => {
+                peers.remove(&id.to_string());
+            }
+            TunnelEvent::PathChanged {
+                remote_id,
+                is_relay,
+                rtt_ms,
+            } => {
+                let id = remote_id.to_string();
+                let peer = peers.entry(id.clone()).or_insert(HostPeerSnapshot {
+                    id,
+                    route: None,
+                    rtt_ms: None,
+                });
+                peer.route = Some(if *is_relay { "relay" } else { "direct" });
+                peer.rtt_ms = Some(*rtt_ms);
+            }
+            _ => {}
         }
     }
 
@@ -194,6 +245,7 @@ pub(crate) async fn start_host(
     connect_state.acquire(ConnectMode::Host)?;
 
     host_state.set_message(None);
+    host_state.clear_peers();
     *host_state
         .port
         .lock()
@@ -336,6 +388,7 @@ fn apply_host_update(app: &AppHandle, state: &HostState, update: HostUpdate) {
             None
         }
         HostUpdate::Event(event) => {
+            state.apply_event(&event);
             state.set_message(connection::event_message(event));
             None
         }
@@ -373,6 +426,7 @@ fn clear_session(state: &HostState) {
     if let Ok(mut port) = state.port.lock() {
         *port = None;
     }
+    state.clear_peers();
 }
 
 fn to_share_url(uri: &str) -> Option<String> {
@@ -385,6 +439,7 @@ fn snapshot(
     share_uri: Option<String>,
     message: Option<String>,
     host_port: Option<u16>,
+    host_peers: Vec<HostPeerSnapshot>,
 ) -> ConnectSnapshot {
     ConnectSnapshot {
         phase: match status.as_ref().map(|status| status.phase) {
@@ -402,6 +457,7 @@ fn snapshot(
         rtt_ms: None,
         tx_bytes: 0,
         rx_bytes: 0,
+        host_peers,
         error: status
             .and_then(|status| status.last_error)
             .map(connection::category_name),
@@ -448,7 +504,9 @@ async fn run_host(
             target_addr,
             token_state,
             token_refresh: start.token_refresh,
-            config: HostConfig::new().max_players(start.max_players),
+            config: HostConfig::new()
+                .event_delay(Duration::from_secs(1))
+                .max_players(start.max_players),
         })
         .await
     {
@@ -682,6 +740,7 @@ mod tests {
             Some("sculk://join/v1/example".to_owned()),
             None,
             Some(25_565),
+            Vec::new(),
         );
 
         assert_eq!(snapshot.phase, "starting");

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { getStatus, onStatus } from "@api";
-import { emptyConnectStatus, type ConnectStatus } from "../models/tunnel";
+import { emptyConnectStatus, type ConnectStatus } from "@models/connection";
 
 export const useSessionStore = defineStore("session", () => {
   const status = ref<ConnectStatus>({ ...emptyConnectStatus });

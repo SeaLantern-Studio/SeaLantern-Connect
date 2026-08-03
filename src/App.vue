@@ -7,16 +7,16 @@ import AppToast from "./components/AppToast.vue";
 import SplashScreen from "./components/SplashScreen.vue";
 import AppHeader from "./components/layout/AppHeader.vue";
 import AppSidebar from "./components/layout/AppSidebar.vue";
-import HostView from "./components/rooms/HostView.vue";
-import JoinView from "./components/rooms/JoinView.vue";
-import PersonalizationView from "./components/settings/PersonalizationView.vue";
-import SettingsView from "./components/settings/SettingsView.vue";
-import { t } from "./i18n";
-import { inviteFromDeepLinkUrls } from "./invitations";
+import Host from "./views/Host.vue";
+import Join from "./views/Join.vue";
+import Personalization from "./views/Personalization.vue";
+import Settings from "./views/Settings.vue";
+import { t } from "@i18n";
+import { inviteFromDeepLinkUrls } from "@domain/invitations";
 import { usePreferencesStore } from "./stores/preferences";
 import { useSessionStore } from "./stores/session";
 import { useUiStore } from "./stores/ui";
-import { enableAutoHidingScrollbars } from "./ui/scrollbars";
+import { enableAutoHidingScrollbars } from "./effects/scrollbars";
 
 const sessionStore = useSessionStore();
 const preferencesStore = usePreferencesStore();
@@ -128,13 +128,13 @@ onUnmounted(() => {
     <main class="app-content">
       <Transition name="page" mode="out-in">
         <div :key="activeSection" class="page-transition-frame">
-          <HostView
+          <Host
             v-if="activeSection === 'create'"
             :status="status"
             :uri-lifetime="preferences.hostUriLifetime"
             @change-uri-lifetime="preferencesStore.setHostUriLifetime"
           />
-          <JoinView
+          <Join
             v-else-if="activeSection === 'join'"
             :status="status"
             :saved-invite="preferences.joinUri"
@@ -142,12 +142,12 @@ onUnmounted(() => {
             :incoming-invite="uiStore.incomingInvite"
             @consume-incoming-invite="uiStore.consumeIncomingInvite"
           />
-          <PersonalizationView
+          <Personalization
             v-else-if="activeSection === 'personalize'"
             :preferences="preferences"
             @change="updatePersonalization"
           />
-          <SettingsView
+          <Settings
             v-else
             :preferences="preferences"
             @change="preferencesStore.updateConnectionSettings"

@@ -246,6 +246,7 @@ fn snapshot(status: TunnelStatus, message: Option<String>) -> ConnectSnapshot {
         rtt_ms: connection.map(|value| value.rtt_ms),
         tx_bytes: connection.map_or(0, |value| value.tx_bytes),
         rx_bytes: connection.map_or(0, |value| value.rx_bytes),
+        host_peers: Vec::new(),
         error: status.last_error.map(connection::category_name),
         message,
     }

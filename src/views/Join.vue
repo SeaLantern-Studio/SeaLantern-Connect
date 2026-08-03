@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 import { Cmz_Button, Cmz_Input, Cmz_Modal, Cmz_TabBar, type TabBarItem } from "cmzya-modern-ui";
 import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "@lucide/vue";
 import {
@@ -9,9 +9,11 @@ import {
   stopTunnel,
   validateInvite,
 } from "@api";
-import { isSameInvite, normalizeInvite, type IncomingInvite } from "../../invitations";
-import type { ConnectStatus } from "../../models/tunnel";
-import { backendMessage, t } from "../../i18n";
+import { isSameInvite, normalizeInvite, type IncomingInvite } from "@domain/invitations";
+import type { ConnectStatus } from "@models/connection";
+import { backendMessage, t } from "@i18n";
+
+const LatencyChart = defineAsyncComponent(() => import("@components/LatencyChart.vue"));
 
 const props = defineProps<{
   status: ConnectStatus;
@@ -302,6 +304,7 @@ function formatBytes(value: number) {
           ><strong>{{ formatBytes(status.rxBytes) }}</strong>
         </div>
       </div>
+      <LatencyChart v-if="connected" :rtt-ms="status.rttMs" />
       <div class="connection-footer">
         <p>{{ localizedStatusMessage ?? t("join.syncing") }}</p>
         <Cmz_Button

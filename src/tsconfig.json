@@ -9,7 +9,12 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "paths": {
-      "@api": ["./api/index.ts"]
+      "@api": ["./api/index.ts"],
+      "@components/*": ["./components/*"],
+      "@i18n": ["./i18n/index.ts"],
+      "@domain/*": ["./domain/*"],
+      "@themes": ["./themes/index.ts"],
+      "@models/*": ["./models/*"]
     },
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
