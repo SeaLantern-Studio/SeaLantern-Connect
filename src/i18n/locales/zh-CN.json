@@ -158,7 +158,7 @@
     "defaultRelay": "使用默认中继",
     "customRelay": "使用自定义中继",
     "customRelayUrl": "自定义中继地址",
-    "relayPlaceholder": "https://relay.example.com",
+    "relayPlaceholder": "https://...",
     "invalidRelay": "请输入有效的 HTTP 或 HTTPS 地址",
     "reconnectSection": "重连设置",
     "reconnectPolicy": "断线重连",
@@ -300,6 +300,7 @@
   },
   "common": {
     "cancel": "取消",
-    "dismiss": "关闭"
+    "dismiss": "关闭",
+    "noResults": "没有匹配项"
   }
 }

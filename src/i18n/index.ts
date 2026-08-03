@@ -1,4 +1,5 @@
-import { ref } from "vue";
+import { get, writable } from "svelte/store";
+import { createSubscriber } from "svelte/reactivity";
 import en from "./locales/en.json";
 import zhCN from "./locales/zh-CN.json";
 import type { Locale } from "@models/preferences";
@@ -10,10 +11,11 @@ const translations: Record<Locale, TranslationNode> = {
   en,
 };
 
-export const locale = ref<Locale>("zh-CN");
+export const locale = writable<Locale>("zh-CN");
+const subscribeToLocale = createSubscriber((update) => locale.subscribe(update));
 
 export function setLocale(value: Locale) {
-  locale.value = value;
+  locale.set(value);
   document.documentElement.lang = value;
 }
 
@@ -28,7 +30,9 @@ function resolve(node: TranslationNode, key: string): string | undefined {
 }
 
 export function t(key: string, params: Record<string, string | number> = {}) {
-  let value = resolve(translations[locale.value], key) ?? resolve(translations.en, key) ?? key;
+  subscribeToLocale();
+  const currentLocale = get(locale);
+  let value = resolve(translations[currentLocale], key) ?? resolve(translations.en, key) ?? key;
   for (const [name, replacement] of Object.entries(params)) {
     value = value.split(`{${name}}`).join(String(replacement));
   }

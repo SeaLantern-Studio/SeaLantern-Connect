@@ -1,0 +1,17 @@
+.settings-number-input {
+  position: relative;
+}
+
+.settings-number-input .ui-input {
+  padding-right: 52px;
+}
+
+.settings-number-input > span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--muted);
+  font-size: 0.8571rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
