@@ -7,26 +7,26 @@ use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
-const STATUS_EVENT: &str = "connect-status";
+const STATUS_EVENT: &str = "p2p-status";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ConnectMode {
+pub(crate) enum P2pMode {
     Host,
     Join,
 }
 
-pub(crate) struct ConnectState {
+pub(crate) struct P2pState {
     service: TunnelService,
-    active_mode: Mutex<Option<ConnectMode>>,
-    snapshot: Mutex<ConnectSnapshot>,
+    active_mode: Mutex<Option<P2pMode>>,
+    snapshot: Mutex<P2pSnapshot>,
 }
 
-impl ConnectState {
+impl P2pState {
     pub(crate) fn new() -> Self {
         Self {
             service: TunnelService::new(),
             active_mode: Mutex::new(None),
-            snapshot: Mutex::new(ConnectSnapshot::idle(None)),
+            snapshot: Mutex::new(P2pSnapshot::idle(None)),
         }
     }
 
@@ -34,19 +34,19 @@ impl ConnectState {
         self.service.clone()
     }
 
-    pub(crate) fn acquire(&self, mode: ConnectMode) -> Result<(), String> {
+    pub(crate) fn acquire(&self, mode: P2pMode) -> Result<(), String> {
         let mut active = self
             .active_mode
             .lock()
-            .map_err(|_| "connection mode state is unavailable".to_owned())?;
+            .map_err(|_| "P2P mode state is unavailable".to_owned())?;
         if active.is_some() {
-            return Err("stop the current room or connection first".to_owned());
+            return Err("stop the current P2P session first".to_owned());
         }
         *active = Some(mode);
         Ok(())
     }
 
-    pub(crate) fn release(&self, mode: ConnectMode) {
+    pub(crate) fn release(&self, mode: P2pMode) {
         if let Ok(mut active) = self.active_mode.lock()
             && *active == Some(mode)
         {
@@ -54,30 +54,28 @@ impl ConnectState {
         }
     }
 
-    pub(crate) fn active_mode(&self) -> Option<ConnectMode> {
+    pub(crate) fn active_mode(&self) -> Option<P2pMode> {
         self.active_mode.lock().ok().and_then(|active| *active)
     }
 
-    pub(crate) fn publish(&self, app: &AppHandle, snapshot: ConnectSnapshot) {
+    pub(crate) fn publish(&self, app: &AppHandle, snapshot: P2pSnapshot) {
         if let Ok(mut current) = self.snapshot.lock() {
             *current = snapshot.clone();
         }
         let _ = app.emit(STATUS_EVENT, snapshot);
     }
 
-    fn snapshot(&self) -> ConnectSnapshot {
+    fn snapshot(&self) -> P2pSnapshot {
         self.snapshot
             .lock()
             .map(|snapshot| snapshot.clone())
-            .unwrap_or_else(|_| {
-                ConnectSnapshot::idle(Some("connection state is unavailable".into()))
-            })
+            .unwrap_or_else(|_| P2pSnapshot::idle(Some("P2P state is unavailable".into())))
     }
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct ConnectSnapshot {
+pub(crate) struct P2pSnapshot {
     pub(crate) phase: &'static str,
     pub(crate) mode: Option<&'static str>,
     pub(crate) local_address: Option<String>,
@@ -88,20 +86,20 @@ pub(crate) struct ConnectSnapshot {
     pub(crate) rtt_ms: Option<u64>,
     pub(crate) tx_bytes: u64,
     pub(crate) rx_bytes: u64,
-    pub(crate) host_peers: Vec<HostPeerSnapshot>,
+    pub(crate) host_peers: Vec<P2pPeerSnapshot>,
     pub(crate) error: Option<&'static str>,
     pub(crate) message: Option<String>,
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct HostPeerSnapshot {
+pub(crate) struct P2pPeerSnapshot {
     pub(crate) id: String,
     pub(crate) route: Option<&'static str>,
     pub(crate) rtt_ms: Option<u64>,
 }
 
-impl ConnectSnapshot {
+impl P2pSnapshot {
     pub(crate) fn idle(message: Option<String>) -> Self {
         Self {
             phase: "idle",
@@ -122,22 +120,24 @@ impl ConnectSnapshot {
 }
 
 #[tauri::command]
-pub(crate) fn get_status(state: State<'_, ConnectState>) -> ConnectSnapshot {
+pub(crate) fn get_p2p_status(state: State<'_, P2pState>) -> P2pSnapshot {
     state.snapshot()
 }
 
 pub(crate) fn event_message(event: TunnelEvent) -> Option<String> {
     match event {
-        TunnelEvent::Connected => Some("connected to the host".to_owned()),
+        TunnelEvent::Connected => Some("P2P link established".to_owned()),
         TunnelEvent::PlayerJoined { id } => Some(format!("player {id} joined")),
         TunnelEvent::PlayerLeft { id, .. } => Some(format!("player {id} left")),
-        TunnelEvent::Disconnected { reason } => Some(format!("disconnected: {reason}")),
-        TunnelEvent::Reconnecting { attempt } => Some(format!("reconnecting, attempt {attempt}")),
-        TunnelEvent::Reconnected => Some("connection restored".to_owned()),
+        TunnelEvent::Disconnected { reason } => Some(format!("P2P link closed: {reason}")),
+        TunnelEvent::Reconnecting { attempt } => {
+            Some(format!("restoring P2P link, attempt {attempt}"))
+        }
+        TunnelEvent::Reconnected => Some("P2P link restored".to_owned()),
         TunnelEvent::PathChanged {
             is_relay, rtt_ms, ..
         } => Some(format!(
-            "using a {} connection with {rtt_ms} ms latency",
+            "using a {} P2P path with {rtt_ms} ms latency",
             if is_relay { "relay" } else { "direct" }
         )),
         TunnelEvent::Error { message, .. } => Some(message),
@@ -170,15 +170,15 @@ mod tests {
     fn maps_event_messages() {
         assert_eq!(
             event_message(TunnelEvent::Connected),
-            Some("connected to the host".to_owned())
+            Some("P2P link established".to_owned())
         );
         assert_eq!(
             event_message(TunnelEvent::Reconnecting { attempt: 3 }),
-            Some("reconnecting, attempt 3".to_owned())
+            Some("restoring P2P link, attempt 3".to_owned())
         );
         assert_eq!(
             event_message(TunnelEvent::Reconnected),
-            Some("connection restored".to_owned())
+            Some("P2P link restored".to_owned())
         );
     }
 
@@ -197,12 +197,12 @@ mod tests {
 
     #[test]
     fn keeps_modes_exclusive() {
-        let state = ConnectState::new();
-        assert!(state.acquire(ConnectMode::Host).is_ok());
-        assert!(state.acquire(ConnectMode::Join).is_err());
-        state.release(ConnectMode::Join);
-        assert_eq!(state.active_mode(), Some(ConnectMode::Host));
-        state.release(ConnectMode::Host);
-        assert!(state.acquire(ConnectMode::Join).is_ok());
+        let state = P2pState::new();
+        assert!(state.acquire(P2pMode::Host).is_ok());
+        assert!(state.acquire(P2pMode::Join).is_err());
+        state.release(P2pMode::Join);
+        assert_eq!(state.active_mode(), Some(P2pMode::Host));
+        state.release(P2pMode::Host);
+        assert!(state.acquire(P2pMode::Join).is_ok());
     }
 }

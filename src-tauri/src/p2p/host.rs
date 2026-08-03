@@ -1,4 +1,4 @@
-use crate::connection::{self, ConnectMode, ConnectSnapshot, ConnectState, HostPeerSnapshot};
+use crate::p2p::{self, P2pMode, P2pPeerSnapshot, P2pSnapshot, P2pState};
 use crate::settings::SettingsState;
 use sculk::ErrorCategory;
 use sculk::minecraft::lan::LanScanner;
@@ -33,7 +33,7 @@ pub(crate) struct HostState {
     uri: Mutex<Option<String>>,
     port: Mutex<Option<u16>>,
     message: Mutex<Option<String>>,
-    peers: Mutex<BTreeMap<String, HostPeerSnapshot>>,
+    peers: Mutex<BTreeMap<String, P2pPeerSnapshot>>,
     generation: AtomicU64,
 }
 
@@ -56,7 +56,7 @@ impl HostState {
         self.task.lock().is_ok_and(|task| task.is_some())
     }
 
-    fn snapshot(&self) -> ConnectSnapshot {
+    fn snapshot(&self) -> P2pSnapshot {
         snapshot(
             self.status.lock().ok().and_then(|status| status.clone()),
             self.uri.lock().ok().and_then(|uri| uri.clone()),
@@ -72,7 +72,7 @@ impl HostState {
         }
     }
 
-    fn peers(&self) -> Vec<HostPeerSnapshot> {
+    fn peers(&self) -> Vec<P2pPeerSnapshot> {
         self.peers
             .lock()
             .map(|peers| peers.values().cloned().collect())
@@ -92,7 +92,7 @@ impl HostState {
         match event {
             TunnelEvent::PlayerJoined { id } => {
                 let id = id.to_string();
-                peers.entry(id.clone()).or_insert(HostPeerSnapshot {
+                peers.entry(id.clone()).or_insert(P2pPeerSnapshot {
                     id,
                     route: None,
                     rtt_ms: None,
@@ -107,7 +107,7 @@ impl HostState {
                 rtt_ms,
             } => {
                 let id = remote_id.to_string();
-                let peer = peers.entry(id.clone()).or_insert(HostPeerSnapshot {
+                let peer = peers.entry(id.clone()).or_insert(P2pPeerSnapshot {
                     id,
                     route: None,
                     rtt_ms: None,
@@ -215,11 +215,11 @@ pub(crate) async fn start_host(
     max_players: Option<u32>,
     uri_lifetime: String,
     app: AppHandle,
-    connect_state: State<'_, ConnectState>,
+    p2p_state: State<'_, P2pState>,
     host_state: State<'_, HostState>,
 ) -> Result<(), String> {
     if host_state.is_running() {
-        return Err("stop the current room or connection first".to_owned());
+        return Err("stop the current P2P session first".to_owned());
     }
     if port == 0 {
         return Err("Minecraft port must be between 1 and 65535".to_owned());
@@ -242,7 +242,7 @@ pub(crate) async fn start_host(
         state_path: settings.host_state_path(),
     };
     host_state.stop_scanner().await?;
-    connect_state.acquire(ConnectMode::Host)?;
+    p2p_state.acquire(P2pMode::Host)?;
 
     host_state.set_message(None);
     host_state.clear_peers();
@@ -266,11 +266,11 @@ pub(crate) async fn start_host(
     match host_state.task.lock() {
         Ok(mut current) => *current = Some(task),
         Err(_) => {
-            connect_state.release(ConnectMode::Host);
+            p2p_state.release(P2pMode::Host);
             return Err("host state is unavailable".to_owned());
         }
     }
-    connect_state.publish(&app, host_state.snapshot());
+    p2p_state.publish(&app, host_state.snapshot());
     Ok(())
 }
 
@@ -290,8 +290,7 @@ pub(crate) fn stop(app: &AppHandle) -> Result<(), String> {
     {
         status.phase = HostedServicePhase::Stopping;
     }
-    app.state::<ConnectState>()
-        .publish(app, host_state.snapshot());
+    app.state::<P2pState>().publish(app, host_state.snapshot());
     Ok(())
 }
 
@@ -389,7 +388,7 @@ fn apply_host_update(app: &AppHandle, state: &HostState, update: HostUpdate) {
         }
         HostUpdate::Event(event) => {
             state.apply_event(&event);
-            state.set_message(connection::event_message(event));
+            state.set_message(p2p::event_message(event));
             None
         }
         HostUpdate::Error(error) => {
@@ -403,13 +402,13 @@ fn apply_host_update(app: &AppHandle, state: &HostState, update: HostUpdate) {
         HostUpdate::Stopped(result) => Some(result.err()),
     };
 
-    let connect_state = app.state::<ConnectState>();
+    let p2p_state = app.state::<P2pState>();
     if let Some(message) = terminal {
         clear_session(state);
-        connect_state.release(ConnectMode::Host);
-        connect_state.publish(app, ConnectSnapshot::idle(message));
-    } else if connect_state.active_mode() == Some(ConnectMode::Host) {
-        connect_state.publish(app, state.snapshot());
+        p2p_state.release(P2pMode::Host);
+        p2p_state.publish(app, P2pSnapshot::idle(message));
+    } else if p2p_state.active_mode() == Some(P2pMode::Host) {
+        p2p_state.publish(app, state.snapshot());
     }
 }
 
@@ -439,9 +438,9 @@ fn snapshot(
     share_uri: Option<String>,
     message: Option<String>,
     host_port: Option<u16>,
-    host_peers: Vec<HostPeerSnapshot>,
-) -> ConnectSnapshot {
-    ConnectSnapshot {
+    host_peers: Vec<P2pPeerSnapshot>,
+) -> P2pSnapshot {
+    P2pSnapshot {
         phase: match status.as_ref().map(|status| status.phase) {
             None => "starting",
             Some(HostedServicePhase::Active) => "active",
@@ -460,7 +459,7 @@ fn snapshot(
         host_peers,
         error: status
             .and_then(|status| status.last_error)
-            .map(connection::category_name),
+            .map(p2p::category_name),
         message,
     }
 }

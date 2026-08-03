@@ -1,4 +1,4 @@
-use crate::connection::{self, ConnectMode, ConnectSnapshot, ConnectState};
+use crate::p2p::{self, P2pMode, P2pSnapshot, P2pState};
 use crate::settings::SettingsState;
 use sculk::minecraft::lan::LanBroadcaster;
 use sculk::tunnel::{
@@ -115,7 +115,7 @@ pub(crate) async fn start_join(
     local_port: Option<u16>,
     app: AppHandle,
     settings: State<'_, SettingsState>,
-    connect_state: State<'_, ConnectState>,
+    p2p_state: State<'_, P2pState>,
     join_state: State<'_, JoinState>,
 ) -> Result<(), String> {
     let uri = uri.trim().to_owned();
@@ -131,11 +131,11 @@ pub(crate) async fn start_join(
         None => LocalPort::Auto,
     };
 
-    connect_state.acquire(ConnectMode::Join)?;
+    p2p_state.acquire(P2pMode::Join)?;
     join_state.stop_broadcast();
     join_state.set_message(None);
     join_state.set_pending_uri(Some(uri));
-    if let Err(error) = connect_state
+    if let Err(error) = p2p_state
         .tunnel()
         .start_join(
             JoinOptions::new(join_uri)
@@ -145,8 +145,8 @@ pub(crate) async fn start_join(
         .await
     {
         join_state.set_pending_uri(None);
-        connect_state.release(ConnectMode::Join);
-        connect_state.publish(&app, ConnectSnapshot::idle(None));
+        p2p_state.release(P2pMode::Join);
+        p2p_state.publish(&app, P2pSnapshot::idle(None));
         return Err(error.to_string());
     }
     Ok(())
@@ -162,7 +162,7 @@ pub(crate) async fn stop(app: &AppHandle) -> Result<(), String> {
     join_state.stop_broadcast();
     join_state.set_message(None);
     join_state.set_pending_uri(None);
-    app.state::<ConnectState>()
+    app.state::<P2pState>()
         .tunnel()
         .shutdown()
         .await
@@ -171,7 +171,7 @@ pub(crate) async fn stop(app: &AppHandle) -> Result<(), String> {
 
 pub(crate) fn setup(app: &mut App) {
     let handle = app.handle().clone();
-    let service = app.state::<ConnectState>().tunnel();
+    let service = app.state::<P2pState>().tunnel();
     tauri::async_runtime::spawn(async move {
         let mut updates = service.subscribe();
         while let Some(update) = updates.recv().await {
@@ -181,8 +181,8 @@ pub(crate) fn setup(app: &mut App) {
 }
 
 fn apply_update(app: &AppHandle, update: TunnelUpdate) {
-    let connect_state = app.state::<ConnectState>();
-    if connect_state.active_mode() != Some(ConnectMode::Join) {
+    let p2p_state = app.state::<P2pState>();
+    if p2p_state.active_mode() != Some(P2pMode::Join) {
         return;
     }
     let join_state = app.state::<JoinState>();
@@ -200,26 +200,23 @@ fn apply_update(app: &AppHandle, update: TunnelUpdate) {
             status
         }
         TunnelUpdate::Event(event) => {
-            join_state.set_message(connection::event_message(event));
-            connect_state.tunnel().status()
+            join_state.set_message(p2p::event_message(event));
+            p2p_state.tunnel().status()
         }
-        _ => connect_state.tunnel().status(),
+        _ => p2p_state.tunnel().status(),
     };
 
     if status.state.phase == TunnelPhase::Idle {
         join_state.stop_broadcast();
         join_state.set_pending_uri(None);
-        connect_state.release(ConnectMode::Join);
+        p2p_state.release(P2pMode::Join);
     }
-    connect_state.publish(app, snapshot(status, join_state.message()));
+    p2p_state.publish(app, snapshot(status, join_state.message()));
 }
 
-fn snapshot(status: TunnelStatus, message: Option<String>) -> ConnectSnapshot {
-    let connection = status
-        .connections
-        .iter()
-        .find(|connection| connection.alive);
-    ConnectSnapshot {
+fn snapshot(status: TunnelStatus, message: Option<String>) -> P2pSnapshot {
+    let peer = status.connections.iter().find(|peer| peer.alive);
+    P2pSnapshot {
         phase: match status.state.phase {
             TunnelPhase::Idle => "idle",
             TunnelPhase::Starting => "starting",
@@ -236,18 +233,14 @@ fn snapshot(status: TunnelStatus, message: Option<String>) -> ConnectSnapshot {
             .join_uri
             .as_ref()
             .and_then(|uri| uri.expose_secret_uri().ok()),
-        player_count: status
-            .connections
-            .iter()
-            .filter(|connection| connection.alive)
-            .count(),
+        player_count: status.connections.iter().filter(|peer| peer.alive).count(),
         host_port: None,
-        route: connection.map(|value| if value.is_relay { "relay" } else { "direct" }),
-        rtt_ms: connection.map(|value| value.rtt_ms),
-        tx_bytes: connection.map_or(0, |value| value.tx_bytes),
-        rx_bytes: connection.map_or(0, |value| value.rx_bytes),
+        route: peer.map(|value| if value.is_relay { "relay" } else { "direct" }),
+        rtt_ms: peer.map(|value| value.rtt_ms),
+        tx_bytes: peer.map_or(0, |value| value.tx_bytes),
+        rx_bytes: peer.map_or(0, |value| value.rx_bytes),
         host_peers: Vec::new(),
-        error: status.last_error.map(connection::category_name),
+        error: status.last_error.map(p2p::category_name),
         message,
     }
 }
