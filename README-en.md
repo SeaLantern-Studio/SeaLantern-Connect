@@ -51,6 +51,12 @@ Build the application:
 only build
 ```
 
+On Arch Linux and Arch-based distributions, build and install a local pacman package:
+
+```bash
+only arch install
+```
+
 ### Local CI
 
 Please run the local CI suite before committing:
