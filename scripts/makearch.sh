@@ -34,7 +34,7 @@ detect_architecture() {
 
 read_version() {
     local version_tag
-    version_tag="$(node "${repo_dir}/scripts/version.mjs" show)"
+    version_tag="$(node "${repo_dir}/scripts/version.ts" show)"
     if [[ ! "${version_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
         echo "invalid project version: ${version_tag}" >&2
         exit 1

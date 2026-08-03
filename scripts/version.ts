@@ -2,6 +2,25 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+type VersionedJson = Record<string, unknown> & { version: string };
+
+interface CargoVersionRange {
+  end: number;
+  start: number;
+  value: string;
+}
+
+interface CurrentVersions {
+  cargoRange: CargoVersionRange;
+  cargoSource: string;
+  packageJson: VersionedJson;
+  packageSource: string;
+  tauriJson: VersionedJson;
+  tauriSource: string;
+}
+
+type VersionUpdate = [file: string, source: string, previousSource: string];
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "..");
 const files = {
@@ -12,7 +31,7 @@ const files = {
 const semverPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 
-function cargoVersionRange(source) {
+function cargoVersionRange(source: string): CargoVersionRange {
   const sectionMatch = /^\[workspace\.package\]\s*$/m.exec(source);
   if (!sectionMatch) throw new Error("Cargo.toml is missing [workspace.package]");
 
@@ -33,20 +52,21 @@ function cargoVersionRange(source) {
   };
 }
 
-function parseJson(source, label) {
-  let value;
+function parseJson(source: string, label: string): VersionedJson {
+  let value: unknown;
   try {
     value = JSON.parse(source);
   } catch (error) {
-    throw new Error(`${label} is not valid JSON: ${error.message}`, { cause: error });
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${label} is not valid JSON: ${message}`, { cause: error });
   }
-  if (typeof value.version !== "string") {
+  if (typeof value !== "object" || value === null || typeof value.version !== "string") {
     throw new Error(`${label} is missing a string version`);
   }
-  return value;
+  return value as VersionedJson;
 }
 
-async function readVersions() {
+async function readVersions(): Promise<CurrentVersions> {
   const [cargoSource, packageSource, tauriSource] = await Promise.all([
     readFile(files.cargo, "utf8"),
     readFile(files.package, "utf8"),
@@ -64,14 +84,14 @@ async function readVersions() {
   return { cargoRange, cargoSource, packageJson, packageSource, tauriJson, tauriSource };
 }
 
-async function writeVersions(current, version) {
+async function writeVersions(current: CurrentVersions, version: string): Promise<void> {
   const cargoSource =
     current.cargoSource.slice(0, current.cargoRange.start) +
     `version = "${version}"` +
     current.cargoSource.slice(current.cargoRange.end);
   const packageSource = `${JSON.stringify({ ...current.packageJson, version }, null, 2)}\n`;
   const tauriSource = `${JSON.stringify({ ...current.tauriJson, version }, null, 2)}\n`;
-  const updates = [
+  const updates: VersionUpdate[] = [
     [files.cargo, cargoSource, current.cargoSource],
     [files.package, packageSource, current.packageSource],
     [files.tauri, tauriSource, current.tauriSource],
@@ -84,7 +104,7 @@ async function writeVersions(current, version) {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const [command, versionTag, ...extra] = process.argv.slice(2);
   if (command === "show" && versionTag === undefined) {
     const current = await readVersions();
@@ -92,7 +112,7 @@ async function main() {
     return;
   }
   if (command !== "change" || versionTag === undefined || extra.length !== 0) {
-    throw new Error("usage: version.mjs show | version.mjs change <vMAJOR.MINOR.PATCH>");
+    throw new Error("usage: version.ts show | version.ts change <vMAJOR.MINOR.PATCH>");
   }
   if (!versionTag.startsWith("v")) {
     throw new Error(`version must start with v: ${versionTag}`);
@@ -112,7 +132,7 @@ async function main() {
   console.log(`v${previous} -> v${version}`);
 }
 
-main().catch((error) => {
-  console.error(`version: ${error.message}`);
+main().catch((error: unknown) => {
+  console.error(`version: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 });

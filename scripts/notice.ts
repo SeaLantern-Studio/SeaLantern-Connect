@@ -5,6 +5,24 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
+interface FrontendDependency {
+  licenseFile?: string;
+  licenses?: string;
+  publisher?: string;
+  repository?: string;
+}
+
+interface BackendCrate {
+  authors?: string | string[];
+  license?: string;
+  license_file?: string;
+  name: string;
+  repository?: string;
+  version: string;
+}
+
+type FrontendLicenses = Record<string, FrontendDependency>;
+
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,7 +33,7 @@ const temporaryFiles = [
 ];
 const noticeFile = path.join(rootDir, "NOTICE");
 
-async function exists(filePath) {
+async function exists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
     return true;
@@ -24,7 +42,7 @@ async function exists(filePath) {
   }
 }
 
-async function run(command, args, cwd) {
+async function run(command: string, args: string[], cwd: string) {
   return execFileAsync(command, args, { cwd, maxBuffer: 16 * 1024 * 1024 });
 }
 
@@ -37,25 +55,25 @@ async function ensureCargoLicense() {
   }
 }
 
-async function frontendLicenses() {
+async function frontendLicenses(): Promise<FrontendLicenses> {
   const outputFile = temporaryFiles[0];
   const { stdout } = await execAsync(
     "npx --yes license-checker-rseidelsohn --start . --json --production",
     { cwd: rootDir, maxBuffer: 16 * 1024 * 1024 },
   );
   await writeFile(outputFile, stdout, "utf8");
-  return JSON.parse(stdout);
+  return JSON.parse(stdout) as FrontendLicenses;
 }
 
-async function backendLicenses() {
+async function backendLicenses(): Promise<BackendCrate[]> {
   await ensureCargoLicense();
   const outputFile = temporaryFiles[1];
   const { stdout } = await run("cargo", ["license", "--json", "--avoid-dev-deps"], cargoDir);
   await writeFile(outputFile, stdout, "utf8");
-  return JSON.parse(stdout);
+  return JSON.parse(stdout) as BackendCrate[];
 }
 
-async function readFrontendLicense(filePath) {
+async function readFrontendLicense(filePath: string | undefined): Promise<string | null> {
   if (!filePath || /README|\.spdx/i.test(filePath)) return null;
   const candidates = [path.resolve(rootDir, filePath), filePath];
   const licenses = await Promise.all(
@@ -67,7 +85,7 @@ async function readFrontendLicense(filePath) {
   return licenses.find(Boolean) || null;
 }
 
-async function readBackendLicense(crate) {
+async function readBackendLicense(crate: BackendCrate): Promise<string | null> {
   if (crate.license_file && (await exists(crate.license_file))) {
     return (await readFile(crate.license_file, "utf8")).trim();
   }
@@ -92,7 +110,12 @@ async function readBackendLicense(crate) {
   return licenses.find(Boolean) || null;
 }
 
-function frontendSection(name, version, dependency, id) {
+function frontendSection(
+  name: string,
+  version: string,
+  dependency: FrontendDependency,
+  id: number,
+): string {
   return [
     `${id}. ${name}@${version}`,
     "",
@@ -105,7 +128,7 @@ function frontendSection(name, version, dependency, id) {
     .join("\n");
 }
 
-function backendSection(crate, id) {
+function backendSection(crate: BackendCrate, id: number): string {
   const authors = Array.isArray(crate.authors) ? crate.authors : [crate.authors].filter(Boolean);
   return [
     `${id}. ${crate.name}@${crate.version}`,
@@ -119,8 +142,10 @@ function backendSection(crate, id) {
     .join("\n");
 }
 
-async function generateNotice() {
-  const packageJson = JSON.parse(await readFile(path.join(rootDir, "package.json"), "utf8"));
+async function generateNotice(): Promise<void> {
+  const packageJson = JSON.parse(await readFile(path.join(rootDir, "package.json"), "utf8")) as {
+    name: string;
+  };
   const [frontend, backend] = await Promise.all([frontendLicenses(), backendLicenses()]);
   const lines = [
     "SeaLantern Connect",
@@ -179,8 +204,10 @@ if (argument === "--help" || argument === "-h") {
 } else if (argument) {
   throw new Error(`Unknown argument: ${argument}`);
 } else {
-  generateNotice().catch((error) => {
-    console.error(`Failed to generate NOTICE: ${error.message}`);
+  generateNotice().catch((error: unknown) => {
+    console.error(
+      `Failed to generate NOTICE: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exitCode = 1;
   });
 }
