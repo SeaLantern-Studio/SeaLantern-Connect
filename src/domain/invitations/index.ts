@@ -9,6 +9,12 @@ export function normalizeInvite(value: string): string {
   return fragment ? `sculk://join/v1/${fragment[1]}` : trimmed;
 }
 
+export function toWebInvite(value: string): string {
+  const normalized = normalizeInvite(value);
+  const payload = normalized.match(/^sculk:\/\/join\/v1\/([A-Za-z0-9_-]+)$/);
+  return payload ? `https://ideaflash.cn/#v1/${payload[1]}` : normalized;
+}
+
 export function isSameInvite(left: string | null, right: string | null): boolean {
   return left !== null && right !== null && normalizeInvite(left) === normalizeInvite(right);
 }

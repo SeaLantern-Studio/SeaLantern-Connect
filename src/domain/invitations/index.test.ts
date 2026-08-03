@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inviteFromDeepLinkUrls, isSameInvite, normalizeInvite } from ".";
+import { inviteFromDeepLinkUrls, isSameInvite, normalizeInvite, toWebInvite } from ".";
 
 describe("normalizeInvite", () => {
   it("converts a web invitation into the sculk URI", () => {
@@ -25,6 +25,20 @@ describe("normalizeInvite", () => {
   it("does not accept an insecure HTTP wrapper", () => {
     expect(normalizeInvite("http://example.com/#v1/token-123")).toBe(
       "http://example.com/#v1/token-123",
+    );
+  });
+});
+
+describe("toWebInvite", () => {
+  it("converts a native invitation into the HTTPS form", () => {
+    expect(toWebInvite("sculk://join/v1/token_123-abc")).toBe(
+      "https://ideaflash.cn/#v1/token_123-abc",
+    );
+  });
+
+  it("keeps an HTTPS invitation in its canonical form", () => {
+    expect(toWebInvite(" https://ideaflash.cn/#v1/token-123 ")).toBe(
+      "https://ideaflash.cn/#v1/token-123",
     );
   });
 });

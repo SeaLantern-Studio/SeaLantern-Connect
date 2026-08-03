@@ -9,14 +9,19 @@ import {
   stopTunnel,
   validateInvite,
 } from "@api";
-import { isSameInvite, normalizeInvite, type IncomingInvite } from "@domain/invitations";
-import type { ConnectStatus } from "@models/connection";
+import {
+  isSameInvite,
+  normalizeInvite,
+  toWebInvite,
+  type IncomingInvite,
+} from "@domain/invitations";
+import type { P2pStatus } from "@models/p2p";
 import { backendMessage, t } from "@i18n";
 
 const LatencyChart = defineAsyncComponent(() => import("@components/LatencyChart.vue"));
 
 const props = defineProps<{
-  status: ConnectStatus;
+  status: P2pStatus;
   savedInvite: string;
   savedPort: number;
   incomingInvite: IncomingInvite | null;
@@ -25,7 +30,7 @@ const emit = defineEmits<{
   consumeIncomingInvite: [id: number];
 }>();
 
-const invite = ref(props.savedInvite);
+const invite = ref(toWebInvite(props.savedInvite));
 const validationError = ref("");
 const commandError = ref("");
 const confirming = ref(false);
@@ -72,7 +77,7 @@ const localizedStatusError = computed(() =>
 watch(
   () => props.savedInvite,
   (value) => {
-    if (!invite.value) invite.value = value;
+    if (!invite.value) invite.value = toWebInvite(value);
   },
 );
 
@@ -105,8 +110,9 @@ async function submitInvite() {
   validationError.value = "";
   commandError.value = "";
   try {
-    invite.value = normalizeInvite(invite.value);
-    await validateInvite(invite.value);
+    const normalized = normalizeInvite(invite.value);
+    await validateInvite(normalized);
+    invite.value = toWebInvite(normalized);
     await join();
   } catch {
     validationError.value = t("join.invalidInvite");
@@ -117,7 +123,7 @@ async function importIncomingInvite(uri: string) {
   const normalized = normalizeInvite(uri);
   validationError.value = "";
   commandError.value = "";
-  invite.value = normalized;
+  invite.value = toWebInvite(normalized);
   if (rejectOwnInvite(normalized)) return;
   if (joining.value && isSameInvite(props.status.shareUri, normalized)) return;
   try {
@@ -161,7 +167,10 @@ async function join() {
       await stopTunnel();
       await waitForIdle();
     }
-    await startJoin(invite.value, portMode.value === "auto" ? null : Number(manualPort.value));
+    await startJoin(
+      normalizeInvite(invite.value),
+      portMode.value === "auto" ? null : Number(manualPort.value),
+    );
   } catch (error) {
     commandError.value = backendMessage(error);
   }
