@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/oxlint/configuration_schema.json",
-  "plugins": ["vue", "typescript", "import", "promise", "unicorn"],
+  "plugins": ["typescript", "import", "promise", "unicorn"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -20,7 +20,7 @@
   "settings": {
     "import/resolver": {
       "node": {
-        "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue", ".css"]
+        "extensions": [".js", ".jsx", ".ts", ".tsx", ".svelte", ".css"]
       },
       "typescript": {
         "alwaysTryTypes": true,
@@ -35,11 +35,11 @@
           ["@themes", "./src/themes"],
           ["@models", "./src/models"]
         ],
-        "extensions": [".js", ".jsx", ".ts", ".tsx", ".vue"]
+        "extensions": [".js", ".jsx", ".ts", ".tsx", ".svelte"]
       }
     },
     "import/parsers": {
-      "@typescript-eslint/parser": [".ts", ".tsx", ".vue"]
+      "@typescript-eslint/parser": [".ts", ".tsx", ".svelte"]
     },
     "jsx-a11y": {
       "components": {},
@@ -75,8 +75,8 @@
   },
   "overrides": [
     {
-      "files": ["**/*.ts", "**/*.tsx", "**/*.vue"],
-      "excludeFiles": ["api/**/*.ts"],
+      "files": ["**/*.ts", "**/*.tsx"],
+      "excludeFiles": ["api/**/*.ts", "lib/state.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",

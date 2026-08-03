@@ -6,38 +6,43 @@
   "repository": "https://github.com/SeaLantern-Studio/SeaLantern-Connect",
   "type": "module",
   "scripts": {
-    "dev": "vite -c src/vite.config.ts",
-    "build": "vue-tsc -p src/tsconfig.json --noEmit && vite build -c src/vite.config.ts",
-    "preview": "vite preview -c src/vite.config.ts",
-    "test": "vitest run -c src/vite.config.ts",
+    "dev": "vite dev -c src/vite.config.ts",
+    "build": "svelte-kit sync && vite build -c src/vite.config.ts",
+    "preview": "vite preview",
+    "test": "vitest run",
     "notice": "node scripts/notice.mjs",
     "sv": "node scripts/version.mjs show",
     "cv": "node scripts/version.mjs change",
     "tauri": "tauri",
     "lint": "oxlint -c src/.oxlintrc.json src scripts",
     "lint:fix": "oxlint -c src/.oxlintrc.json --fix src scripts",
-    "fmt": "oxfmt -c src/.oxfmtrc.json src scripts package.json pnpm-workspace.yaml README.md",
-    "fmt:check": "oxfmt -c src/.oxfmtrc.json --check src scripts package.json pnpm-workspace.yaml README.md"
+    "check": "svelte-kit sync && svelte-check --workspace . --config svelte.config.js --tsconfig src/tsconfig.json",
+    "fmt": "oxfmt -c src/.oxfmtrc.json src scripts package.json pnpm-workspace.yaml svelte.config.js README.md",
+    "fmt:check": "oxfmt -c src/.oxfmtrc.json --check src scripts package.json pnpm-workspace.yaml svelte.config.js README.md"
   },
   "dependencies": {
-    "@lucide/vue": "^1.28.0",
+    "@lucide/svelte": "^1",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-autostart": "^2.5.1",
+    "@tauri-apps/plugin-autostart": "^2",
     "@tauri-apps/plugin-deep-link": "^2",
-    "cmzya-modern-ui": "^0.5.5",
-    "echarts": "^6.1.0",
-    "pinia": "^4.0.2",
-    "vue": "^3.5.13"
+    "bits-ui": "^2",
+    "echarts": "^6",
+    "svelte": "^5",
+    "svelte-awesome-color-picker": "^4"
   },
   "devDependencies": {
+    "@sveltejs/adapter-static": "^3",
+    "@sveltejs/kit": "^2",
     "@tauri-apps/cli": "^2",
-    "@vitejs/plugin-vue": "^6",
-    "oxfmt": "^0.61.0",
-    "oxlint": "^1.76.0",
-    "typescript": "^6.0.3",
-    "vite": "^8.2.0",
-    "vitest": "^4.1.10",
-    "vue-tsc": "^3.3.9"
+    "oxfmt": "^0.62",
+    "oxlint": "^1",
+    "svelte-check": "^4",
+    "typescript": "^6",
+    "vite": "^8",
+    "vitest": "^4"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "packageManager": "pnpm@11.5.3+sha512.7ac1c919341c213a34dc0d02afb7143c5c26ac26ee8c4782deea821b8ac64d2134a081fd8941dae6e29bbb48f58dfc2b7fbceeccc07cb2f09d219d342a4969ed"
 }

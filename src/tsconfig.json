@@ -1,34 +1,25 @@
 {
+  "extends": "../.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "baseUrl": ".",
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-
-    /* Bundler mode */
+    "sourceMap": true,
+    "strict": true,
     "moduleResolution": "bundler",
     "paths": {
-      "@api": ["./api/index.ts"],
-      "@components/*": ["./components/*"],
-      "@i18n": ["./i18n/index.ts"],
-      "@domain/*": ["./domain/*"],
-      "@themes": ["./themes/index.ts"],
-      "@models/*": ["./models/*"]
-    },
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "preserve",
-
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue"],
-  "exclude": ["vite.config.ts"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+      "@api/*": ["api/*"],
+      "@components/*": ["lib/components/*"],
+      "@domain/*": ["domain/*"],
+      "@i18n": ["i18n/index.ts"],
+      "@models/*": ["models/*"],
+      "@themes": ["themes/index.ts"],
+      "@themes/*": ["themes/*"]
+    }
+  }
 }

@@ -158,7 +158,7 @@
     "defaultRelay": "Default Relay",
     "customRelay": "Custom Relay",
     "customRelayUrl": "Custom Relay URL",
-    "relayPlaceholder": "https://relay.example.com",
+    "relayPlaceholder": "https://...",
     "invalidRelay": "Enter a valid HTTP or HTTPS URL",
     "reconnectSection": "Reconnect Settings",
     "reconnectPolicy": "Auto Reconnect",
@@ -300,6 +300,7 @@
   },
   "common": {
     "cancel": "Cancel",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "noResults": "No matching options"
   }
 }

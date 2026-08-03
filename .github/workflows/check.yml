@@ -39,6 +39,7 @@ jobs:
               - '.github/workflows/check.yml'
             frontend:
               - 'src/**'
+              - 'svelte.config.js'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -91,7 +92,7 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "lts/*"
+          node-version: "24"
 
       - name: 安装 pnpm
         run: corepack enable
@@ -108,5 +109,8 @@ jobs:
       - name: 运行前端测试
         run: pnpm test
 
-      - name: 检查类型并构建前端
+      - name: 检查 Svelte 类型
+        run: pnpm check
+
+      - name: 构建前端
         run: pnpm build

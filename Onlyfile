@@ -24,6 +24,7 @@ build():
 _front_check():
     pnpm fmt
     pnpm lint
+    pnpm check
     pnpm build
 
 # 格式化并检查后端
@@ -51,7 +52,7 @@ ci() & check & test:
 
 # 清理构建产物
 clean():
-    rm -rf node_modules dist
+    rm -rf node_modules dist .svelte-kit
     echo "前端已清除"
     cargo clean
     echo "后端已清除"
