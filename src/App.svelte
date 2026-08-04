@@ -68,6 +68,7 @@
   } from "./lib/state";
 
   let loading = $state(true);
+  let startupReady = $state(false);
   let splash = $state(true);
   let materialPrompt = $state(false);
   let updatePrompt = $state(false);
@@ -124,7 +125,6 @@
 
   onMount(() => {
     void initialize();
-    void revealWindow();
     window.addEventListener("resize", updateNavIndicator);
     return () => {
       unlistenDeepLinks?.();
@@ -159,6 +159,10 @@
       console.error("Failed to initialize deep links", error);
     }
     await loadPreferences();
+    splashDurationMs = get(preferences).splashDurationMs;
+    if (splashDurationMs === 0) splash = false;
+    startupReady = true;
+    await revealWindow();
     stopSystemThemeListener = startSystemThemeListener();
     try {
       await initializeSession();
@@ -166,7 +170,14 @@
       console.error("Failed to initialize session", error);
     }
     loading = false;
-    splashDurationMs = get(preferences).splashDurationMs;
+    if (!splash) void tick().then(() => checkForAutomaticUpdate());
+  }
+
+  function finishSplash(): void {
+    if (!splash) return;
+    splash = false;
+    scheduleNavIndicator();
+    void tick().then(() => checkForAutomaticUpdate());
   }
 
   async function checkForAutomaticUpdate(): Promise<void> {
@@ -312,17 +323,11 @@
   }
 </script>
 
-{#if splash}
-  <div out:fade={{ duration: 250 }}>
-    <SplashScreen
-      {loading}
-      durationMs={splashDurationMs}
-      onReady={() => {
-        splash = false;
-        scheduleNavIndicator();
-        void tick().then(() => checkForAutomaticUpdate());
-      }}
-    />
+{#if !startupReady}
+  <div></div>
+{:else if splash}
+  <div out:fade={{ duration: 0 }}>
+    <SplashScreen {loading} durationMs={splashDurationMs} onReady={finishSplash} />
   </div>
 {:else}
   <div class:sidebar-collapsed={$sidebarCollapsed} class="app-shell">
