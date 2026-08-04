@@ -106,9 +106,9 @@ export function applyColorTheme(
   root.style.setProperty("--text", colors.textPrimary);
   root.style.setProperty("--muted", colors.textSecondary);
   root.style.setProperty("--border", colors.border);
-  root.style.setProperty("--cmz-primary-bg", rgba(colors.primary, dark ? 0.12 : 0.08));
+  root.style.setProperty("--sl-primary-bg", rgba(colors.primary, dark ? 0.12 : 0.08));
   root.style.setProperty(
-    "--cmz-glass-bg",
+    "--sl-glass-bg",
     nativeMaterial
       ? rgba(colors.bgSecondary, Math.max(opacity.surface - 0.04, 0.14))
       : dark
@@ -116,7 +116,7 @@ export function applyColorTheme(
         : "rgba(255, 255, 255, 0.65)",
   );
   root.style.setProperty(
-    "--cmz-acrylic-bg",
+    "--sl-acrylic-bg",
     nativeMaterial
       ? rgba(colors.bgTertiary, opacity.strong)
       : dark

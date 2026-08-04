@@ -335,7 +335,7 @@
     color: var(--muted);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--cmz-radius-md);
+    border-radius: var(--sl-radius-md);
   }
   :global(.invite-field:focus-within) {
     border-color: var(--primary);

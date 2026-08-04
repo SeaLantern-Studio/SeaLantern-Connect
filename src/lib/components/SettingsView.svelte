@@ -193,7 +193,7 @@
     </div>
     {#if autoLightweight}<label class="preference-row settings-input-row"
         ><span>{t("connectionSettings.lightweightDelay")}</span>
-        <div class="settings-input settings-number-input cmz-input-wrapper">
+        <div class="settings-input settings-number-input sl-input-wrapper">
           <Input
             bind:value={autoLightweightMinutes}
             type="number"

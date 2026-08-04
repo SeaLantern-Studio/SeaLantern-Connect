@@ -69,7 +69,7 @@
     align-items: stretch;
     flex-direction: column;
   }
-  .frp-share-address .cmz-button {
+  .frp-share-address .sl-button {
     align-self: flex-start;
   }
   .frp-tunnel-layout {

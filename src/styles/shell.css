@@ -69,7 +69,7 @@
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
 }
 .macos-sidebar .sidebar-brand {
   height: 72px;
@@ -109,7 +109,7 @@
   gap: 9px;
   padding: 0 14px;
   border: 0;
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -137,7 +137,7 @@
   left: 0;
   width: 3px;
   height: 20px;
-  border-radius: 0 var(--cmz-radius-full) var(--cmz-radius-full) 0;
+  border-radius: 0 var(--sl-radius-full) var(--sl-radius-full) 0;
   background: var(--primary);
   box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 70%, transparent);
   opacity: 0;
@@ -253,7 +253,7 @@
   justify-content: center;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-full);
+  border-radius: var(--sl-radius-full);
   color: var(--muted);
   background: var(--surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -278,7 +278,7 @@
   gap: 2px;
   padding: 0 4px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-full);
+  border-radius: var(--sl-radius-full);
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(30, 55, 75, 0.06);
   -webkit-app-region: no-drag;
@@ -328,7 +328,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: var(--cmz-radius-xs);
+  border-radius: var(--sl-radius-xs);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
@@ -352,7 +352,7 @@
   overflow: hidden;
   margin: 0 12px 12px 0;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-lg);
+  border-radius: var(--sl-radius-lg);
   background: var(--surface);
 }
 :root[data-native-material] .app-shell {

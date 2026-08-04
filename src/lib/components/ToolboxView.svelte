@@ -215,7 +215,7 @@
     box-sizing: border-box;
     padding: 20px;
     border: 1px solid var(--border);
-    border-radius: var(--cmz-radius-lg);
+    border-radius: var(--sl-radius-lg);
     background: var(--surface-soft);
     box-shadow: var(--card-shadow);
   }
@@ -251,7 +251,7 @@
     gap: 10px;
     padding: 11px;
     border: 1px solid var(--border);
-    border-radius: var(--cmz-radius-sm);
+    border-radius: var(--sl-radius-sm);
     color: var(--muted);
   }
   .toolbox-status.available {

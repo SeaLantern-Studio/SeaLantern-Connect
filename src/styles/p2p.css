@@ -14,12 +14,12 @@
   min-width: 0;
   margin-bottom: 0;
 }
-.mode-tabs .cmz-tab-bar__tabs {
+.mode-tabs .sl-tab-bar__tabs {
   width: 100%;
   min-width: 0;
   flex: 1;
 }
-.mode-tabs .cmz-tab-bar__btn {
+.mode-tabs .sl-tab-bar__btn {
   min-width: 0;
   flex: 1;
   justify-content: center;
@@ -106,7 +106,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   overflow: hidden;
 }
 .host-summary > div {
@@ -177,8 +177,8 @@
   font-weight: 500;
 }
 .primary-button {
-  --cmz-primary: var(--primary-solid);
-  --cmz-primary-dark: var(--primary-solid-hover);
+  --sl-primary: var(--primary-solid);
+  --sl-primary-dark: var(--primary-solid-hover);
 }
 button:disabled {
   opacity: 0.45;
@@ -232,7 +232,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   overflow: hidden;
 }
 .metrics div {
@@ -262,7 +262,7 @@ button:disabled {
   min-width: 0;
   padding: 14px 14px 8px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   background: var(--surface-soft);
 }
 .latency-chart-heading {
@@ -303,7 +303,7 @@ button:disabled {
   margin: 0;
   padding: 11px 14px;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
   font-size: 0.8571rem;
@@ -327,7 +327,7 @@ button:disabled {
   justify-content: space-between;
   margin-top: 19px;
   padding: 12px 14px;
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   background: var(--surface-soft);
   font-size: 0.8571rem;
 }
@@ -363,7 +363,7 @@ button:disabled {
   justify-self: end;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   color: var(--muted);
   background: var(--surface-soft);
   font-size: 0.8571rem;

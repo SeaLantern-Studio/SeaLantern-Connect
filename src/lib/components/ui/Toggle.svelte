@@ -18,7 +18,7 @@
 
 <button
   class:checked
-  class="ui-toggle cmz-toggle"
+  class="ui-toggle sl-toggle"
   type="button"
   role="switch"
   aria-label={label}

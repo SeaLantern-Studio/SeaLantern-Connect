@@ -26,7 +26,7 @@
   gap: 18px;
   padding: 22px 24px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-lg);
+  border-radius: var(--sl-radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -63,7 +63,7 @@
   display: grid;
   gap: 5px;
 }
-.frp-download-prompt .cmz-button {
+.frp-download-prompt .sl-button {
   flex: none;
 }
 .frp-download-progress {
@@ -194,7 +194,7 @@
 .frp-output-panel {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   background: color-mix(in srgb, var(--surface-soft) 55%, transparent);
 }
 .frp-output-panel summary {
@@ -250,7 +250,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   background: var(--surface-soft);
 }
 .frp-tunnel-panel-head {
@@ -282,7 +282,7 @@
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   background: var(--surface);
 }
 .frp-tunnel-list {
@@ -301,7 +301,7 @@
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   background: var(--surface-soft);
 }
 .ui-dialog-body .frp-create-form {
@@ -337,7 +337,7 @@
   justify-content: center;
   color: var(--muted);
   border: 1px solid transparent;
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   background: transparent;
   cursor: pointer;
 }
@@ -380,7 +380,7 @@
   color: var(--text);
   text-align: left;
   border: 1px solid transparent;
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   background: transparent;
   cursor: pointer;
 }
@@ -438,7 +438,7 @@
   flex-direction: column;
   padding: 18px;
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
+  border-radius: var(--sl-radius-md);
   background: var(--surface-soft);
 }
 .frp-detail-identity {
@@ -477,7 +477,7 @@
   margin: 0;
   padding: 5px 10px;
   color: var(--muted);
-  border-radius: var(--cmz-radius-full);
+  border-radius: var(--sl-radius-full);
   background: var(--surface-soft);
   font-size: 0.7857rem;
   font-weight: 600;
@@ -513,7 +513,7 @@
   color: var(--text);
   background: var(--surface-soft);
   border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-sm);
+  border-radius: var(--sl-radius-sm);
   font-family: inherit;
   font-size: 0.8571rem;
   text-overflow: ellipsis;
