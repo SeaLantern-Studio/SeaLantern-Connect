@@ -66,6 +66,10 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             deeplink::stash_restore_links(app, &args);
             tray::show_main_window(app);
+            // The single-instance plugin handles this once before the callback. Repeat it
+            // after revealing the window so an already-mounted WebView receives the event.
+            use tauri_plugin_deep_link::DeepLinkExt;
+            app.deep_link().handle_cli_arguments(args.iter());
         }))
         .manage(p2p::P2pState::new())
         .manage(host::HostState::new())

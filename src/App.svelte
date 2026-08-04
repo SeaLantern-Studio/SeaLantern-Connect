@@ -32,13 +32,15 @@
     restartApplication,
     toggleMaximize,
   } from "@api/window";
-  import { getInitialDeepLinks, onDeepLinks } from "@api/deeplink";
+  import { markFrontendReady } from "@api/app";
+  import { getInitialDeepLinks, getPendingDeepLinks, onDeepLinks } from "@api/deeplink";
   import { locale, t } from "@i18n";
   import { inviteFromDeepLinkUrls } from "@domain/invitations";
   import type { Preferences } from "@models/preferences";
   import Button from "./lib/components/ui/Button.svelte";
   import Dialog from "./lib/components/ui/Dialog.svelte";
   import HostView from "./lib/components/HostView.svelte";
+  import JoinView from "./lib/components/JoinView.svelte";
   import SplashScreen from "./lib/components/shared/SplashScreen.svelte";
   import {
     activeSection,
@@ -68,13 +70,14 @@
   let splashDurationMs = $state(1000);
   let currentLocale = $derived($locale);
   let unlistenDeepLinks: (() => void) | null = null;
+  let pendingDeepLinkTimer: number | null = null;
   let unlistenResize: (() => void) | null = null;
   let stopSystemThemeListener: (() => void) | null = null;
+  let lastDeepLink: { uri: string; receivedAt: number } | null = null;
   let sidebarNav = $state<HTMLElement | null>(null);
   let navIndicator = $state<HTMLElement | null>(null);
   let indicatorFrame: number | null = null;
   let indicatorTimer: number | null = null;
-  let JoinView = $state<typeof import("./lib/components/JoinView.svelte").default | null>(null);
   let PersonalizeView = $state<
     typeof import("./lib/components/PersonalizeView.svelte").default | null
   >(null);
@@ -112,10 +115,12 @@
 
   onMount(() => {
     void initialize();
+    void revealWindow();
     window.addEventListener("resize", updateNavIndicator);
     return () => {
-      unlistenResize?.();
       unlistenDeepLinks?.();
+      if (pendingDeepLinkTimer != null) window.clearInterval(pendingDeepLinkTimer);
+      unlistenResize?.();
       stopSystemThemeListener?.();
       if (indicatorFrame != null) window.cancelAnimationFrame(indicatorFrame);
       if (indicatorTimer != null) window.clearTimeout(indicatorTimer);
@@ -123,6 +128,12 @@
       disposeSession();
     };
   });
+
+  async function revealWindow(): Promise<void> {
+    await tick();
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    await markFrontendReady();
+  }
 
   async function initialize(): Promise<void> {
     isMacOS = /Macintosh|Mac OS X/i.test(navigator.userAgent);
@@ -132,7 +143,9 @@
     }).catch(() => null);
     try {
       unlistenDeepLinks = await onDeepLinks(handleDeepLinks);
-      handleDeepLinks(await getInitialDeepLinks());
+      const urls = await getInitialDeepLinks();
+      handleDeepLinks(urls);
+      startPendingDeepLinkPolling();
     } catch (error) {
       console.error("Failed to initialize deep links", error);
     }
@@ -149,7 +162,28 @@
 
   function handleDeepLinks(urls: string[]): void {
     const invite = inviteFromDeepLinkUrls(urls);
-    if (invite) importInvite(invite);
+    if (!invite) return;
+    const now = Date.now();
+    if (lastDeepLink?.uri === invite && now - lastDeepLink.receivedAt < 1000) return;
+    lastDeepLink = { uri: invite, receivedAt: now };
+    importInvite(invite);
+  }
+
+  function startPendingDeepLinkPolling(): void {
+    if (pendingDeepLinkTimer != null) return;
+    void pollPendingDeepLinks();
+    pendingDeepLinkTimer = window.setInterval(() => {
+      void pollPendingDeepLinks();
+    }, 500);
+  }
+
+  async function pollPendingDeepLinks(): Promise<void> {
+    try {
+      const urls = await getPendingDeepLinks();
+      if (urls.length > 0) handleDeepLinks(urls);
+    } catch (error) {
+      console.error("Failed to read pending deep links", error);
+    }
   }
 
   async function restartForMaterialChange(): Promise<void> {
@@ -216,7 +250,6 @@
     const load = (async (): Promise<void> => {
       switch (section) {
         case "join":
-          JoinView = (await import("./lib/components/JoinView.svelte")).default;
           break;
         case "personalize":
           PersonalizeView = (await import("./lib/components/PersonalizeView.svelte")).default;
@@ -399,16 +432,12 @@
                 onLifetime={(value) => setPreference("hostUriLifetime", value)}
               />
             {:else if $activeSection === "join"}
-              {#if JoinView}
-                <JoinView
-                  status={$session}
-                  savedInvite={$preferences.joinUri}
-                  savedPort={$preferences.joinPort}
-                  request={$incomingInvite}
-                />
-              {:else}
-                {@render viewLoading()}
-              {/if}
+              <JoinView
+                status={$session}
+                savedInvite={$preferences.joinUri}
+                savedPort={$preferences.joinPort}
+                request={$incomingInvite}
+              />
             {:else if $activeSection === "personalize"}
               {#if PersonalizeView}
                 <PersonalizeView

@@ -1,4 +1,3 @@
-use super::window_state::MainWindowState;
 use std::sync::Mutex;
 use tauri::{App, AppHandle, Manager, State};
 
@@ -23,19 +22,23 @@ fn is_join_uri(value: &str) -> bool {
 }
 
 pub(crate) fn stash_restore_links(app: &AppHandle, args: &[String]) {
-    if !app.state::<MainWindowState>().is_background() {
+    let urls: Vec<String> = args
+        .iter()
+        .filter(|url| is_join_uri(url))
+        .cloned()
+        .collect();
+    if urls.is_empty() {
         return;
     }
     let state = app.state::<PendingDeepLinks>();
-    let Ok(mut pending) = state.urls.lock() else {
-        return;
-    };
-    for url in args.iter().filter(|url| is_join_uri(url)) {
-        if pending.len() >= MAX_PENDING_LINKS {
-            break;
-        }
-        if !pending.contains(url) {
-            pending.push(url.clone());
+    if let Ok(mut pending) = state.urls.lock() {
+        for url in &urls {
+            if pending.len() >= MAX_PENDING_LINKS {
+                break;
+            }
+            if !pending.contains(url) {
+                pending.push(url.clone());
+            }
         }
     }
 }

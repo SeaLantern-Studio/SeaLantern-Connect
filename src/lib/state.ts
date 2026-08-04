@@ -87,6 +87,7 @@ let nextToastId = 0;
 let unlisten: (() => void) | null = null;
 let preferencesLoaded = false;
 let systemTheme = SystemTheme.Light;
+let nextInviteId = 0;
 
 function loadSection(): SectionId {
   const value = localStorage.getItem("sealantern.active-section");
@@ -112,7 +113,7 @@ export function toggleSidebar(): void {
 }
 
 export function importInvite(uri: string): void {
-  incomingInvite.update((current) => ({ id: (current?.id ?? 0) + 1, uri }));
+  incomingInvite.set({ id: ++nextInviteId, uri });
   navigate("join");
 }
 

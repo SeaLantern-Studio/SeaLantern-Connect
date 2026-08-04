@@ -24,6 +24,7 @@
     request: IncomingInvite | null;
   }>();
   let invite = $state("");
+  let inviteCleared = $state(false);
   let validationError = $state("");
   let commandError = $state("");
   let confirming = $state(false);
@@ -31,6 +32,7 @@
   let manualPort = $state("");
   let copied = $state(false);
   let stopPending = $state(false);
+  let handledRequestId = $state<number | null>(null);
   const portOptions = $derived<Option[]>([
     { label: t("join.automatic"), value: "auto" },
     { label: t("join.manual"), value: "manual" },
@@ -63,22 +65,23 @@
   );
 
   $effect(() => {
-    if (!invite) invite = toWebInvite(savedInvite);
+    if (!invite && !inviteCleared) invite = toWebInvite(savedInvite);
   });
   $effect(() => {
     if (Number(manualPort) !== savedPort) manualPort = String(savedPort);
   });
   $effect(() => {
-    if (request) {
-      consumeInvite(request.id);
-      void importIncomingInvite(request.uri);
-    }
+    const currentRequest = request;
+    if (!currentRequest || currentRequest.id === handledRequestId) return;
+    handledRequestId = currentRequest.id;
+    void importIncomingInvite(currentRequest.uri).finally(() => consumeInvite(currentRequest.id));
   });
 
   function setPortMode(value: string): void {
     if (value === "auto" || value === "manual") portMode = value;
   }
   function resetInvite(): void {
+    inviteCleared = true;
     invite = "";
     validationError = "";
     commandError = "";
@@ -110,10 +113,11 @@
     invite = toWebInvite(normalized);
     if (rejectOwnInvite(normalized)) return;
     if (joining && isSameInvite(status.shareUri, normalized)) return;
+    confirming = true;
     try {
       await validateInvite(normalized);
-      confirming = true;
     } catch {
+      confirming = false;
       if (status.phase === "idle") validationError = t("join.invalidInvite");
       else commandError = t("join.invalidInvite");
     }

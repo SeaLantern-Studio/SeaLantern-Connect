@@ -12,3 +12,7 @@ export async function getInitialDeepLinks(): Promise<string[]> {
   ]);
   return [...(pending ?? []), ...(current ?? [])];
 }
+
+export function getPendingDeepLinks(): Promise<string[]> {
+  return invoke<string[]>("take_pending_links");
+}
