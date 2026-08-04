@@ -560,12 +560,6 @@
 <Dialog bind:open={updatePrompt} title={t("update.availableTitle")}>
   <div class="update-dialog-copy">
     <p>{t("update.availableHint", { version: availableUpdate?.version ?? "" })}</p>
-    {#if availableUpdate?.body}
-      <div class="update-dialog-notes">
-        <strong>{t("update.releaseNotes")}</strong>
-        <p>{availableUpdate.body}</p>
-      </div>
-    {/if}
   </div>
   {#snippet footer()}<Button
       variant="outline"

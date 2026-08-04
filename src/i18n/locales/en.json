@@ -316,7 +316,6 @@
   "update": {
     "availableTitle": "Update Available",
     "availableHint": "SeaLantern Connect v{version} is available. Download and install it now?",
-    "releaseNotes": "Release Notes",
     "later": "Later",
     "install": "Download and Install",
     "installing": "Downloading…"

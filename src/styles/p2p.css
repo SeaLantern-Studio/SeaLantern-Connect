@@ -333,20 +333,6 @@ button:disabled {
 .update-dialog-copy p {
   margin: 0;
 }
-.update-dialog-notes {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: var(--cmz-radius-sm);
-  background: var(--surface-soft);
-}
-.update-dialog-notes strong {
-  color: var(--text);
-  font-size: 0.8571rem;
-}
-.update-dialog-notes p {
-  white-space: pre-wrap;
-}
 .invite-summary {
   display: flex;
   justify-content: space-between;

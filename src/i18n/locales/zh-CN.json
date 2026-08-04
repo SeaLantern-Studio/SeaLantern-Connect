@@ -316,7 +316,6 @@
   "update": {
     "availableTitle": "发现新版本",
     "availableHint": "SeaLantern Connect v{version} 已发布，是否现在下载并安装？",
-    "releaseNotes": "更新说明",
     "later": "稍后",
     "install": "下载并安装",
     "installing": "正在下载…"
