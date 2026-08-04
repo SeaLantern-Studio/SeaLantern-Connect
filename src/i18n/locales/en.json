@@ -63,6 +63,7 @@
     "logout": "Disconnect Account",
     "loadingTunnels": "Loading tunnels…",
     "noTunnels": "No tunnels yet — create one here",
+    "selectTunnelHint": "Select a tunnel on the left to view details and actions",
     "running": "Running",
     "stopped": "Stopped",
     "start": "Start Tunnel",

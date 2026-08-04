@@ -20,6 +20,7 @@
     searchPlaceholder = "Search",
     emptyLabel = "No results",
     class: className = "",
+    portal = false,
     onValueChange,
   } = $props<{
     value?: string | number;
@@ -30,6 +31,7 @@
     searchPlaceholder?: string;
     emptyLabel?: string;
     class?: string;
+    portal?: boolean;
     onValueChange?: (value: string) => void;
   }>();
   const normalized: NormalizedOption[] = $derived(
@@ -107,25 +109,7 @@
   }
 </script>
 
-<Select.Root
-  type="single"
-  bind:open
-  {disabled}
-  value={selected}
-  items={visibleOptions.map((option) => ({ value: option.value, label: option.label }))}
-  onValueChange={update}
-  onOpenChange={handleOpenChange}
->
-  <Select.Trigger
-    class={`ui-select ${className}`}
-    style={fontFamilyStyle(selectedOption?.fontFamily)}
-    onkeydown={handleTriggerKeydown}
-  >
-    <span class:ui-select-placeholder={!selectedOption} class="ui-select-value">
-      {selectedOption?.label ?? placeholder}
-    </span>
-    <ChevronDown class="ui-select-chevron" size={16} strokeWidth={2} aria-hidden="true" />
-  </Select.Trigger>
+{#snippet selectContent()}
   <Select.Content
     align="end"
     class={`ui-select-content ${hasFontPreview ? "ui-select-font-content" : ""}`}
@@ -155,6 +139,32 @@
       >
     {/each}
   </Select.Content>
+{/snippet}
+
+<Select.Root
+  type="single"
+  bind:open
+  {disabled}
+  value={selected}
+  items={visibleOptions.map((option) => ({ value: option.value, label: option.label }))}
+  onValueChange={update}
+  onOpenChange={handleOpenChange}
+>
+  <Select.Trigger
+    class={`ui-select ${className}`}
+    style={fontFamilyStyle(selectedOption?.fontFamily)}
+    onkeydown={handleTriggerKeydown}
+  >
+    <span class:ui-select-placeholder={!selectedOption} class="ui-select-value">
+      {selectedOption?.label ?? placeholder}
+    </span>
+    <ChevronDown class="ui-select-chevron" size={16} strokeWidth={2} aria-hidden="true" />
+  </Select.Trigger>
+  {#if portal}
+    <Select.Portal>{@render selectContent()}</Select.Portal>
+  {:else}
+    {@render selectContent()}
+  {/if}
 </Select.Root>
 
 <style>
@@ -196,7 +206,7 @@
     color: var(--muted);
   }
   :global(.ui-select-content) {
-    z-index: 100;
+    z-index: 900;
     min-width: var(--bits-floating-anchor-width, 0px);
     max-height: 280px;
     overflow: auto;

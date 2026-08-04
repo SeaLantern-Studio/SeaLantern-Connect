@@ -72,8 +72,11 @@
   .frp-share-address .cmz-button {
     align-self: flex-start;
   }
-  .frp-tunnel-list {
-    grid-template-columns: 1fr;
+  .frp-tunnel-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .frp-tunnel-panel {
+    max-height: none;
   }
   .font-size-control {
     max-width: none;

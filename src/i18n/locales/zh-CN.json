@@ -63,6 +63,7 @@
     "logout": "解除授权",
     "loadingTunnels": "正在加载隧道…",
     "noTunnels": "当前账号还没有隧道，可在此创建",
+    "selectTunnelHint": "在左侧选择一条隧道以查看详情和操作",
     "running": "运行中",
     "stopped": "已停止",
     "start": "启动隧道",

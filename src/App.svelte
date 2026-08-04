@@ -41,6 +41,7 @@
     type AppUpdate,
   } from "@api/app";
   import { getInitialDeepLinks, getPendingDeepLinks, onDeepLinks } from "@api/deeplink";
+  import { preloadFrpProvider } from "@api/frp";
   import { locale, t } from "@i18n";
   import { inviteFromDeepLinkUrls } from "@domain/invitations";
   import type { Preferences } from "@models/preferences";
@@ -164,6 +165,8 @@
       console.error("Failed to initialize deep links", error);
     }
     await loadPreferences();
+    void preloadFrpProvider("open_frp").catch(() => undefined);
+    void preloadFrpProvider("sakura_frp").catch(() => undefined);
     splashDurationMs = get(preferences).splashDurationMs;
     if (splashDurationMs === 0) splash = false;
     startupReady = true;
