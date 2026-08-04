@@ -86,6 +86,7 @@
   let unlistenResize: (() => void) | null = null;
   let stopSystemThemeListener: (() => void) | null = null;
   let lastDeepLink: { uri: string; receivedAt: number } | null = null;
+  let disposed = false;
   let sidebarNav = $state<HTMLElement | null>(null);
   let navIndicator = $state<HTMLElement | null>(null);
   let indicatorFrame: number | null = null;
@@ -130,9 +131,11 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   onMount(() => {
+    disposed = false;
     void initialize();
     window.addEventListener("resize", updateNavIndicator);
     return () => {
+      disposed = true;
       unlistenDeepLinks?.();
       if (pendingDeepLinkTimer != null) window.clearInterval(pendingDeepLinkTimer);
       unlistenResize?.();
@@ -144,10 +147,27 @@
     };
   });
 
-  async function revealWindow(): Promise<void> {
-    await tick();
-    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-    await markFrontendReady();
+  function notifyFrontendReady(): void {
+    void markFrontendReady().catch((error) =>
+      console.error("Failed to notify the backend that the frontend is ready", error),
+    );
+  }
+
+  async function initializeDeepLinks(): Promise<void> {
+    try {
+      const unlisten = await onDeepLinks(handleDeepLinks);
+      if (disposed) {
+        unlisten();
+        return;
+      }
+      unlistenDeepLinks = unlisten;
+      const urls = await getInitialDeepLinks();
+      if (disposed) return;
+      handleDeepLinks(urls);
+      startPendingDeepLinkPolling();
+    } catch (error) {
+      console.error("Failed to initialize deep links", error);
+    }
   }
 
   async function initialize(): Promise<void> {
@@ -156,27 +176,19 @@
     unlistenResize = await onWindowResized(async () => {
       maximized = await isWindowMaximized();
     }).catch(() => null);
-    try {
-      unlistenDeepLinks = await onDeepLinks(handleDeepLinks);
-      const urls = await getInitialDeepLinks();
-      handleDeepLinks(urls);
-      startPendingDeepLinkPolling();
-    } catch (error) {
-      console.error("Failed to initialize deep links", error);
-    }
+    void initializeDeepLinks();
     await loadPreferences();
     void preloadFrpProvider("open_frp").catch(() => undefined);
     void preloadFrpProvider("sakura_frp").catch(() => undefined);
     splashDurationMs = get(preferences).splashDurationMs;
     if (splashDurationMs === 0) splash = false;
     startupReady = true;
-    await revealWindow();
+    // Flush the splash mount before changing loading, otherwise Svelte batches both
+    // assignments and the splash never gets an onMount cycle.
+    await tick();
+    notifyFrontendReady();
     stopSystemThemeListener = startSystemThemeListener();
-    try {
-      await initializeSession();
-    } catch (error) {
-      console.error("Failed to initialize session", error);
-    }
+    void initializeSession().catch((error) => console.error("Failed to initialize session", error));
     loading = false;
     if (!splash) void tick().then(() => checkForAutomaticUpdate());
   }
