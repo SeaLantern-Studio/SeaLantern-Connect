@@ -411,23 +411,11 @@
 :root[data-native-material] .page-transition-frame {
   background: transparent;
 }
-.page-enter-active {
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.page-leave-active {
-  transition:
-    opacity 0.1s ease,
-    transform 0.1s ease;
-}
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+.page-view {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-height: 100%;
+  display: grid;
 }
 .page-placeholder {
   min-height: 100%;

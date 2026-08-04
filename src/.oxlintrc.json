@@ -85,6 +85,17 @@
           }
         ]
       }
+    },
+    {
+      "files": ["**/*.svelte"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": ["@tauri-apps/*"]
+          }
+        ]
+      }
     }
   ],
   "globals": {}

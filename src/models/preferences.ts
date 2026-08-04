@@ -1,4 +1,8 @@
 export type ThemePreference = "system" | "light" | "dark";
+export enum SystemTheme {
+  Light = "light",
+  Dark = "dark",
+}
 export type ColorThemeId = "celadon" | "inkstone" | "vellum" | "moss" | "gloaming" | "custom";
 export type SplashDurationMs = 0 | 500 | 1000 | 1500 | 2000;
 export type Locale = "zh-CN" | "en";

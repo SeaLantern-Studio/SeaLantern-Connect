@@ -73,6 +73,12 @@
   --cmz-glass-bg: rgba(0, 0, 0, 0.72);
   --cmz-acrylic-bg: rgba(0, 0, 0, 0.65);
 }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
 
 * {
   box-sizing: border-box;

@@ -13,6 +13,7 @@
     "moduleResolution": "bundler",
     "module": "ESNext",
     "target": "ES2022",
+    "noUnusedLocals": true,
     "paths": {
       "@api/*": ["api/*"],
       "@components/*": ["lib/components/*"],

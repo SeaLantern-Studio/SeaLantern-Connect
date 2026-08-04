@@ -136,10 +136,3 @@
     border-bottom: 1px solid var(--border);
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .page-enter-active,
-  .page-leave-active {
-    transition: none;
-  }
-}

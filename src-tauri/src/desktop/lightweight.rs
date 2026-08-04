@@ -1,4 +1,4 @@
-use super::effects;
+use super::theme;
 use super::window_state::{
     self as window_lifecycle, MAIN_WINDOW_LABEL, MainWindowMode, MainWindowTransition,
 };
@@ -58,7 +58,7 @@ pub(crate) fn leave(
     let material = settings.window_material();
     let theme = settings.theme();
     log::debug!("material restore: {material}/{theme}");
-    if let Err(error) = effects::set_material(app, &material, &theme) {
+    if let Err(error) = theme::apply_material(app, &material, &theme, None) {
         log::error!("material restore failed: {error}");
     }
     #[cfg(target_os = "windows")]

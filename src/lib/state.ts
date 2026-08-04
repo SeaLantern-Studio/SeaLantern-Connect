@@ -1,13 +1,13 @@
 import { get, writable } from "svelte/store";
 import * as preferencesApi from "@api/settings";
 import { setLocale } from "@i18n";
-import type {
-  ApplicationSettingsUpdate,
-  ConnectionSettingsUpdate,
-  HostUriLifetime,
-  LightweightSettingsUpdate,
-  Preferences,
-  ThemePreference,
+import {
+  SystemTheme,
+  type ApplicationSettingsUpdate,
+  type ConnectionSettingsUpdate,
+  type LightweightSettingsUpdate,
+  type Preferences,
+  type ThemePreference,
 } from "@models/preferences";
 import { applyColorTheme } from "@themes/apply";
 import { applyTypography, DEFAULT_FONT_SIZE } from "@themes/typography";
@@ -85,6 +85,8 @@ export interface ToastItem {
 }
 let nextToastId = 0;
 let unlisten: (() => void) | null = null;
+let preferencesLoaded = false;
+let systemTheme = SystemTheme.Light;
 
 function loadSection(): SectionId {
   const value = localStorage.getItem("sealantern.active-section");
@@ -128,11 +130,10 @@ export function showToast(message: string, tone: ToastTone = "info"): void {
 }
 
 function applyPreferences(value: Preferences): void {
-  const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   applyColorTheme(
     value.theme,
     value.colorTheme,
-    systemDark,
+    systemTheme === SystemTheme.Dark,
     value.windowMaterial,
     value.customTheme,
   );
@@ -140,23 +141,53 @@ function applyPreferences(value: Preferences): void {
 }
 
 export async function loadPreferences(): Promise<void> {
+  if (preferencesLoaded) {
+    applyPreferences(get(preferences));
+    return;
+  }
   try {
     const value = await preferencesApi.getPreferences();
+    systemTheme = await preferencesApi
+      .getSystemTheme()
+      .catch(() =>
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? SystemTheme.Dark
+          : SystemTheme.Light,
+      );
     preferences.set(value);
     setLocale(value.locale);
   } catch (error) {
     console.error("Failed to load preferences", error);
   }
+  preferencesLoaded = true;
   applyPreferences(get(preferences));
 }
 
 export function setTheme(theme: ThemePreference): void {
   preferences.update((value) => ({ ...value, theme }));
   const value = get(preferences);
-  applyPreferences(value);
+  if (theme !== "system") applyPreferences(value);
   void preferencesApi
-    .saveTheme(theme)
+    .saveTheme(theme, systemTheme)
+    .then(() => applyPreferences(get(preferences)))
     .catch((error) => console.error("Failed to save theme", error));
+}
+
+export function startSystemThemeListener(): () => void {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const handleChange = (): void => {
+    const value = get(preferences);
+    if (value.theme !== "system") return;
+    systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? SystemTheme.Dark
+      : SystemTheme.Light;
+    applyPreferences(value);
+    void preferencesApi
+      .saveTheme("system", systemTheme)
+      .catch((error) => console.error("Failed to sync system theme", error));
+  };
+  media.addEventListener("change", handleChange);
+  return () => media.removeEventListener("change", handleChange);
 }
 
 export function changeLocale(value: Preferences["locale"]): void {
@@ -170,16 +201,19 @@ export function changeLocale(value: Preferences["locale"]): void {
 export function updatePreferences(update: Partial<Preferences>): void {
   preferences.update((value) => ({ ...value, ...structuredClone(update) }));
   const value = get(preferences);
-  applyPreferences(value);
   void preferencesApi
-    .savePersonalization({
-      theme: value.theme,
-      colorTheme: value.colorTheme,
-      customTheme: value.customTheme,
-      fontSize: value.fontSize,
-      fontFamily: value.fontFamily,
-      windowMaterial: value.windowMaterial,
-    })
+    .savePersonalization(
+      {
+        theme: value.theme,
+        colorTheme: value.colorTheme,
+        customTheme: value.customTheme,
+        fontSize: value.fontSize,
+        fontFamily: value.fontFamily,
+        windowMaterial: value.windowMaterial,
+      },
+      systemTheme,
+    )
+    .then(() => applyPreferences(get(preferences)))
     .catch((error) => console.error("Failed to save personalization", error));
 }
 

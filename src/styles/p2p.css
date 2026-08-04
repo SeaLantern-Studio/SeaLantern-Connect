@@ -27,63 +27,39 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.discovery-row {
-  height: 62px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--cmz-radius-md);
-  background: var(--surface-soft);
-}
-.manual-port-field {
+.port-field {
   height: 62px;
 }
-.discovery-state {
-  min-width: 0;
-  color: var(--primary);
+.port-input-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  justify-self: end;
 }
-.discovery-state.detected {
-  color: var(--success);
+.port-input-wrap .room-input {
+  max-width: none;
+  padding-right: 40px;
 }
-.discovery-state.failed {
-  color: var(--danger);
-}
-.discovery-state > div {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-.discovery-state strong,
-.discovery-state span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.discovery-state strong {
+.port-input-wrap .room-input:disabled {
+  opacity: 1;
   color: var(--text);
-  font-size: 0.9286rem;
 }
-.detected-port {
-  color: var(--success);
+.port-input-wrap.detecting .room-input:disabled {
+  cursor: wait;
 }
-.discovery-state span {
-  color: var(--muted);
-  font-size: 0.7857rem;
-}
-.discovery-status-icon {
-  width: 32px;
-  height: 32px;
+.port-input-status {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   color: var(--primary);
+  transform: translateY(-50%);
+  pointer-events: none;
 }
-.discovery-status-icon.detected {
-  color: var(--success);
-}
-.discovery-status-icon.failed {
+.port-input-status.error {
   color: var(--danger);
 }
 .room-input {

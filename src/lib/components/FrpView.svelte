@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { onMount, untrack } from "svelte";
   import {
     Check,
     ChevronDown,
     Copy,
+    Download,
     ExternalLink,
     LockKeyhole,
     LogIn,
@@ -23,6 +25,7 @@
     loginOpenFrp,
     loginSakuraFrp,
     logoutFrp,
+    onFrpDownloadProgress,
     openPremium,
     openSakuraKeys,
     openSakuraPurchase,
@@ -41,13 +44,24 @@
   import Input from "./ui/Input.svelte";
   import Select, { type Option } from "./ui/Select.svelte";
 
+  interface FrpSnapshot {
+    client: FrpClientStatus | null;
+    session: FrpSessionStatus | null;
+    tunnels: FrpTunnel[];
+  }
+
+  const snapshots = new Map<FrpProvider, FrpSnapshot>();
+
   let { provider } = $props<{ provider: FrpProvider }>();
-  let client = $state<FrpClientStatus | null>(null);
-  let session = $state<FrpSessionStatus | null>(null);
-  let tunnels = $state<FrpTunnel[]>([]);
+  const snapshot = untrack(() => snapshots.get(provider));
+  let client = $state<FrpClientStatus | null>(snapshot?.client ?? null);
+  let session = $state<FrpSessionStatus | null>(snapshot?.session ?? null);
+  let tunnels = $state<FrpTunnel[]>(snapshot?.tunnels ?? []);
   let nodes = $state<FrpNode[]>([]);
-  let loading = $state(true);
+  let loading = $state(!snapshot);
   let busy = $state(false);
+  let downloading = $state(false);
+  let downloadProgress = $state(0);
   let creating = $state(false);
   let credential = $state("");
   let selectedTunnelId = $state("");
@@ -78,8 +92,28 @@
     void provider;
     void load();
   });
+
+  onMount(() => {
+    let disposed = false;
+    let cleanup: (() => void) | null = null;
+    const listener = onFrpDownloadProgress((progress) => {
+      if (progress.provider !== provider) return;
+      downloading = true;
+      downloadProgress = progress.percent;
+    });
+    void listener.then((unlisten) => {
+      if (disposed) unlisten();
+      else cleanup = unlisten;
+      return unlisten;
+    });
+    return () => {
+      disposed = true;
+      cleanup?.();
+    };
+  });
+
   async function load(): Promise<void> {
-    loading = true;
+    if (!snapshots.has(provider)) loading = true;
     error = "";
     try {
       client = await getFrpClientStatus(provider);
@@ -89,6 +123,7 @@
     } catch (reason) {
       error = String(reason);
     } finally {
+      snapshots.set(provider, { client, session, tunnels });
       loading = false;
     }
   }
@@ -103,12 +138,18 @@
     }
   }
   async function download(): Promise<void> {
+    if (downloading) return;
+    downloading = true;
+    downloadProgress = 0;
     busy = true;
     try {
       client = await downloadFrpClient(provider);
+      downloadProgress = 100;
+      snapshots.set(provider, { client, session, tunnels });
     } catch (reason) {
       error = String(reason);
     } finally {
+      downloading = false;
       busy = false;
     }
   }
@@ -223,9 +264,24 @@
             {t("frp.downloadHint", { provider: provider === "open_frp" ? "OpenFRP" : "SakuraFRP" })}
           </p>
         </div>
-        <Button class="primary-button" loading={busy} onclick={download}>{t("frp.download")}</Button
+        <Button class="primary-button" loading={busy} onclick={download}
+          >{#if !busy}<Download size={17} />{/if}{t("frp.download")}</Button
         >
       </div>
+      {#if downloading}<div class="frp-download-progress" aria-live="polite">
+          <div class="frp-download-progress-label">
+            <span>{t("frp.downloading")}</span><span>{downloadProgress}%</span>
+          </div>
+          <div
+            class="frp-progress-track"
+            role="progressbar"
+            aria-valuenow={downloadProgress}
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="frp-progress-value" style={`width: ${downloadProgress}%`}></div>
+          </div>
+        </div>{/if}
     {:else if !session?.authenticated}
       {#if provider === "open_frp"}<div class="frp-connect-main">
           <strong>{t("frp.connectOpenFrp")}</strong>

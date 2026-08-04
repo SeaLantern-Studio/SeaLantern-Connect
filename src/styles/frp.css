@@ -66,6 +66,28 @@
 .frp-download-prompt .cmz-button {
   flex: none;
 }
+.frp-download-progress {
+  display: grid;
+  gap: 8px;
+}
+.frp-download-progress-label {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.frp-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.frp-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-solid, var(--primary));
+  transition: width 0.15s ease;
+}
 .frp-account-name {
   max-width: 240px;
   overflow: hidden;

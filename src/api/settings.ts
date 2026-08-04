@@ -7,6 +7,7 @@ import type {
   LightweightSettingsUpdate,
   PersonalizationUpdate,
   Preferences,
+  SystemTheme,
   ThemePreference,
 } from "@models/preferences";
 
@@ -18,12 +19,16 @@ export function getSystemFonts(): Promise<string[]> {
   return invoke("get_system_fonts");
 }
 
+export function getSystemTheme(): Promise<SystemTheme> {
+  return invoke("get_system_theme");
+}
+
 export function supportsLiquidGlass(): Promise<boolean> {
   return invoke("supports_liquid_glass");
 }
 
-export function saveTheme(theme: ThemePreference): Promise<void> {
-  return invoke("set_theme", { theme });
+export function saveTheme(theme: ThemePreference, systemTheme: SystemTheme): Promise<void> {
+  return invoke("set_theme", { theme, systemTheme });
 }
 
 export function saveLocale(locale: Locale): Promise<void> {
@@ -34,8 +39,11 @@ export function saveInviteLifetime(lifetime: HostUriLifetime): Promise<void> {
   return invoke("set_invite_lifetime", { lifetime });
 }
 
-export function savePersonalization(update: PersonalizationUpdate): Promise<void> {
-  return invoke("set_personalization", { update });
+export function savePersonalization(
+  update: PersonalizationUpdate,
+  systemTheme: SystemTheme,
+): Promise<void> {
+  return invoke("set_personalization", { update, systemTheme });
 }
 
 export function saveApplicationSettings(update: ApplicationSettingsUpdate): Promise<void> {

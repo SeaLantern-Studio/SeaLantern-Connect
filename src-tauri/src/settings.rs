@@ -1,4 +1,4 @@
-use crate::desktop::{effects, tray};
+use crate::desktop::{theme, tray};
 use sculk::persist;
 use sculk::tunnel::{RelayUrl, SecretKey};
 use serde::{Deserialize, Serialize};
@@ -329,6 +329,7 @@ pub async fn get_system_fonts() -> Result<Vec<String>, String> {
 #[tauri::command]
 pub fn set_theme(
     theme: String,
+    system_theme: Option<theme::SystemTheme>,
     app: AppHandle,
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
@@ -337,10 +338,15 @@ pub fn set_theme(
     }
     let window_material = state.window_material();
     state.update(|preferences| preferences.theme = theme.clone())?;
-    if let Err(error) = effects::set_material(&app, &window_material, &theme) {
+    if let Err(error) = theme::apply_material(&app, &window_material, &theme, system_theme) {
         log::error!("native material update failed: {error}");
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_system_theme(app: AppHandle) -> theme::SystemTheme {
+    theme::current(&app)
 }
 
 #[tauri::command]
@@ -381,6 +387,7 @@ pub fn set_invite_lifetime(
 #[tauri::command]
 pub fn set_personalization(
     update: PersonalizationUpdate,
+    system_theme: Option<theme::SystemTheme>,
     app: AppHandle,
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
@@ -411,7 +418,7 @@ pub fn set_personalization(
         preferences.font_family = font_family;
         preferences.window_material = window_material.clone();
     })?;
-    if let Err(error) = effects::set_material(&app, &window_material, &theme) {
+    if let Err(error) = theme::apply_material(&app, &window_material, &theme, system_theme) {
         log::error!("window material update failed: {error}");
     }
     Ok(())

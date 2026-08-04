@@ -1,10 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import {
-    ArrowRight,
-    Check,
     CircleAlert,
     CircleCheck,
     Cloud,
@@ -12,7 +9,6 @@
     Flower2,
     HousePlus,
     Info,
-    Link,
     LoaderCircle,
     LogIn,
     Minus,
@@ -21,15 +17,13 @@
     Palette,
     PanelLeftClose,
     PanelLeftOpen,
-    RefreshCw,
     Settings,
     Square,
     Sun,
-    Unplug,
     X,
   } from "@lucide/svelte";
   import logoUrl from "./assets/logo.png";
-  import { get, type Writable } from "svelte/store";
+  import { get } from "svelte/store";
   import {
     closeWindow,
     isWindowMaximized,
@@ -39,36 +33,16 @@
     toggleMaximize,
   } from "@api/window";
   import { getInitialDeepLinks, onDeepLinks } from "@api/deeplink";
-  import { backendMessage, locale, t } from "@i18n";
-  import {
-    getLanScan,
-    probeHostPort,
-    startHost,
-    startLanScan,
-    startJoin,
-    stopJoin,
-    stopLanScan,
-    stopTunnel,
-    validateInvite,
-  } from "@api/p2p";
-  import {
-    isSameInvite,
-    inviteFromDeepLinkUrls,
-    normalizeInvite,
-    toWebInvite,
-  } from "@domain/invitations";
+  import { locale, t } from "@i18n";
+  import { inviteFromDeepLinkUrls } from "@domain/invitations";
   import type { Preferences } from "@models/preferences";
   import Button from "./lib/components/ui/Button.svelte";
   import Dialog from "./lib/components/ui/Dialog.svelte";
-  import Input from "./lib/components/ui/Input.svelte";
-  import Select, { type Option } from "./lib/components/ui/Select.svelte";
-  import Toggle from "./lib/components/ui/Toggle.svelte";
   import HostView from "./lib/components/HostView.svelte";
   import SplashScreen from "./lib/components/shared/SplashScreen.svelte";
   import {
     activeSection,
     changeLocale,
-    consumeInvite,
     disposeSession,
     importInvite,
     initializeSession,
@@ -78,13 +52,10 @@
     preferences,
     session,
     setTheme,
-    showToast,
     sidebarCollapsed,
+    startSystemThemeListener,
     type SectionId,
     toasts,
-    updateApplication,
-    updateConnection,
-    updateLightweight,
     updatePreferences,
   } from "./lib/state";
 
@@ -98,6 +69,7 @@
   let currentLocale = $derived($locale);
   let unlistenDeepLinks: (() => void) | null = null;
   let unlistenResize: (() => void) | null = null;
+  let stopSystemThemeListener: (() => void) | null = null;
   let sidebarNav = $state<HTMLElement | null>(null);
   let navIndicator = $state<HTMLElement | null>(null);
   let indicatorFrame: number | null = null;
@@ -136,14 +108,15 @@
   const p2pState = $derived(
     $session.phase === "active" ? "active" : $session.phase === "idle" ? "idle" : "busy",
   );
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   onMount(() => {
-    void revealWindow().catch((error) => console.error("Failed to reveal main window", error));
     void initialize();
     window.addEventListener("resize", updateNavIndicator);
     return () => {
       unlistenResize?.();
       unlistenDeepLinks?.();
+      stopSystemThemeListener?.();
       if (indicatorFrame != null) window.cancelAnimationFrame(indicatorFrame);
       if (indicatorTimer != null) window.clearTimeout(indicatorTimer);
       window.removeEventListener("resize", updateNavIndicator);
@@ -164,6 +137,7 @@
       console.error("Failed to initialize deep links", error);
     }
     await loadPreferences();
+    stopSystemThemeListener = startSystemThemeListener();
     try {
       await initializeSession();
     } catch (error) {
@@ -171,12 +145,6 @@
     }
     loading = false;
     splashDurationMs = get(preferences).splashDurationMs;
-  }
-
-  async function revealWindow(): Promise<void> {
-    await tick();
-    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-    await invoke("frontend_ready");
   }
 
   function handleDeepLinks(urls: string[]): void {
@@ -314,8 +282,8 @@
               <Icon class="nav-icon" size={19} />
               <span class="nav-label">{sectionLabel(item.id)}</span>
               {#if p2pState !== "idle" && (($session.mode === "host" && item.id === "create") || ($session.mode === "join" && item.id === "join"))}<span
-                  class:p2p-active={p2pState === "active"}
-                  class:p2p-busy={p2pState === "busy"}
+                  class:active={p2pState === "active"}
+                  class:busy={p2pState === "busy"}
                   class="p2p-dot"
                 ></span>{/if}
             </button>
@@ -415,54 +383,66 @@
 
     <main class="app-content">
       <div class="page-transition-frame">
-        {#if $activeSection === "create"}<HostView
-            status={$session}
-            uriLifetime={$preferences.hostUriLifetime}
-            onLifetime={(value) => setPreference("hostUriLifetime", value)}
-          />
-        {:else if $activeSection === "join"}
-          {#if JoinView}
-            <JoinView
-              status={$session}
-              savedInvite={$preferences.joinUri}
-              savedPort={$preferences.joinPort}
-              request={$incomingInvite}
-            />
-          {:else}
-            {@render viewLoading()}
-          {/if}
-        {:else if $activeSection === "personalize"}
-          {#if PersonalizeView}
-            <PersonalizeView
-              value={$preferences}
-              onupdate={(update) => updatePreferences(update)}
-            />
-          {:else}
-            {@render viewLoading()}
-          {/if}
-        {:else if $activeSection === "settings"}
-          {#if SettingsView}
-            <SettingsView value={$preferences} />
-          {:else}
-            {@render viewLoading()}
-          {/if}
-        {:else if $activeSection === "about"}
-          {#if AboutView}
-            <AboutView />
-          {:else}
-            {@render viewLoading()}
-          {/if}
-        {:else if $activeSection === "openfrp"}
-          {#if OpenFrpView}
-            <OpenFrpView />
-          {:else}
-            {@render viewLoading()}
-          {/if}
-        {:else if SakuraFrpView}
-          <SakuraFrpView />
-        {:else}
-          {@render viewLoading()}
-        {/if}
+        {#key $activeSection}
+          <div
+            class="page-view"
+            in:fly={{
+              y: reducedMotion ? 0 : 8,
+              duration: reducedMotion ? 0 : 180,
+              delay: reducedMotion ? 0 : 100,
+            }}
+            out:fly={{ y: reducedMotion ? 0 : -4, duration: reducedMotion ? 0 : 100 }}
+          >
+            {#if $activeSection === "create"}<HostView
+                status={$session}
+                uriLifetime={$preferences.hostUriLifetime}
+                onLifetime={(value) => setPreference("hostUriLifetime", value)}
+              />
+            {:else if $activeSection === "join"}
+              {#if JoinView}
+                <JoinView
+                  status={$session}
+                  savedInvite={$preferences.joinUri}
+                  savedPort={$preferences.joinPort}
+                  request={$incomingInvite}
+                />
+              {:else}
+                {@render viewLoading()}
+              {/if}
+            {:else if $activeSection === "personalize"}
+              {#if PersonalizeView}
+                <PersonalizeView
+                  value={$preferences}
+                  onupdate={(update) => updatePreferences(update)}
+                />
+              {:else}
+                {@render viewLoading()}
+              {/if}
+            {:else if $activeSection === "settings"}
+              {#if SettingsView}
+                <SettingsView value={$preferences} />
+              {:else}
+                {@render viewLoading()}
+              {/if}
+            {:else if $activeSection === "about"}
+              {#if AboutView}
+                <AboutView />
+              {:else}
+                {@render viewLoading()}
+              {/if}
+            {:else if $activeSection === "openfrp"}
+              {#if OpenFrpView}
+                <OpenFrpView />
+              {:else}
+                {@render viewLoading()}
+              {/if}
+            {:else if SakuraFrpView}
+              <SakuraFrpView />
+            {:else}
+              {@render viewLoading()}
+            {/if}
+          </div>
+        {/key}
       </div>
     </main>
   </div>

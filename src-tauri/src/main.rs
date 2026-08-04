@@ -9,7 +9,7 @@ mod logging;
 mod p2p;
 mod settings;
 
-use desktop::{autodelay, deeplink, effects, tray, window_state};
+use desktop::{autodelay, deeplink, effects, theme, tray, window_state};
 use p2p::{host, join};
 use tauri::Manager;
 use tauri_plugin_window_state::{StateFlags, WindowExt};
@@ -96,7 +96,7 @@ fn main() {
             {
                 window.restore_state(window_state_flags())?;
             }
-            if let Err(error) = effects::set_material(app.handle(), &material, &theme) {
+            if let Err(error) = theme::apply_material(app.handle(), &material, &theme, None) {
                 log::error!("native material failed: {error}");
             }
             tray::setup(app)?;
@@ -141,6 +141,7 @@ fn main() {
             frp::stop_frp_tunnel,
             settings::get_preferences,
             settings::get_system_fonts,
+            settings::get_system_theme,
             effects::supports_liquid_glass,
             settings::set_theme,
             settings::set_color_theme,

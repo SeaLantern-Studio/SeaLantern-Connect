@@ -269,13 +269,13 @@
           variant="outline"
           disabled={stopDisabled}
           loading={stopPending}
-          onclick={stop}><Unplug size={16} />{stopLabel}</Button
+          onclick={stop}
+          >{#if !stopPending}<Unplug size={16} />{/if}{stopLabel}</Button
         >
       </div>
     </section>
   {/if}
   {#if commandError || status.error || occupied}<p class="error-banner">
-      {t("join.connectionFailed")}
       {commandError ||
         (occupied
           ? t("join.occupied")

@@ -1,3 +1,4 @@
+use super::theme::SystemTheme;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use super::window_state::MAIN_WINDOW_LABEL;
 #[cfg(target_os = "macos")]
@@ -36,35 +37,27 @@ fn set_liquid_glass(app: &AppHandle, enabled: bool) -> Result<bool, String> {
     }
 }
 
-pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Result<(), String> {
-    log::debug!("material: {material}/{theme}");
+pub(crate) fn set_material(
+    app: &AppHandle,
+    material: &str,
+    theme: SystemTheme,
+) -> Result<(), String> {
+    log::debug!("material: {material}/{theme:?}");
     #[cfg(target_os = "windows")]
     {
-        use tauri::{
-            Theme,
-            window::{Color, Effect, EffectsBuilder},
-        };
+        use tauri::window::{Color, Effect, EffectsBuilder};
 
         let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
             log::warn!("material skipped: window missing");
             return Ok(());
         };
 
-        window
-            .set_theme(match theme {
-                "dark" => Some(Theme::Dark),
-                "light" => Some(Theme::Light),
-                _ => None,
-            })
-            .map_err(|error| error.to_string())?;
-
         let effects = match material {
             "mica" => Some(
                 EffectsBuilder::new()
                     .effect(match theme {
-                        "dark" => Effect::MicaDark,
-                        "light" => Effect::MicaLight,
-                        _ => Effect::Mica,
+                        SystemTheme::Dark => Effect::MicaDark,
+                        SystemTheme::Light => Effect::MicaLight,
                     })
                     .build(),
             ),
@@ -72,9 +65,8 @@ pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Resu
                 EffectsBuilder::new()
                     .effect(Effect::Acrylic)
                     .color(match theme {
-                        "dark" => Color(32, 32, 32, 225),
-                        "light" => Color(245, 245, 245, 215),
-                        _ => Color(0, 0, 0, 0),
+                        SystemTheme::Dark => Color(32, 32, 32, 225),
+                        SystemTheme::Light => Color(245, 245, 245, 215),
                     })
                     .build(),
             ),
@@ -87,21 +79,11 @@ pub(crate) fn set_material(app: &AppHandle, material: &str, theme: &str) -> Resu
 
     #[cfg(target_os = "macos")]
     {
-        use tauri::{
-            Theme,
-            window::{Effect, EffectsBuilder},
-        };
+        use tauri::window::{Effect, EffectsBuilder};
 
         let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
             return Ok(());
         };
-        window
-            .set_theme(match theme {
-                "dark" => Some(Theme::Dark),
-                "light" => Some(Theme::Light),
-                _ => None,
-            })
-            .map_err(|error| error.to_string())?;
         window
             .set_effects(None)
             .map_err(|error| error.to_string())?;

@@ -1,14 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    Check,
-    CircleAlert,
-    CircleCheck,
-    Copy,
-    HousePlus,
-    LoaderCircle,
-    Square,
-  } from "@lucide/svelte";
+  import { Check, CircleAlert, Copy, HousePlus, LoaderCircle, Square } from "@lucide/svelte";
   import {
     getLanScan,
     probeHostPort,
@@ -242,7 +234,7 @@
       <div class="connection-footer">
         <p>{status.message ? backendMessage(status.message) : t("create.ready")}</p>
         <Button variant="danger" disabled={pending} loading={pending} onclick={stopRoom}
-          ><Square size={15} />{t("create.stop")}</Button
+          >{#if !pending}<Square size={15} />{/if}{t("create.stop")}</Button
         >
       </div>
     </section>
@@ -256,43 +248,40 @@
           onValueChange={setPortMode}
         />
       </div>
-      {#if portMode === "auto"}<div class="discovery-row">
-          <div
-            class:detected={scan.port != null}
-            class:failed={!!scanError}
-            class="discovery-state"
-          >
-            <div>
-              <strong
-                >{scan.port != null
-                  ? `${t("create.portFoundLabel")} ${scan.port}`
-                  : scanError
-                    ? t("create.discoveryFailed")
-                    : t("create.discovering")}</strong
-              ><span
-                >{scan.port != null ? t("create.worldReady") : t("create.waitingBroadcast")}</span
-              >
-            </div>
-          </div>
-          <span
-            class:detected={scan.port != null}
-            class:failed={!!scanError}
-            class="discovery-status-icon"
-            >{#if scan.port != null}<CircleCheck size={20} />{:else if scanError}<CircleAlert
-                size={19}
-              />{:else}<LoaderCircle class="spin" size={19} />{/if}</span
-          >
-        </div>{:else}<div class="form-field manual-port-field">
-          <label for="host-port" class="field-label">{t("create.port")}</label><Input
+      <div class="form-field port-field">
+        <label for="host-port" class="field-label">{t("create.port")}</label>
+        <div
+          class:detecting={portMode === "auto" && scan.port == null && !scanError}
+          class="port-input-wrap"
+        >
+          <Input
             id="host-port"
-            class="room-input"
-            bind:value={manualPort}
-            type="number"
+            class={`room-input ${portMode === "auto" && scanError ? "invalid" : ""}`}
+            value={portMode === "auto" ? (scan.port?.toString() ?? "") : manualPort}
+            type={portMode === "auto" ? "text" : "number"}
             min={1}
             max={65535}
+            disabled={portMode === "auto"}
+            placeholder={portMode === "auto"
+              ? scanError
+                ? t("create.discoveryFailed")
+                : t("create.detectingPort")
+              : ""}
             hideNumberControls
+            onchange={(event) => {
+              if (portMode === "manual") manualPort = event.currentTarget.value;
+            }}
           />
-        </div>{/if}
+          {#if portMode === "auto" && scan.port == null}<span
+              class:error={!!scanError}
+              class="port-input-status"
+              >{#if scanError}<CircleAlert size={18} />{:else}<LoaderCircle
+                  class="spin"
+                  size={18}
+                />{/if}</span
+            >{/if}
+        </div>
+      </div>
       <div class="form-field settings-field">
         <label for="max-players" class="field-label">{t("create.maxPlayers")}</label><Input
           id="max-players"
