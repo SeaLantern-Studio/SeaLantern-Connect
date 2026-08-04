@@ -201,8 +201,8 @@
         "hint": "UDP is unavailable or NAT mapping varies by destination, so a relay may be needed."
       },
       "unknown": {
-        "title": "Direct Connectivity Is Inconclusive",
-        "hint": "Not enough NAT mapping information was available. Try again later."
+        "title": "Direct Connection Unknown",
+        "hint": "NAT mapping data is incomplete. Try again later."
       }
     },
     "errors": {

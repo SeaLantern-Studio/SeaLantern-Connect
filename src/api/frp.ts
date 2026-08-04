@@ -10,6 +10,45 @@ import type {
   FrpTunnel,
 } from "@models/frp";
 
+export interface FrpSnapshot {
+  client: FrpClientStatus;
+  session: FrpSessionStatus;
+  tunnels: FrpTunnel[];
+}
+
+const snapshots = new Map<FrpProvider, FrpSnapshot>();
+const preloadTasks = new Map<FrpProvider, Promise<void>>();
+
+export function getCachedFrpSnapshot(provider: FrpProvider): FrpSnapshot | null {
+  return snapshots.get(provider) ?? null;
+}
+
+export function cacheFrpSnapshot(provider: FrpProvider, snapshot: FrpSnapshot): void {
+  snapshots.set(provider, snapshot);
+}
+
+export function clearCachedFrpSnapshot(provider: FrpProvider): void {
+  snapshots.delete(provider);
+}
+
+export async function preloadFrpProvider(provider: FrpProvider): Promise<void> {
+  if (snapshots.has(provider)) return;
+  const existing = preloadTasks.get(provider);
+  if (existing) return existing;
+  const task = (async () => {
+    const client = await getFrpClientStatus(provider);
+    const session = await getFrpSessionStatus(provider);
+    const tunnels = session.authenticated ? await listFrpTunnels(provider) : [];
+    cacheFrpSnapshot(provider, { client, session, tunnels });
+  })();
+  preloadTasks.set(provider, task);
+  try {
+    await task;
+  } finally {
+    preloadTasks.delete(provider);
+  }
+}
+
 export function getFrpClientStatus(provider: FrpProvider): Promise<FrpClientStatus> {
   return invoke("get_frp_client_status", { provider });
 }

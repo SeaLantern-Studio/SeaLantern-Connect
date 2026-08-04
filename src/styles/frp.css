@@ -251,7 +251,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--cmz-radius-md);
-  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  background: var(--surface-soft);
 }
 .frp-tunnel-panel-head {
   flex: none;
@@ -390,7 +390,7 @@
 }
 .frp-tunnel-row.selected {
   border-color: color-mix(in srgb, var(--primary-solid) 38%, var(--border));
-  background: color-mix(in srgb, var(--primary-solid) 7%, var(--surface));
+  background: color-mix(in srgb, var(--primary-solid) 4%, var(--surface-soft));
   box-shadow: 0 1px 4px color-mix(in srgb, var(--primary-solid) 8%, transparent);
 }
 .frp-tunnel-row:disabled {
@@ -439,7 +439,7 @@
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: var(--cmz-radius-md);
-  background: var(--surface);
+  background: var(--surface-soft);
 }
 .frp-detail-identity {
   min-width: 0;

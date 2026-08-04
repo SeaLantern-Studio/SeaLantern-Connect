@@ -95,10 +95,16 @@
       background-color 0.15s ease,
       border-color 0.15s ease;
   }
+  :global(.ui-dialog-close svg) {
+    transition: transform 0.2s ease;
+  }
   :global(.ui-dialog-close:hover) {
     color: var(--danger);
     background: color-mix(in srgb, var(--danger) 12%, var(--surface-strong));
     border-color: color-mix(in srgb, var(--danger) 60%, var(--border));
+  }
+  :global(.ui-dialog-close:hover svg) {
+    transform: rotate(90deg);
   }
   :global(.ui-dialog-body) {
     flex: 1;

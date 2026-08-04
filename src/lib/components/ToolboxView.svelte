@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RefreshCw, ShieldAlert, ShieldCheck } from "@lucide/svelte";
+  import { LoaderCircle, RefreshCw, ShieldAlert, ShieldCheck } from "@lucide/svelte";
   import {
     runNetworkDiagnostics,
     runRelayDiagnostics,
@@ -96,7 +96,7 @@
 
 <div class="workspace toolbox-workspace">
   <div class="toolbox-grid">
-    <section class="tool-card network-card">
+    <section class="settings-section tool-card network-card">
       <div class="tool-card-heading">
         <div class="tool-card-title"><h2>{t("toolbox.networkTitle")}</h2></div>
         <Button class="tool-action" onclick={() => openTool("network")}
@@ -105,7 +105,7 @@
       </div>
       <p class="tool-card-description">{t("toolbox.networkDescription")}</p>
     </section>
-    <section class="tool-card">
+    <section class="settings-section tool-card">
       <div class="tool-card-heading">
         <div class="tool-card-title"><h2>{t("toolbox.relayTitle")}</h2></div>
         <Button class="tool-action" onclick={() => openTool("relay")}
@@ -122,82 +122,87 @@
 
 <Dialog bind:open={dialogOpen} title={t(`toolbox.${activeTool ?? "network"}Title`)} width="480px">
   {#if activeTool === "network"}
-    <div class="tool-dialog-content">
-      {#if network}
-        <div
-          class="toolbox-status"
-          class:available={directStatus === "available"}
-          class:limited={directStatus === "limited"}
-        >
-          {#if directStatus === "available"}<ShieldCheck size={19} />{:else}<ShieldAlert
+    <div class="tool-dialog-content tool-network-dialog">
+      <div
+        class="toolbox-status"
+        class:available={network && directStatus === "available"}
+        class:limited={network && directStatus === "limited"}
+      >
+        {#if network}{#if directStatus === "available"}<ShieldCheck size={19} />{:else}<ShieldAlert
               size={19}
-            />{/if}
-          <div>
-            <strong>{t(`toolbox.direct.${directStatus}.title`)}</strong>
-            <p>{t(`toolbox.direct.${directStatus}.hint`)}</p>
-          </div>
+            />{/if}{:else}<LoaderCircle class="spin" size={19} />{/if}
+        <div>
+          <strong
+            >{network ? t(`toolbox.direct.${directStatus}.title`) : t("toolbox.checking")}</strong
+          >
+          {#if network}<p>{t(`toolbox.direct.${directStatus}.hint`)}</p>{/if}
         </div>
-        <div class="toolbox-mini-results">
-          <span
-            >{t("toolbox.publicIpv4")}<strong
+      </div>
+      <div class="toolbox-mini-results">
+        <span
+          >{t("toolbox.publicIpv4")}{#if network}<strong
               >{network.publicIpv4 ?? t("toolbox.unavailable")}</strong
-            ></span
-          >
-          <span
-            >{t("toolbox.publicIpv6")}<strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+        <span
+          >{t("toolbox.publicIpv6")}{#if network}<strong
               >{network.publicIpv6 ?? t("toolbox.unavailable")}</strong
-            ></span
-          >
-          <span
-            >{t("toolbox.udp")}<strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+        <span
+          >{t("toolbox.udp")}{#if network}<strong
               >{network.udpAvailable ? t("toolbox.available") : t("toolbox.unavailable")}</strong
-            ></span
-          >
-          <span
-            >{t("toolbox.natMapping")}<strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+        <span
+          >{t("toolbox.natMapping")}{#if network}<strong
               >{network.mappingVariesByDestination === null
                 ? t("toolbox.unknown")
                 : network.mappingVariesByDestination
                   ? t("toolbox.varies")
                   : t("toolbox.stable")}</strong
-            ></span
-          >
-          <span
-            >{t("toolbox.relay")}<strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+        <span
+          >{t("toolbox.relay")}{#if network}<strong
               >{network.relayAvailable ? t("toolbox.available") : t("toolbox.unavailable")}</strong
-            ></span
-          >
-        </div>
-      {:else}<div class="tool-empty">
-          {networkChecking ? t("toolbox.checking") : t("toolbox.readyHint")}
-        </div>{/if}
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+      </div>
     </div>
   {:else if activeTool === "relay"}
-    {#if relay}<div class="tool-value-list">
+    <div class="tool-dialog-content tool-relay-dialog">
+      <div class="tool-value-list">
         <span
-          >{t("toolbox.relayAddress")}<strong>{relay.relayUrl ?? t("toolbox.unavailable")}</strong
-          ></span
-        ><span
-          >{t("toolbox.latency")}<strong
-            >{relay.latencyMs == null ? t("toolbox.unavailable") : `${relay.latencyMs} ms`}</strong
-          ></span
+          >{t("toolbox.relayAddress")}{#if relay}<strong
+              >{relay.relayUrl ?? t("toolbox.unavailable")}</strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
         >
-      </div>{:else}<div class="tool-empty">
-        {relayChecking ? t("toolbox.checking") : t("toolbox.relayReadyHint")}
-      </div>{/if}
+        <span
+          >{t("toolbox.latency")}{#if relay}<strong
+              >{relay.latencyMs == null
+                ? t("toolbox.unavailable")
+                : `${relay.latencyMs} ms`}</strong
+            >{:else}<LoaderCircle class="spin" size={16} />{/if}</span
+        >
+      </div>
+    </div>
   {/if}
 </Dialog>
 
 <style>
   .toolbox-workspace {
-    width: min(1000px, calc(100% - 48px));
+    width: min(760px, calc(100% - 48px));
+    min-height: 100%;
+    padding-bottom: 32px;
+    align-content: start;
   }
   :global(.tool-action) {
     min-width: 158px;
   }
   .toolbox-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
   .tool-card {
@@ -206,20 +211,21 @@
     align-content: start;
     gap: 13px;
     min-width: 0;
-    height: 180px;
+    height: 156px;
     box-sizing: border-box;
-    padding: 18px;
+    padding: 20px;
     border: 1px solid var(--border);
-    border-radius: var(--cmz-radius-sm);
+    border-radius: var(--cmz-radius-lg);
     background: var(--surface-soft);
+    box-shadow: var(--card-shadow);
   }
   .tool-card-heading {
     display: block;
   }
   .tool-card-heading :global(.tool-action) {
     position: absolute;
-    right: 18px;
-    bottom: 18px;
+    right: 20px;
+    bottom: 20px;
   }
   .tool-card-title {
     display: flex;
@@ -238,7 +244,10 @@
     line-height: 1.55;
   }
   .toolbox-status {
+    min-height: 80px;
+    box-sizing: border-box;
     display: flex;
+    align-items: flex-start;
     gap: 10px;
     padding: 11px;
     border: 1px solid var(--border);
@@ -265,6 +274,9 @@
     display: grid;
     gap: 7px;
   }
+  .toolbox-mini-results {
+    margin-top: 10px;
+  }
   .toolbox-mini-results span,
   .tool-value-list span {
     display: flex;
@@ -281,20 +293,19 @@
     text-align: right;
     overflow-wrap: anywhere;
   }
-  .tool-empty {
-    display: flex;
-    align-items: center;
-    min-height: 54px;
-    color: var(--muted);
-    font-size: 0.8571rem;
-    line-height: 1.5;
-  }
   .toolbox-error {
     margin: 0;
   }
   .tool-dialog-content {
     display: grid;
+    align-content: start;
     gap: 16px;
+  }
+  .tool-network-dialog {
+    min-height: 292px;
+  }
+  .tool-relay-dialog {
+    min-height: 86px;
   }
   :global(.tool-dialog-action) {
     justify-self: end;
