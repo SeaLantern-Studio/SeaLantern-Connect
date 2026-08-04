@@ -77,8 +77,17 @@
     "version": "版本",
     "license": "许可证",
     "developer": "开发者",
-    "frpTitle": "FRP 服务声明",
-    "frpDescription": "FRP 隧道使用 OpenFRP/SakuraFRP。SeaLantern Connect 为独立客户端，与服务商无关。"
+    "projectRepository": "项目地址",
+    "openProject": "前往",
+    "updateTitle": "应用更新",
+    "updateDescription": "从 CNB 或 GitHub 检查最新版本",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "检查中…",
+    "upToDate": "当前已是最新版本",
+    "updateAvailable": "发现新版本 v{version}",
+    "installUpdate": "下载并安装",
+    "updateError": "检查更新失败，请稍后重试",
+    "frpDescription": "FRP 隧道由 OpenFRP 和 SakuraFRP 服务商供应。\nSeaLantern Connect 为独立客户端，与服务商无关。"
   },
   "window": {
     "toggleTheme": "切换明暗主题",
@@ -160,6 +169,7 @@
     "relayPlaceholder": "https://...",
     "invalidRelay": "请输入有效的 HTTP 或 HTTPS 地址",
     "reconnectSection": "重连设置",
+    "autoUpdate": "自动检查更新",
     "reconnectPolicy": "断线重连",
     "unlimited": "持续重连",
     "limited": "限时重连",
@@ -302,5 +312,13 @@
     "dismiss": "关闭",
     "loading": "加载中",
     "noResults": "没有匹配项"
+  },
+  "update": {
+    "availableTitle": "发现新版本",
+    "availableHint": "SeaLantern Connect v{version} 已发布，是否现在下载并安装？",
+    "releaseNotes": "更新说明",
+    "later": "稍后",
+    "install": "下载并安装",
+    "installing": "正在下载…"
   }
 }

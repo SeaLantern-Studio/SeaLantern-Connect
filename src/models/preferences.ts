@@ -35,6 +35,7 @@ export interface Preferences {
   fontFamily: string;
   splashDurationMs: SplashDurationMs;
   silentStart: boolean;
+  autoUpdate: boolean;
   locale: Locale;
   rememberWindowState: boolean;
   windowMaterial: WindowMaterial;
@@ -59,6 +60,7 @@ export interface PersonalizationUpdate {
 export interface ApplicationSettingsUpdate {
   splashDurationMs: SplashDurationMs;
   silentStart: boolean;
+  autoUpdate: boolean;
   rememberWindowState: boolean;
 }
 

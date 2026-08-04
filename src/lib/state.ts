@@ -50,6 +50,7 @@ export const defaults: Preferences = {
   fontFamily: "",
   splashDurationMs: 1000,
   silentStart: false,
+  autoUpdate: true,
   locale: "zh-CN",
   rememberWindowState: true,
   windowMaterial: "solid",

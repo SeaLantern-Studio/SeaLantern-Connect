@@ -77,8 +77,17 @@
     "version": "Version",
     "license": "License",
     "developer": "Developer",
-    "frpTitle": "FRP Service Notice",
-    "frpDescription": "FRP: OpenFRP/SakuraFRP. SeaLantern Connect is independent and unaffiliated."
+    "projectRepository": "Project URL",
+    "openProject": "Open",
+    "updateTitle": "App Updates",
+    "updateDescription": "Check CNB first, then GitHub, for the latest version",
+    "checkUpdates": "Check for Updates",
+    "checkingUpdates": "Checking…",
+    "upToDate": "You are up to date",
+    "updateAvailable": "Version v{version} is available",
+    "installUpdate": "Download and Install",
+    "updateError": "Could not check for updates. Try again later",
+    "frpDescription": "FRP tunnels are provided by OpenFRP and SakuraFRP.\nSeaLantern Connect is independent and unaffiliated."
   },
   "window": {
     "toggleTheme": "Toggle Light/Dark Theme",
@@ -160,6 +169,7 @@
     "relayPlaceholder": "https://...",
     "invalidRelay": "Enter a valid HTTP or HTTPS URL",
     "reconnectSection": "Reconnect Settings",
+    "autoUpdate": "Check for updates automatically",
     "reconnectPolicy": "Auto Reconnect",
     "unlimited": "Keep Reconnecting",
     "limited": "Time-Limited",
@@ -302,5 +312,13 @@
     "dismiss": "Dismiss",
     "loading": "Loading",
     "noResults": "No matching options"
+  },
+  "update": {
+    "availableTitle": "Update Available",
+    "availableHint": "SeaLantern Connect v{version} is available. Download and install it now?",
+    "releaseNotes": "Release Notes",
+    "later": "Later",
+    "install": "Download and Install",
+    "installing": "Downloading…"
   }
 }

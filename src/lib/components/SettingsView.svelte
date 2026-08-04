@@ -126,10 +126,24 @@
             updateApplication({
               splashDurationMs: value.splashDurationMs,
               silentStart: checked,
+              autoUpdate: value.autoUpdate,
               rememberWindowState: value.rememberWindowState,
             })}
         />
       </div>{/if}
+    <div class="preference-row switch-row">
+      <span>{t("connectionSettings.autoUpdate")}</span><Toggle
+        label={t("connectionSettings.autoUpdate")}
+        checked={value.autoUpdate}
+        oncheckedchange={(checked) =>
+          updateApplication({
+            splashDurationMs: value.splashDurationMs,
+            silentStart: value.silentStart,
+            autoUpdate: checked,
+            rememberWindowState: value.rememberWindowState,
+          })}
+      />
+    </div>
     <div class="preference-row">
       <span>{t("connectionSettings.splashDuration")}</span><Select
         class="settings-select"
@@ -139,6 +153,7 @@
           updateApplication({
             splashDurationMs: Number(next) as Preferences["splashDurationMs"],
             silentStart: value.silentStart,
+            autoUpdate: value.autoUpdate,
             rememberWindowState: value.rememberWindowState,
           })}
       />
@@ -155,6 +170,7 @@
           updateApplication({
             splashDurationMs: value.splashDurationMs,
             silentStart: value.silentStart,
+            autoUpdate: value.autoUpdate,
             rememberWindowState: checked,
           })}
       />

@@ -82,6 +82,7 @@ pub struct Preferences {
     font_family: String,
     splash_duration_ms: u32,
     silent_start: bool,
+    auto_update: bool,
     locale: String,
     remember_window_state: bool,
     window_material: String,
@@ -104,6 +105,7 @@ impl Default for Preferences {
             font_family: String::new(),
             splash_duration_ms: 1000,
             silent_start: false,
+            auto_update: true,
             locale: "zh-CN".to_owned(),
             remember_window_state: true,
             window_material: "solid".to_owned(),
@@ -491,7 +493,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\ncustom_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nlocale={}\nremember_window_state={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\ncustom_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nauto_update={}\nlocale={}\nremember_window_state={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
         preferences.theme,
         preferences.color_theme,
         serde_json::to_string(&preferences.custom_theme).map_err(|error| error.to_string())?,
@@ -499,6 +501,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         preferences.font_family,
         preferences.splash_duration_ms,
         preferences.silent_start,
+        preferences.auto_update,
         preferences.locale,
         preferences.remember_window_state,
         preferences.window_material,
@@ -575,6 +578,8 @@ fn parse_preferences(content: &str) -> Preferences {
                 .unwrap_or(1000);
         } else if let Some(value) = line.strip_prefix("silent_start=") {
             preferences.silent_start = value.trim() == "true";
+        } else if let Some(value) = line.strip_prefix("auto_update=") {
+            preferences.auto_update = value.trim() == "true";
         } else if let Some(value) = line.strip_prefix("locale=") {
             let value = value.trim();
             if matches!(value, "zh-CN" | "en") {

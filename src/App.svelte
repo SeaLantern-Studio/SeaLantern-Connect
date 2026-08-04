@@ -32,7 +32,13 @@
     restartApplication,
     toggleMaximize,
   } from "@api/window";
-  import { markFrontendReady, markPageLoaded } from "@api/app";
+  import {
+    checkForAppUpdate,
+    installAppUpdate,
+    markFrontendReady,
+    markPageLoaded,
+    type AppUpdate,
+  } from "@api/app";
   import { getInitialDeepLinks, getPendingDeepLinks, onDeepLinks } from "@api/deeplink";
   import { locale, t } from "@i18n";
   import { inviteFromDeepLinkUrls } from "@domain/invitations";
@@ -64,6 +70,9 @@
   let loading = $state(true);
   let splash = $state(true);
   let materialPrompt = $state(false);
+  let updatePrompt = $state(false);
+  let availableUpdate = $state<AppUpdate | null>(null);
+  let installingUpdate = $state(false);
   let restarting = $state(false);
   let maximized = $state(false);
   let isMacOS = $state(false);
@@ -158,6 +167,30 @@
     }
     loading = false;
     splashDurationMs = get(preferences).splashDurationMs;
+  }
+
+  async function checkForAutomaticUpdate(): Promise<void> {
+    if (!get(preferences).autoUpdate) return;
+    try {
+      const update = await checkForAppUpdate();
+      if (update) {
+        availableUpdate = update;
+        updatePrompt = true;
+      }
+    } catch (error) {
+      console.error("Failed to check for updates automatically", error);
+    }
+  }
+
+  async function installAvailableUpdate(): Promise<void> {
+    if (!availableUpdate || installingUpdate) return;
+    installingUpdate = true;
+    try {
+      await installAppUpdate(availableUpdate);
+    } catch (error) {
+      installingUpdate = false;
+      console.error("Failed to install update", error);
+    }
   }
 
   function handleDeepLinks(urls: string[]): void {
@@ -287,6 +320,7 @@
       onReady={() => {
         splash = false;
         scheduleNavIndicator();
+        void tick().then(() => checkForAutomaticUpdate());
       }}
     />
   </div>
@@ -516,4 +550,26 @@
       loading={restarting}
       onclick={restartForMaterialChange}>{t("personalization.restartApplication")}</Button
     >{/snippet}
+</Dialog>
+
+<Dialog bind:open={updatePrompt} title={t("update.availableTitle")}>
+  <div class="update-dialog-copy">
+    <p>{t("update.availableHint", { version: availableUpdate?.version ?? "" })}</p>
+    {#if availableUpdate?.body}
+      <div class="update-dialog-notes">
+        <strong>{t("update.releaseNotes")}</strong>
+        <p>{availableUpdate.body}</p>
+      </div>
+    {/if}
+  </div>
+  {#snippet footer()}<Button
+      variant="outline"
+      disabled={installingUpdate}
+      onclick={() => (updatePrompt = false)}
+    >
+      {t("update.later")}
+    </Button>
+    <Button loading={installingUpdate} disabled={installingUpdate} onclick={installAvailableUpdate}>
+      {installingUpdate ? t("update.installing") : t("update.install")}
+    </Button>{/snippet}
 </Dialog>

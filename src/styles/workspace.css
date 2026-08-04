@@ -54,7 +54,10 @@ h1 {
 .about-view {
   width: min(620px, calc(100% - 48px));
   margin: auto;
-  display: grid;
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   gap: 26px;
 }
 .about-product {
@@ -68,8 +71,7 @@ h1 {
   flex: none;
   border-radius: var(--cmz-radius-lg);
 }
-.about-product h2,
-.about-frp h3 {
+.about-product h2 {
   margin: 0;
   font-weight: 600;
 }
@@ -103,10 +105,65 @@ h1 {
   margin: 0;
   font-weight: 500;
 }
+.about-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  color: var(--text-primary);
+  background: transparent;
+  cursor: pointer;
+}
+.about-link-button:hover {
+  color: var(--primary);
+}
+.about-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-block: 2px;
+}
+.about-update h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.about-update p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.8571rem;
+}
+.about-update-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--cmz-radius-md);
+  color: var(--text-primary);
+  background: var(--surface);
+  cursor: pointer;
+}
+.about-update-button:hover:not(:disabled) {
+  background: var(--surface-strong);
+}
+.about-update-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
 .about-frp h3 {
   font-size: 1rem;
 }
 .about-frp p {
+  margin: 0;
+  text-align: center;
   font-size: 0.8571rem;
   white-space: pre-line;
+}
+.about-frp {
+  margin: auto 0 -16px;
 }

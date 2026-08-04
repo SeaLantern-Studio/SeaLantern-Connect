@@ -11,6 +11,9 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "autostart:default",
-    "deep-link:default"
+    "deep-link:default",
+    "opener:default",
+    "process:default",
+    "updater:default"
   ]
 }
