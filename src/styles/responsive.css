@@ -101,9 +101,6 @@
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  .discovery-state span {
-    white-space: normal;
-  }
   .create-actions {
     align-items: stretch;
     flex-direction: column;

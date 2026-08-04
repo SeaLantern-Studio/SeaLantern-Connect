@@ -49,9 +49,6 @@
 .preference-row > span:first-child {
   font-weight: 500;
 }
-.settings-segment {
-  width: 100%;
-}
 .settings-select,
 .settings-input {
   width: 100%;
@@ -84,41 +81,6 @@
 }
 .settings-input-row > select {
   cursor: pointer;
-}
-.settings-input-row > .cmz-input-wrapper,
-.settings-input-row > .cmz-select {
-  width: 100%;
-  min-width: 0;
-}
-.settings-input-row .cmz-input-container,
-.settings-input-row .cmz-select-trigger {
-  min-height: 38px;
-  border-radius: var(--cmz-radius-md);
-}
-.settings-select .cmz-select-trigger {
-  font-size: 0.9286rem;
-  line-height: 1.4;
-}
-.settings-select .cmz-select-value,
-.settings-select .cmz-select-placeholder,
-.settings-select .cmz-select-loading,
-.cmz-select-dropdown .cmz-select-option .option-label,
-.cmz-select-dropdown .cmz-select-option .option-sublabel {
-  line-height: 1.4;
-}
-.cmz-select-dropdown {
-  border-color: color-mix(in srgb, var(--border) 82%, var(--text) 10%);
-  border-radius: var(--cmz-radius-md);
-  background: var(--overlay-surface);
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.16),
-    0 2px 8px rgba(0, 0, 0, 0.08);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  font-size: 0.9286rem;
-}
-.cmz-select-dropdown .cmz-select-option {
-  min-height: 36px;
 }
 .font-family-select {
   max-width: var(--settings-control-width);

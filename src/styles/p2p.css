@@ -146,9 +146,6 @@
   display: grid;
   gap: 9px;
 }
-.host-peer-list {
-  border-top: 1px solid var(--border);
-}
 .host-peer-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 96px 72px;
@@ -178,14 +175,6 @@
   margin-bottom: 9px;
   font-size: 0.9286rem;
   font-weight: 500;
-}
-.invite-input {
-  width: 100%;
-}
-.invite-input.invalid .cmz-input-container,
-.join-port-input.invalid .cmz-input-container {
-  border-color: var(--danger);
-  box-shadow: none;
 }
 .primary-button {
   --cmz-primary: var(--primary-solid);
@@ -397,11 +386,4 @@ button:disabled {
   50% {
     opacity: 0.35;
   }
-}
-
-.splash-fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.splash-fade-leave-to {
-  opacity: 0;
 }

@@ -7,7 +7,6 @@
   import Input from "./ui/Input.svelte";
   import Select, { type Option } from "./ui/Select.svelte";
   import Toggle from "./ui/Toggle.svelte";
-  import "./SettingsView.css";
 
   let { value } = $props<{ value: Preferences }>();
   let autostartEnabled = $state(false);
@@ -258,3 +257,21 @@
       >{/if}
   </section>
 </div>
+
+<style>
+  .settings-number-input {
+    position: relative;
+  }
+  .settings-number-input :global(.ui-input) {
+    padding-right: 52px;
+  }
+  .settings-number-input > span {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    color: var(--muted);
+    font-size: 0.8571rem;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+</style>

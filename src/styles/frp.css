@@ -123,9 +123,6 @@
   line-height: 1.45;
   opacity: 0.82;
 }
-.frp-connect-main > .form-error {
-  color: var(--danger);
-}
 .frp-credential-note {
   display: inline-flex;
   align-items: center;
@@ -337,23 +334,6 @@
   font-size: 1rem;
   font-weight: 600;
 }
-.frp-tunnel-toolbar .icon-button {
-  width: 30px;
-  height: 30px;
-  border-color: transparent;
-  border-radius: var(--cmz-radius-sm);
-  background: transparent;
-  box-shadow: none;
-}
-.frp-tunnel-toolbar .icon-button:hover {
-  border-color: var(--border);
-  background: var(--surface);
-}
-.frp-tunnel-toolbar .frp-delete-button:not(:disabled):hover {
-  color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
-  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
-}
 .frp-tunnel-list {
   max-height: 272px;
   display: grid;
@@ -419,10 +399,6 @@
   width: 100%;
   max-width: none;
   justify-self: stretch;
-}
-.frp-node-select {
-  width: 100%;
-  min-width: 0;
 }
 .frp-create-actions {
   grid-column: 1 / -1;

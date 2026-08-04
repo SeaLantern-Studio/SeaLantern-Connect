@@ -15,7 +15,6 @@
   import Input from "./ui/Input.svelte";
   import Select, { type Option } from "./ui/Select.svelte";
   import LatencyChart from "./shared/LatencyChart.svelte";
-  import "./JoinView.css";
 
   let { status, savedInvite, savedPort, request } = $props<{
     status: P2pStatus;
@@ -324,3 +323,31 @@
         : t("join.confirm")}</Button
     >{/snippet}
 </Dialog>
+
+<style>
+  :global(.invite-field) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 4px 0 0;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--cmz-radius-md);
+  }
+  :global(.invite-field:focus-within) {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+  }
+  :global(.invite-field .ui-input) {
+    min-width: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  :global(.invite-field .ui-button) {
+    width: 30px;
+    padding: 0;
+  }
+</style>
