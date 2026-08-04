@@ -9,7 +9,6 @@
   const samples: Array<{ time: number; value: number }> = [];
   const maxSamples = 60;
   let intervalId: number | null = null;
-  let warmupId: number | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let themeObserver: MutationObserver | null = null;
 
@@ -144,10 +143,8 @@
     void initializeChart(chartElement, () => mounted).catch((error: unknown) => {
       console.error("Failed to load latency chart", error);
     });
-    warmupId = window.setTimeout(() => {
-      recordSample();
-      intervalId = window.setInterval(recordSample, 1000);
-    }, 3000);
+    recordSample();
+    intervalId = window.setInterval(recordSample, 1000);
     resizeObserver = new ResizeObserver(() => chart?.resize());
     resizeObserver.observe(chartElement);
     themeObserver = new MutationObserver(render);
@@ -158,7 +155,6 @@
     return () => {
       mounted = false;
       if (intervalId != null) window.clearInterval(intervalId);
-      if (warmupId != null) window.clearTimeout(warmupId);
       resizeObserver?.disconnect();
       themeObserver?.disconnect();
       chart?.dispose();

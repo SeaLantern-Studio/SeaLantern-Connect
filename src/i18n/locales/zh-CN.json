@@ -200,7 +200,7 @@
     "syncing": "正在同步连接状态…",
     "cancelConnection": "取消连接",
     "cancelling": "正在取消…",
-    "disconnect": "断开",
+    "disconnect": "断开连接",
     "retryHint": "请检查邀请链接和网络连接后重试。",
     "ownInvite": "无法加入自己创建的房间。",
     "occupied": "请先停止当前房间或断开现有连接。",

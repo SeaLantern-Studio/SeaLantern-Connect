@@ -195,11 +195,6 @@ button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-.danger-button {
-  --cmz-primary: var(--danger);
-  --cmz-primary-dark: color-mix(in srgb, var(--danger) 82%, var(--text));
-  --cmz-primary-bg: color-mix(in srgb, var(--danger) 10%, transparent);
-}
 .field-error {
   margin: 8px 0 0;
   color: var(--danger);

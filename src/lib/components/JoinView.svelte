@@ -264,12 +264,7 @@
       {#if connected}<LatencyChart rttMs={status.rttMs} />{/if}
       <div class="connection-footer">
         <p>{status.message ? backendMessage(status.message) : t("join.syncing")}</p>
-        <Button
-          class="danger-button"
-          variant="outline"
-          disabled={stopDisabled}
-          loading={stopPending}
-          onclick={stop}
+        <Button variant="danger" disabled={stopDisabled} loading={stopPending} onclick={stop}
           >{#if !stopPending}<Unplug size={16} />{/if}{stopLabel}</Button
         >
       </div>
