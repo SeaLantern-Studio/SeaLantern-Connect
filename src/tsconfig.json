@@ -1,5 +1,4 @@
 {
-  "extends": "../.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
     "baseUrl": ".",
@@ -12,6 +11,8 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler",
+    "module": "ESNext",
+    "target": "ES2022",
     "paths": {
       "@api/*": ["api/*"],
       "@components/*": ["lib/components/*"],
@@ -21,5 +22,6 @@
       "@themes": ["themes/index.ts"],
       "@themes/*": ["themes/*"]
     }
-  }
+  },
+  "exclude": ["vite.config.ts"]
 }

@@ -52,7 +52,7 @@ ci() & check & test:
 
 # 清理构建产物
 clean():
-    rm -rf node_modules dist .svelte-kit
+    rm -rf node_modules dist
     echo "前端已清除"
     cargo clean
     echo "后端已清除"

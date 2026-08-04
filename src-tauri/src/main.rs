@@ -46,6 +46,11 @@ fn restart_application(app: tauri::AppHandle) {
     tauri::process::restart(&app.env());
 }
 
+#[tauri::command]
+fn frontend_ready(app: tauri::AppHandle) {
+    tray::show_when_ready(&app);
+}
+
 fn main() {
     #[cfg(all(target_os = "windows", debug_assertions))]
     attach_parent_console();
@@ -95,12 +100,11 @@ fn main() {
                 log::error!("native material failed: {error}");
             }
             tray::setup(app)?;
-            if launched_by_autostart && app.state::<settings::SettingsState>().starts_silently() {
-                if let Err(error) = tray::start_silently(app.handle()) {
-                    log::error!("silent start failed: {error}");
-                    tray::show_main_window(app.handle());
-                }
-            } else {
+            if launched_by_autostart
+                && app.state::<settings::SettingsState>().starts_silently()
+                && let Err(error) = tray::start_silently(app.handle())
+            {
+                log::error!("silent start failed: {error}");
                 tray::show_main_window(app.handle());
             }
             Ok(())
@@ -110,6 +114,7 @@ fn main() {
             p2p::get_p2p_status,
             stop_tunnel,
             restart_application,
+            frontend_ready,
             host::start_lan_scan,
             host::get_lan_scan,
             host::restart_lan_scan,

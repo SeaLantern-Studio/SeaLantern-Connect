@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import { fade } from "svelte/transition";
   import {
     ArrowRight,
@@ -27,9 +28,8 @@
     Unplug,
     X,
   } from "@lucide/svelte";
-  import logoUrl from "../assets/logo.png";
+  import logoUrl from "./assets/logo.png";
   import { get, type Writable } from "svelte/store";
-  import { getAppVersion } from "@api/app";
   import {
     closeWindow,
     isWindowMaximized,
@@ -52,49 +52,19 @@
     validateInvite,
   } from "@api/p2p";
   import {
-    downloadFrpClient,
-    getFrpClientStatus,
-    getFrpSessionStatus,
-    listFrpNodes,
-    listFrpTunnels,
-    loginOpenFrp,
-    loginSakuraFrp,
-    logoutFrp,
-    startFrpTunnel,
-    stopFrpTunnel,
-    createFrpTunnel,
-    deleteFrpTunnel,
-  } from "@api/frp";
-  import {
     isSameInvite,
     inviteFromDeepLinkUrls,
     normalizeInvite,
     toWebInvite,
   } from "@domain/invitations";
-  import type {
-    CreateFrpTunnel,
-    FrpNode,
-    FrpProvider,
-    FrpSessionStatus,
-    FrpTunnel,
-  } from "@models/frp";
-  import type { HostUriLifetime, Preferences } from "@models/preferences";
-  import type { P2pStatus } from "@models/p2p";
-  import { getThemeOptions } from "@themes";
-  import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@themes/typography";
-  import Button from "../lib/components/ui/Button.svelte";
-  import Dialog from "../lib/components/ui/Dialog.svelte";
-  import Input from "../lib/components/ui/Input.svelte";
-  import Select, { type Option } from "../lib/components/ui/Select.svelte";
-  import Toggle from "../lib/components/ui/Toggle.svelte";
-  import HostView from "../lib/components/HostView.svelte";
-  import JoinView from "../lib/components/JoinView.svelte";
-  import PersonalizeView from "../lib/components/PersonalizeView.svelte";
-  import SettingsView from "../lib/components/SettingsView.svelte";
-  import AboutView from "../lib/components/AboutView.svelte";
-  import OpenFrpView from "../lib/components/OpenFrpView.svelte";
-  import SakuraFrpView from "../lib/components/SakuraFrpView.svelte";
-  import SplashScreen from "../lib/components/shared/SplashScreen.svelte";
+  import type { Preferences } from "@models/preferences";
+  import Button from "./lib/components/ui/Button.svelte";
+  import Dialog from "./lib/components/ui/Dialog.svelte";
+  import Input from "./lib/components/ui/Input.svelte";
+  import Select, { type Option } from "./lib/components/ui/Select.svelte";
+  import Toggle from "./lib/components/ui/Toggle.svelte";
+  import HostView from "./lib/components/HostView.svelte";
+  import SplashScreen from "./lib/components/shared/SplashScreen.svelte";
   import {
     activeSection,
     changeLocale,
@@ -110,12 +80,13 @@
     setTheme,
     showToast,
     sidebarCollapsed,
+    type SectionId,
     toasts,
     updateApplication,
     updateConnection,
     updateLightweight,
     updatePreferences,
-  } from "../lib/state";
+  } from "./lib/state";
 
   let loading = $state(true);
   let splash = $state(true);
@@ -131,6 +102,21 @@
   let navIndicator = $state<HTMLElement | null>(null);
   let indicatorFrame: number | null = null;
   let indicatorTimer: number | null = null;
+  let JoinView = $state<typeof import("./lib/components/JoinView.svelte").default | null>(null);
+  let PersonalizeView = $state<
+    typeof import("./lib/components/PersonalizeView.svelte").default | null
+  >(null);
+  let SettingsView = $state<typeof import("./lib/components/SettingsView.svelte").default | null>(
+    null,
+  );
+  let AboutView = $state<typeof import("./lib/components/AboutView.svelte").default | null>(null);
+  let OpenFrpView = $state<typeof import("./lib/components/OpenFrpView.svelte").default | null>(
+    null,
+  );
+  let SakuraFrpView = $state<typeof import("./lib/components/SakuraFrpView.svelte").default | null>(
+    null,
+  );
+  const viewLoads = new Map<SectionId, Promise<void>>();
 
   const sections = [
     { id: "create", label: "navigation.createRoom", icon: HousePlus },
@@ -152,6 +138,7 @@
   );
 
   onMount(() => {
+    void revealWindow().catch((error) => console.error("Failed to reveal main window", error));
     void initialize();
     window.addEventListener("resize", updateNavIndicator);
     return () => {
@@ -184,6 +171,12 @@
     }
     loading = false;
     splashDurationMs = get(preferences).splashDurationMs;
+  }
+
+  async function revealWindow(): Promise<void> {
+    await tick();
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    await invoke("frontend_ready");
   }
 
   function handleDeepLinks(urls: string[]): void {
@@ -240,6 +233,46 @@
     void $sidebarCollapsed;
     scheduleNavIndicator();
   });
+
+  $effect(() => {
+    const section = $activeSection;
+    void loadView(section).catch((error) => {
+      console.error(`Failed to load ${section} view`, error);
+    });
+  });
+
+  function loadView(section: SectionId): Promise<void> {
+    const existing = viewLoads.get(section);
+    if (existing) return existing;
+
+    const load = (async (): Promise<void> => {
+      switch (section) {
+        case "join":
+          JoinView = (await import("./lib/components/JoinView.svelte")).default;
+          break;
+        case "personalize":
+          PersonalizeView = (await import("./lib/components/PersonalizeView.svelte")).default;
+          break;
+        case "settings":
+          SettingsView = (await import("./lib/components/SettingsView.svelte")).default;
+          break;
+        case "about":
+          AboutView = (await import("./lib/components/AboutView.svelte")).default;
+          break;
+        case "openfrp":
+          OpenFrpView = (await import("./lib/components/OpenFrpView.svelte")).default;
+          break;
+        case "sakurafrp":
+          SakuraFrpView = (await import("./lib/components/SakuraFrpView.svelte")).default;
+          break;
+        case "create":
+          break;
+      }
+    })();
+    viewLoads.set(section, load);
+    void load.catch(() => viewLoads.delete(section));
+    return load;
+  }
 </script>
 
 {#if splash}
@@ -387,24 +420,59 @@
             uriLifetime={$preferences.hostUriLifetime}
             onLifetime={(value) => setPreference("hostUriLifetime", value)}
           />
-        {:else if $activeSection === "join"}<JoinView
-            status={$session}
-            savedInvite={$preferences.joinUri}
-            savedPort={$preferences.joinPort}
-            request={$incomingInvite}
-          />
-        {:else if $activeSection === "personalize"}<PersonalizeView
-            value={$preferences}
-            onupdate={(update) => updatePreferences(update)}
-          />
-        {:else if $activeSection === "settings"}<SettingsView value={$preferences} />
-        {:else if $activeSection === "about"}<AboutView />
-        {:else if $activeSection === "openfrp"}<OpenFrpView />
-        {:else}<SakuraFrpView />{/if}
+        {:else if $activeSection === "join"}
+          {#if JoinView}
+            <JoinView
+              status={$session}
+              savedInvite={$preferences.joinUri}
+              savedPort={$preferences.joinPort}
+              request={$incomingInvite}
+            />
+          {:else}
+            {@render viewLoading()}
+          {/if}
+        {:else if $activeSection === "personalize"}
+          {#if PersonalizeView}
+            <PersonalizeView
+              value={$preferences}
+              onupdate={(update) => updatePreferences(update)}
+            />
+          {:else}
+            {@render viewLoading()}
+          {/if}
+        {:else if $activeSection === "settings"}
+          {#if SettingsView}
+            <SettingsView value={$preferences} />
+          {:else}
+            {@render viewLoading()}
+          {/if}
+        {:else if $activeSection === "about"}
+          {#if AboutView}
+            <AboutView />
+          {:else}
+            {@render viewLoading()}
+          {/if}
+        {:else if $activeSection === "openfrp"}
+          {#if OpenFrpView}
+            <OpenFrpView />
+          {:else}
+            {@render viewLoading()}
+          {/if}
+        {:else if SakuraFrpView}
+          <SakuraFrpView />
+        {:else}
+          {@render viewLoading()}
+        {/if}
       </div>
     </main>
   </div>
 {/if}
+
+{#snippet viewLoading()}
+  <div class="view-loading" role="status" aria-label={t("common.loading")}>
+    <LoaderCircle size={24} />
+  </div>
+{/snippet}
 
 <div class="sr-only">{currentLocale}</div>
 <div class="toast-region" aria-live="polite">

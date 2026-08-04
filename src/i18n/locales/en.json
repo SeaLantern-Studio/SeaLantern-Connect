@@ -301,6 +301,7 @@
   "common": {
     "cancel": "Cancel",
     "dismiss": "Dismiss",
+    "loading": "Loading",
     "noResults": "No matching options"
   }
 }

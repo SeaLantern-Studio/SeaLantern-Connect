@@ -157,6 +157,12 @@ pub(crate) fn show_main_window(app: &AppHandle) {
     }
 }
 
+pub(crate) fn show_when_ready(app: &AppHandle) {
+    if app.state::<MainWindowState>().mode() == MainWindowMode::Hidden {
+        show_main_window(app);
+    }
+}
+
 pub(crate) fn start_silently(app: &AppHandle) -> Result<(), String> {
     let state = app.state::<MainWindowState>();
     let mut transition = state.begin_transition()?;
