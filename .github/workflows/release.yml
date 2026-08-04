@@ -250,7 +250,7 @@ jobs:
           releaseBody: ${{ needs.validate-tag.outputs.release_body }}
           releaseDraft: true
           prerelease: ${{ needs.validate-tag.outputs.prerelease }}
-          args: ${{ matrix.args }}
+          args: ${{ format('{0} --config src-tauri/tauri.release.conf.json', matrix.args) }}
 
       - name: 修正 macOS DMG 布局
         if: runner.os == 'macOS'

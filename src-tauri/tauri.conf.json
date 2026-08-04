@@ -31,7 +31,6 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
     "targets": "all",
     "copyright": "Copyright © 2026 SeaLantern-Studio",
     "resources": {
