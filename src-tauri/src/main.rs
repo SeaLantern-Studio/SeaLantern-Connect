@@ -157,11 +157,12 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|_app_handle, event| match event {
+    app.run(|app_handle, event| match event {
         tauri::RunEvent::ExitRequested {
             api, code: None, ..
         } => api.prevent_exit(),
         tauri::RunEvent::Exit => {
+            app_handle.state::<frp::FrpState>().stop_all();
             log::info!("exit");
         }
         _ => {}

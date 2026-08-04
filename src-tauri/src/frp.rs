@@ -7,11 +7,21 @@ use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, BufReader, Read};
 #[cfg(target_os = "windows")]
+use std::os::windows::io::AsRawHandle;
+#[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::System::JobObjects::{
+    AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectExtendedLimitInformation,
+    SetInformationJobObject,
+};
 
 const STATUS_EVENT: &str = "frp-client-status";
 const PROGRESS_EVENT: &str = "frp-download-progress";
@@ -24,6 +34,61 @@ const MAX_OUTPUT_LINES: usize = 120;
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 type OutputMap = Arc<Mutex<HashMap<FrpProvider, VecDeque<String>>>>;
+
+#[cfg(target_os = "windows")]
+struct FrpProcessJob {
+    handle: usize,
+}
+
+#[cfg(target_os = "windows")]
+impl FrpProcessJob {
+    fn new() -> Result<Self, String> {
+        let handle = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
+        if handle.is_null() {
+            return Err(std::io::Error::last_os_error().to_string());
+        }
+
+        let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let configured = unsafe {
+            SetInformationJobObject(
+                handle,
+                JobObjectExtendedLimitInformation,
+                std::ptr::from_ref(&limits).cast(),
+                std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+            )
+        };
+        if configured == 0 {
+            unsafe {
+                CloseHandle(handle);
+            }
+            return Err(std::io::Error::last_os_error().to_string());
+        }
+
+        Ok(Self {
+            handle: handle as usize,
+        })
+    }
+
+    fn assign(&self, process: &Child) -> Result<(), String> {
+        let assigned = unsafe {
+            AssignProcessToJobObject(self.handle as HANDLE, process.as_raw_handle() as HANDLE)
+        };
+        if assigned == 0 {
+            return Err(std::io::Error::last_os_error().to_string());
+        }
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "windows")]
+impl Drop for FrpProcessJob {
+    fn drop(&mut self) {
+        unsafe {
+            CloseHandle(self.handle as HANDLE);
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -81,6 +146,8 @@ pub(crate) struct FrpState {
     processes: Mutex<HashMap<FrpProvider, Child>>,
     tunnel_ids: Mutex<HashMap<FrpProvider, String>>,
     outputs: OutputMap,
+    #[cfg(target_os = "windows")]
+    process_job: FrpProcessJob,
 }
 
 impl FrpState {
@@ -92,6 +159,8 @@ impl FrpState {
             processes: Mutex::new(HashMap::new()),
             tunnel_ids: Mutex::new(HashMap::new()),
             outputs: Arc::new(Mutex::new(HashMap::new())),
+            #[cfg(target_os = "windows")]
+            process_job: FrpProcessJob::new().expect("failed to create FRP process job object"),
         }
     }
 
@@ -121,16 +190,27 @@ impl FrpState {
             .map(|value| *value == Some(provider))
             .unwrap_or(false)
     }
+
+    pub(crate) fn stop_all(&self) {
+        let Ok(mut processes) = self.processes.lock() else {
+            log::warn!("FRP process state is unavailable during shutdown");
+            return;
+        };
+        for (provider, process) in processes.iter_mut() {
+            let _ = process.kill();
+            let _ = process.wait();
+            log::info!(
+                "stopped {} tunnel process during shutdown",
+                provider.display_name()
+            );
+        }
+        processes.clear();
+    }
 }
 
 impl Drop for FrpState {
     fn drop(&mut self) {
-        if let Ok(processes) = self.processes.get_mut() {
-            for process in processes.values_mut() {
-                let _ = process.kill();
-                let _ = process.wait();
-            }
-        }
+        self.stop_all();
     }
 }
 
@@ -439,6 +519,12 @@ pub(crate) async fn start_frp_tunnel(
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| error.to_string())?;
+    #[cfg(target_os = "windows")]
+    if let Err(error) = state.process_job.assign(&process) {
+        let _ = process.kill();
+        let _ = process.wait();
+        return Err(format!("failed to supervise FRP process: {error}"));
+    }
     state
         .outputs
         .lock()
