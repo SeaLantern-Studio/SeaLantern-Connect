@@ -5,6 +5,7 @@
     size = "md",
     loading = false,
     disabled = false,
+    type = "button",
     class: className = "",
     onclick,
     title,
@@ -14,6 +15,7 @@
     size?: "sm" | "md" | "lg";
     loading?: boolean;
     disabled?: boolean;
+    type?: "button" | "submit" | "reset";
     class?: string;
     onclick?: (event: MouseEvent) => void;
     title?: string;
@@ -26,7 +28,7 @@
   {disabled}
   {title}
   aria-busy={loading}
-  type="button"
+  {type}
   {onclick}
 >
   {#if loading}<LoaderCircle class="spin" size={16} />{/if}
@@ -56,6 +58,9 @@
   .ui-button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+  .ui-button[aria-busy="true"] :global(svg:not(.spin)) {
+    display: none;
   }
   .ui-button-solid {
     color: #fff;

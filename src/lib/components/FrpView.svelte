@@ -10,8 +10,12 @@
     LogIn,
     LoaderCircle,
     LogOut,
+    Play,
     Plus,
     RefreshCw,
+    Shuffle,
+    Square,
+    Terminal,
     Trash2,
   } from "@lucide/svelte";
   import {
@@ -41,6 +45,7 @@
     FrpTunnel,
   } from "@models/frp";
   import Button from "./ui/Button.svelte";
+  import Dialog from "./ui/Dialog.svelte";
   import Input from "./ui/Input.svelte";
   import Select, { type Option } from "./ui/Select.svelte";
 
@@ -71,6 +76,12 @@
   let remotePort = $state("");
   let copied = $state(false);
   let error = $state("");
+  let deleteOpen = $state(false);
+  let nodesLoading = $state(false);
+  let tunnelsLoading = $state(false);
+  let sessionTimer: number | null = null;
+  let outputLog = $state<HTMLPreElement | null>(null);
+  let scrollFrame = 0;
   let nodeOptions = $derived<Option[]>(
     nodes.map((node) => ({
       label: node.vip ? `${node.name} · VIP` : node.name,
@@ -78,19 +89,48 @@
     })),
   );
   let selectedTunnel = $derived(tunnels.find((tunnel) => tunnel.id === selectedTunnelId) ?? null);
+  let activeTunnel = $derived(
+    tunnels.find((tunnel) => tunnel.id === session?.tunnelId) ?? selectedTunnel,
+  );
+  let selectedNode = $derived(nodes.find((node) => node.id === selectedNodeId) ?? null);
+  let remotePortRange = $derived.by(() => {
+    const match = selectedNode?.allowPort?.match(/^\(\s*(\d+)\s*,\s*(\d+)\s*\)$/);
+    if (!match) return [1, 65535] as const;
+    const min = Math.max(1, Number(match[1]));
+    const max = Math.min(65535, Number(match[2]));
+    return min <= max ? ([min, max] as const) : ([1, 65535] as const);
+  });
+  let remotePortHint = $derived(
+    provider === "open_frp" ? (selectedNode?.allowPort ?? "1-65535") : t("frp.automatic"),
+  );
+  let activeEndpoint = $derived(activeTunnel?.remoteEndpoint ?? null);
+  let outputLength = $derived(session?.output.length ?? 0);
+  let validTunnelName = $derived(/^[A-Za-z][A-Za-z0-9_-]{1,31}$/.test(tunnelName.trim()));
+  let validRemotePort = $derived.by(() => {
+    const value = remotePort.trim();
+    if (!/^\d+$/.test(value)) return false;
+    const port = Number(value);
+    return port >= remotePortRange[0] && port <= remotePortRange[1];
+  });
   let validCreate = $derived(
     Boolean(
       selectedNodeId &&
-      tunnelName.trim() &&
+      validTunnelName &&
       Number.isInteger(Number(localPort)) &&
       Number(localPort) >= 1 &&
-      Number(localPort) <= 65535,
+      Number(localPort) <= 65535 &&
+      (provider === "open_frp" ? validRemotePort : !remotePort.trim() || validRemotePort),
     ),
   );
 
   $effect(() => {
     void provider;
     void load();
+  });
+
+  $effect(() => {
+    if (!outputLength || !outputLog?.closest("details")?.open) return;
+    requestAnimationFrame(scrollOutput);
   });
 
   onMount(() => {
@@ -101,14 +141,26 @@
       downloading = true;
       downloadProgress = progress.percent;
     });
-    void listener.then((unlisten) => {
+    void (async () => {
+      const unlisten = await listener;
       if (disposed) unlisten();
       else cleanup = unlisten;
-      return unlisten;
-    });
+    })();
+    sessionTimer = window.setInterval(() => {
+      if (!session?.authenticated) return;
+      void (async () => {
+        try {
+          session = await getFrpSessionStatus(provider);
+        } catch {
+          // Keep the last known state while a background poll fails.
+        }
+      })();
+    }, 1000);
     return () => {
       disposed = true;
       cleanup?.();
+      if (sessionTimer != null) window.clearInterval(sessionTimer);
+      cancelAnimationFrame(scrollFrame);
     };
   });
 
@@ -128,6 +180,7 @@
     }
   }
   async function loadTunnels(): Promise<void> {
+    tunnelsLoading = true;
     try {
       tunnels = await listFrpTunnels(provider);
       if (!tunnels.some((tunnel) => tunnel.id === selectedTunnelId)) {
@@ -135,6 +188,8 @@
       }
     } catch (reason) {
       error = String(reason);
+    } finally {
+      tunnelsLoading = false;
     }
   }
   async function download(): Promise<void> {
@@ -154,6 +209,7 @@
     }
   }
   async function login(): Promise<void> {
+    if (busy) return;
     busy = true;
     error = "";
     try {
@@ -175,6 +231,7 @@
     }
   }
   async function logout(): Promise<void> {
+    if (busy) return;
     busy = true;
     try {
       session = await logoutFrp(provider);
@@ -189,15 +246,25 @@
   async function beginCreate(): Promise<void> {
     creating = true;
     error = "";
+    if (nodes.length > 0) return;
+    nodesLoading = true;
     try {
       nodes = await listFrpNodes(provider);
       selectedNodeId = nodes[0]?.id ?? "";
+      tunnelName = `SeaLantern_${Math.random().toString(36).slice(2, 8)}`;
     } catch (reason) {
       error = String(reason);
+    } finally {
+      nodesLoading = false;
     }
   }
+
+  function randomizeRemotePort(): void {
+    const [min, max] = remotePortRange;
+    remotePort = String(Math.floor(Math.random() * (max - min + 1)) + min);
+  }
   async function saveTunnel(): Promise<void> {
-    if (!validCreate) return;
+    if (!validCreate || busy) return;
     busy = true;
     try {
       tunnels = await createFrpTunnel(provider, {
@@ -215,7 +282,7 @@
     }
   }
   async function toggleTunnel(): Promise<void> {
-    if (!selectedTunnel && !session?.running) return;
+    if (busy || (!selectedTunnel && !session?.running)) return;
     busy = true;
     try {
       session = session?.running
@@ -229,11 +296,12 @@
     }
   }
   async function removeTunnel(): Promise<void> {
-    if (!selectedTunnel) return;
+    if (!selectedTunnel || busy) return;
     busy = true;
     try {
       tunnels = await deleteFrpTunnel(provider, selectedTunnel.id);
       selectedTunnelId = tunnels[0]?.id ?? "";
+      deleteOpen = false;
     } catch (reason) {
       error = String(reason);
     } finally {
@@ -241,10 +309,41 @@
     }
   }
   async function copyEndpoint(): Promise<void> {
-    if (!selectedTunnel?.remoteEndpoint) return;
-    await navigator.clipboard.writeText(selectedTunnel.remoteEndpoint);
+    if (!activeEndpoint) return;
+    await navigator.clipboard.writeText(activeEndpoint);
     copied = true;
     window.setTimeout(() => (copied = false), 1600);
+  }
+
+  function handleOutputToggle(event: Event): void {
+    const panel = event.currentTarget;
+    if (panel instanceof HTMLDetailsElement && panel.open) requestAnimationFrame(scrollOutput);
+  }
+
+  function scrollOutput(): void {
+    const element = outputLog;
+    if (!element) return;
+    cancelAnimationFrame(scrollFrame);
+
+    const target = Math.max(0, element.scrollHeight - element.clientHeight);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      element.scrollTop = target;
+      return;
+    }
+
+    const start = element.scrollTop;
+    const distance = target - start;
+    if (Math.abs(distance) < 1) return;
+
+    const startedAt = performance.now();
+    const duration = 260;
+    const animate = (now: number): void => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 3;
+      element.scrollTop = start + distance * eased;
+      if (progress < 1) scrollFrame = requestAnimationFrame(animate);
+    };
+    scrollFrame = requestAnimationFrame(animate);
   }
 </script>
 
@@ -254,34 +353,45 @@
     <p>{provider === "open_frp" ? t("frp.openFrpDescription") : t("frp.sakuraFrpDescription")}</p>
   </section>
   <section class="frp-provider-section">
-    {#if loading}<div class="frp-checking">
-        <LoaderCircle class="spin" size={18} />{t("frp.checking")}
+    {#if loading || !client?.installed}
+      <div class="frp-section-heading">
+        <div><span>{t("frp.client")}</span><strong>{t("frp.clientManagement")}</strong></div>
       </div>
-    {:else if !client?.installed}<div class="frp-download-prompt">
-        <div>
-          <strong>{t("frp.downloadRequired")}</strong>
-          <p>
-            {t("frp.downloadHint", { provider: provider === "open_frp" ? "OpenFRP" : "SakuraFRP" })}
-          </p>
-        </div>
-        <Button class="primary-button" loading={busy} onclick={download}
-          >{#if !busy}<Download size={17} />{/if}{t("frp.download")}</Button
-        >
-      </div>
-      {#if downloading}<div class="frp-download-progress" aria-live="polite">
-          <div class="frp-download-progress-label">
-            <span>{t("frp.downloading")}</span><span>{downloadProgress}%</span>
+      {#if loading}
+        <div class="frp-checking"><LoaderCircle class="spin" size={18} />{t("frp.checking")}</div>
+      {:else}<div class="frp-download-prompt">
+          <div>
+            <strong>{t("frp.downloadRequired")}</strong>
+            <p>
+              {t("frp.downloadHint", {
+                provider: provider === "open_frp" ? "OpenFRP" : "SakuraFRP",
+              })}
+            </p>
           </div>
-          <div
-            class="frp-progress-track"
-            role="progressbar"
-            aria-valuenow={downloadProgress}
-            aria-valuemin="0"
-            aria-valuemax="100"
+          <Button
+            class="primary-button"
+            loading={downloading}
+            disabled={downloading}
+            onclick={download}
+            >{#if !downloading}<Download size={17} />{/if}{downloading
+              ? t("frp.downloading")
+              : t("frp.download")}</Button
           >
-            <div class="frp-progress-value" style={`width: ${downloadProgress}%`}></div>
-          </div>
-        </div>{/if}
+        </div>
+        {#if downloading}<div class="frp-download-progress" aria-live="polite">
+            <div class="frp-download-progress-label">
+              <span>{t("frp.downloading")}</span><span>{downloadProgress}%</span>
+            </div>
+            <div
+              class="frp-progress-track"
+              role="progressbar"
+              aria-valuenow={downloadProgress}
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div class="frp-progress-value" style={`width: ${downloadProgress}%`}></div>
+            </div>
+          </div>{/if}{/if}
     {:else if !session?.authenticated}
       {#if provider === "open_frp"}<div class="frp-connect-main">
           <strong>{t("frp.connectOpenFrp")}</strong>
@@ -327,8 +437,8 @@
             <Button
               class="primary-button"
               loading={busy}
+              type="submit"
               disabled={!credential.trim() || busy}
-              onclick={() => void login()}
             >
               {#if !busy}<LogIn size={16} />{/if}{t("frp.authorize")}
             </Button>
@@ -361,99 +471,160 @@
         </div>{/if}
     {:else}
       <div class="frp-section-heading">
-        <div><span>{t("frp.account")}</span><strong>{session.accountName ?? "--"}</strong></div>
-        <Button variant="ghost" size="sm" onclick={logout}
-          ><LogOut size={15} />{t("frp.logout")}</Button
-        >
+        <div><span>{t("frp.account")}</span><strong>{t("frp.authorization")}</strong></div>
+        <span class="frp-account-name">{session.accountName ?? "--"}</span>
       </div>
-      {#if session.running}<div class="frp-running-view">
+      {#if session.running}
+        <div class="frp-running-view">
           <div class="frp-running-header">
             <div class="frp-running-identity">
               <span class="frp-running-dot"></span>
               <div>
-                <strong>{selectedTunnel?.name ?? t("frp.tunnels")}</strong><small
-                  >{t("frp.running")}</small
-                >
+                <span>{t("frp.running")}</span>
+                <strong>{activeTunnel?.name ?? t("frp.tunnels")}</strong>
+                <small>{activeTunnel?.node ?? "--"}</small>
               </div>
             </div>
-            <Button variant="danger" loading={busy} onclick={toggleTunnel}>{t("frp.stop")}</Button>
+            <Button variant="danger" loading={busy} onclick={toggleTunnel}
+              ><Square size={15} />{t("frp.stop")}</Button
+            >
           </div>
-          {#if selectedTunnel?.remoteEndpoint}<div class="frp-share-address">
-              <div>
-                <span>{t("frp.publicAddress")}</span><strong>{selectedTunnel.remoteEndpoint}</strong
-                >
-              </div>
-              <Button variant="outline" size="sm" onclick={copyEndpoint}
-                >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{t(
-                  "frp.copyAddress",
-                )}</Button
+          <div class="frp-share-address">
+            <div>
+              <span>{t("frp.publicAddress")}</span><strong
+                >{activeEndpoint ?? t("frp.addressUnavailable")}</strong
               >
-            </div>{/if}
-          <details class="frp-output-panel">
-            <summary>{t("frp.clientOutput")}<ChevronDown size={16} /></summary>
-            <pre>{session.output.join("\n")}</pre>
-          </details>
-        </div>{/if}
-      <div class="frp-tunnel-toolbar">
-        <strong>{t("frp.tunnels")}</strong>
-        <div>
-          <Button variant="ghost" size="sm" title={t("frp.createTunnel")} onclick={beginCreate}
-            ><Plus size={16} /></Button
-          ><Button variant="ghost" size="sm" title={t("frp.refreshTunnels")} onclick={loadTunnels}
-            ><RefreshCw size={16} /></Button
-          ><Button
-            variant="ghost"
-            size="sm"
-            disabled={!selectedTunnel}
-            title={t("frp.deleteTunnel")}
-            onclick={removeTunnel}><Trash2 size={16} /></Button
-          >
+            </div>
+            <Button variant="outline" size="sm" disabled={!activeEndpoint} onclick={copyEndpoint}
+              >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{copied
+                ? t("frp.copiedAddress")
+                : t("frp.copyAddress")}</Button
+            >
+          </div>
+          {#if session.output.length > 0}<details
+              class="frp-output-panel"
+              ontoggle={handleOutputToggle}
+            >
+              <summary
+                ><span><Terminal size={15} />{t("frp.clientOutput")}</span><ChevronDown
+                  class="frp-output-chevron"
+                  size={16}
+                /></summary
+              >
+              <pre bind:this={outputLog} aria-live="polite">{session.output.join("\n")}</pre>
+            </details>
+          {/if}
         </div>
-      </div>
-      {#if creating}<div class="frp-create-form">
-          <label
-            ><span>{t("frp.node")}</span><Select
-              bind:value={selectedNodeId}
-              options={nodeOptions}
-            /></label
-          ><label><span>{t("frp.tunnelName")}</span><Input bind:value={tunnelName} /></label><label
-            ><span>{t("frp.localPort")}</span><Input
-              bind:value={localPort}
-              inputmode="numeric"
-            /></label
-          ><label
-            ><span>{t("frp.remotePort")}</span><Input
-              bind:value={remotePort}
-              inputmode="numeric"
-            /></label
-          >
-          <div class="frp-create-actions">
-            <Button variant="outline" onclick={() => (creating = false)}
-              >{t("common.cancel")}</Button
-            ><Button disabled={!validCreate} loading={busy} onclick={saveTunnel}
-              >{t("frp.createTunnel")}</Button
+      {:else}<div class="frp-tunnel-toolbar">
+          <strong>{t("frp.tunnels")}</strong>
+          <div>
+            <Button variant="ghost" size="sm" title={t("frp.createTunnel")} onclick={beginCreate}
+              ><Plus size={16} /></Button
+            ><Button
+              variant="ghost"
+              size="sm"
+              disabled={tunnelsLoading}
+              title={t("frp.refreshTunnels")}
+              onclick={loadTunnels}
+              ><RefreshCw class={tunnelsLoading ? "spin" : ""} size={16} /></Button
+            ><Button
+              variant="ghost"
+              size="sm"
+              disabled={!selectedTunnel || busy}
+              title={t("frp.deleteTunnel")}
+              onclick={() => (deleteOpen = true)}><Trash2 size={16} /></Button
+            ><Button variant="ghost" size="sm" title={t("frp.logout")} onclick={logout}
+              ><LogOut size={16} /></Button
             >
           </div>
         </div>
-      {:else if tunnels.length}<div class="frp-tunnel-list">
-          {#each tunnels as tunnel (tunnel.id)}<button
-              class:selected={selectedTunnelId === tunnel.id}
-              class="frp-tunnel-row"
-              type="button"
-              onclick={() => (selectedTunnelId = tunnel.id)}
-              ><span class:online={tunnel.online} class="frp-tunnel-state"></span><span
-                ><strong>{tunnel.name}</strong><small>{tunnel.node ?? "--"}</small></span
-              ><code>{tunnel.remoteEndpoint ?? "--"}</code></button
-            >{/each}
-        </div>{:else}<p>{t("frp.noTunnels")}</p>{/if}
-      {#if !creating && selectedTunnel}<div class="frp-session-actions">
-          <span class:active={session.running}
-            >{session.running ? t("frp.running") : t("frp.stopped")}</span
-          ><Button disabled={busy} loading={busy} onclick={toggleTunnel}
-            >{session.running ? t("frp.stop") : t("frp.start")}</Button
+        {#if creating}<form
+            class="frp-create-form"
+            onsubmit={(event) => {
+              event.preventDefault();
+              void saveTunnel();
+            }}
           >
-        </div>{/if}
+            <label
+              ><span>{t("frp.node")}</span><Select
+                bind:value={selectedNodeId}
+                options={nodeOptions}
+                disabled={nodesLoading}
+              /></label
+            ><label
+              ><span>{t("frp.tunnelName")}</span><Input
+                bind:value={tunnelName}
+                class={tunnelName && !validTunnelName ? "invalid" : ""}
+              />{#if tunnelName && !validTunnelName}<small class="frp-field-error"
+                  >{t("frp.invalidTunnelName")}</small
+                >{/if}</label
+            ><label
+              ><span>{t("frp.localPort")}</span><Input
+                bind:value={localPort}
+                inputmode="numeric"
+              /></label
+            ><label
+              ><span>{t("frp.remotePort")}</span>
+              <div class="frp-port-input">
+                <Input
+                  bind:value={remotePort}
+                  inputmode="numeric"
+                  placeholder={remotePortHint}
+                  class={remotePort && !validRemotePort ? "invalid" : ""}
+                />{#if provider === "open_frp"}<button
+                    class="frp-random-port"
+                    type="button"
+                    title={t("frp.randomRemotePort")}
+                    onclick={randomizeRemotePort}><Shuffle size={16} /></button
+                  >{/if}
+              </div>
+              {#if remotePort && !validRemotePort}<small class="frp-field-error"
+                  >{t("frp.invalidRemotePort", { range: remotePortHint })}</small
+                >{/if}</label
+            >
+            <div class="frp-create-actions">
+              <Button variant="outline" type="button" onclick={() => (creating = false)}
+                >{t("common.cancel")}</Button
+              ><Button type="submit" disabled={!validCreate} loading={busy}
+                ><Plus size={16} />{t("frp.createTunnel")}</Button
+              >
+            </div>
+          </form>
+        {:else if tunnelsLoading && tunnels.length === 0}<div class="frp-checking">
+            <LoaderCircle class="spin" size={18} />{t("frp.loadingTunnels")}
+          </div>
+        {:else if tunnels.length}<div class="frp-tunnel-list">
+            {#each tunnels as tunnel (tunnel.id)}<button
+                class:selected={selectedTunnelId === tunnel.id}
+                class="frp-tunnel-row"
+                type="button"
+                disabled={session.running}
+                onclick={() => (selectedTunnelId = tunnel.id)}
+                ><span class:online={tunnel.online} class="frp-tunnel-state"></span><span
+                  ><strong>{tunnel.name}</strong><small>{tunnel.node ?? "--"}</small></span
+                ><code>{tunnel.remoteEndpoint ?? "--"}</code></button
+              >{/each}
+          </div>{:else}<p>{t("frp.noTunnels")}</p>{/if}
+        {#if !creating && selectedTunnel}<div class="frp-session-actions">
+            <span>{t("frp.stopped")}</span><Button
+              disabled={busy}
+              loading={busy}
+              onclick={toggleTunnel}><Play size={15} />{t("frp.start")}</Button
+            >
+          </div>{/if}
+      {/if}
     {/if}
     {#if error}<p class="field-error">{error}</p>{/if}
   </section>
+  <Dialog bind:open={deleteOpen} title={t("frp.deleteTunnel")}>
+    <p class="modal-copy">{t("frp.deleteTunnelHint", { name: selectedTunnel?.name ?? "" })}</p>
+    {#snippet footer()}
+      <Button variant="outline" disabled={busy} onclick={() => (deleteOpen = false)}
+        >{t("common.cancel")}</Button
+      >
+      <Button variant="danger" disabled={busy} loading={busy} onclick={removeTunnel}
+        ><Trash2 size={15} />{busy ? t("frp.deletingTunnel") : t("frp.confirmDeleteTunnel")}</Button
+      >
+    {/snippet}
+  </Dialog>
 </div>

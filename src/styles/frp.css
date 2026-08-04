@@ -268,7 +268,7 @@
 .frp-share-address strong {
   overflow: hidden;
   color: var(--text);
-  font-family: var(--cmz-font-mono, ui-monospace, monospace);
+  font-family: inherit;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -382,6 +382,33 @@
 .frp-create-form label > span {
   color: var(--muted);
   font-size: 0.7857rem;
+}
+.frp-port-input {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.frp-port-input .ui-input {
+  min-width: 0;
+}
+.frp-random-port {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: var(--cmz-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+.frp-random-port:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
 }
 .frp-field-error {
   color: var(--danger);
