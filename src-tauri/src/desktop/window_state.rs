@@ -97,6 +97,9 @@ impl MainWindowTransition<'_> {
 
     pub(crate) fn move_to(&mut self, next: MainWindowMode) -> Result<(), String> {
         let current = self.mode();
+        if current == next {
+            return Ok(());
+        }
         if !current.allows(next) {
             log::warn!("state rejected: {current:?} -> {next:?}");
             return Err(format!(
@@ -104,7 +107,7 @@ impl MainWindowTransition<'_> {
             ));
         }
         self.state.set_mode(next);
-        log::debug!("state: {current:?} -> {next:?}");
+        log::debug!("window: {current:?} -> {next:?}");
         Ok(())
     }
 }

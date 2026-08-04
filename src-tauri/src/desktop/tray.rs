@@ -122,22 +122,6 @@ pub fn handle_window_event(window: &TauriWindow, event: &WindowEvent) {
     if window.label() != MAIN_WINDOW_LABEL {
         return;
     }
-    match event {
-        WindowEvent::CloseRequested { .. } => {
-            log::debug!("close requested");
-        }
-        WindowEvent::Destroyed => {
-            log::debug!(
-                "destroyed: {:?}, registered={}",
-                window.state::<MainWindowState>().mode(),
-                window
-                    .app_handle()
-                    .get_webview_window(MAIN_WINDOW_LABEL)
-                    .is_some()
-            );
-        }
-        _ => {}
-    }
     let settings = window.state::<SettingsState>();
     if let WindowEvent::CloseRequested { api, .. } = event {
         let _ = settings.persist();

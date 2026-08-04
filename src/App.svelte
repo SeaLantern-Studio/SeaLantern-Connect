@@ -32,7 +32,7 @@
     restartApplication,
     toggleMaximize,
   } from "@api/window";
-  import { markFrontendReady } from "@api/app";
+  import { markFrontendReady, markPageLoaded } from "@api/app";
   import { getInitialDeepLinks, getPendingDeepLinks, onDeepLinks } from "@api/deeplink";
   import { locale, t } from "@i18n";
   import { inviteFromDeepLinkUrls } from "@domain/invitations";
@@ -268,6 +268,9 @@
           break;
         case "create":
           break;
+      }
+      if (section !== "create" && section !== "join") {
+        void markPageLoaded(section).catch(() => undefined);
       }
     })();
     viewLoads.set(section, load);

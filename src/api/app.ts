@@ -8,3 +8,7 @@ export function getAppVersion(): Promise<string> {
 export function markFrontendReady(): Promise<void> {
   return invoke("frontend_ready");
 }
+
+export function markPageLoaded(page: string): Promise<void> {
+  return invoke("frontend_page_loaded", { page });
+}

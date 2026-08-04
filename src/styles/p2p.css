@@ -352,11 +352,16 @@ button:disabled {
   font-weight: 500;
 }
 .join-port-heading .mode-tabs {
-  height: 34px;
+  height: 38px;
+  width: 50%;
+  justify-self: end;
+}
+.join-port-detail,
+.join-port-input {
+  width: calc((100% - 88px) / 2);
 }
 .join-port-detail {
-  width: calc((100% - 88px) / 2);
-  height: 40px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-self: end;
@@ -368,8 +373,10 @@ button:disabled {
   font-size: 0.8571rem;
 }
 .join-port-input {
-  width: calc((100% - 88px) / 2);
   justify-self: end;
+}
+.join-port-setting .ui-input.join-port-input {
+  width: calc((100% - 88px) / 2) !important;
 }
 .spin {
   animation: spin 0.9s linear infinite;

@@ -48,7 +48,13 @@ fn restart_application(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn frontend_ready(app: tauri::AppHandle) {
+    log::debug!("frontend: ready");
     tray::show_when_ready(&app);
+}
+
+#[tauri::command]
+fn frontend_page_loaded(page: String) {
+    log::debug!("frontend: {page} loaded");
 }
 
 fn main() {
@@ -119,6 +125,7 @@ fn main() {
             stop_tunnel,
             restart_application,
             frontend_ready,
+            frontend_page_loaded,
             host::start_lan_scan,
             host::get_lan_scan,
             host::restart_lan_scan,

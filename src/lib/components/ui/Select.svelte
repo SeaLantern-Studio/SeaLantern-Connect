@@ -160,6 +160,7 @@
 <style>
   :global(.ui-select) {
     width: 100%;
+    height: 38px;
     min-height: 38px;
     display: flex;
     align-items: center;

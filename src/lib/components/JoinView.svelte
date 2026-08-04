@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowRight, Check, Copy, Link, Radio, RotateCcw, Unplug } from "@lucide/svelte";
+  import { ArrowRight, Check, Copy, Radio, RotateCcw, Unplug } from "@lucide/svelte";
   import { saveJoinPort, startJoin, stopJoin, stopTunnel, validateInvite } from "@api/p2p";
   import { backendMessage, t } from "@i18n";
   import {
@@ -208,7 +208,7 @@
     <section class="join-panel">
       <label for="invite">{t("join.invite")}</label>
       <div class="invite-field">
-        <Link size={18} /><Input
+        <Input
           id="invite"
           class={validationError ? "invalid" : ""}
           bind:value={invite}
@@ -286,7 +286,7 @@
     </p>{/if}
 </div>
 
-<Dialog bind:open={confirming} title={t("join.confirmTitle")}>
+<Dialog bind:open={confirming} title={t("join.confirmTitle")} width="560px">
   <p class="modal-copy">{replacingConnection ? t("join.replaceHint") : t("join.confirmHint")}</p>
   <div class="invite-summary">
     <span>{t("join.inviteProtocol")}</span><strong>sculk / v1</strong>

@@ -37,6 +37,7 @@
 <style>
   .ui-input {
     width: 100%;
+    height: 38px;
     min-height: 38px;
     padding: 0 12px;
     color: var(--text);
