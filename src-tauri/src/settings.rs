@@ -143,6 +143,7 @@ pub struct PersonalizationUpdate {
 pub struct ApplicationSettingsUpdate {
     splash_duration_ms: u32,
     silent_start: bool,
+    auto_update: bool,
     remember_window_state: bool,
 }
 
@@ -437,6 +438,7 @@ pub fn set_application_settings(
     state.update(|preferences| {
         preferences.splash_duration_ms = update.splash_duration_ms;
         preferences.silent_start = update.silent_start;
+        preferences.auto_update = update.auto_update;
         preferences.remember_window_state = update.remember_window_state;
     })
 }
