@@ -5,6 +5,7 @@
     "joinRoom": "Join P2P Room",
     "createOpenFrp": "OpenFRP Tunnel",
     "createSakuraFrp": "SakuraFRP Tunnel",
+    "toolbox": "Toolbox",
     "personalization": "Personalization",
     "settings": "Settings",
     "about": "About",
@@ -147,6 +148,69 @@
     },
     "restartTitle": "Restart to Apply Window Material",
     "restartHint": "The new window material takes effect after SeaLantern Connect restarts"
+  },
+  "toolbox": {
+    "back": "Back",
+    "networkTitle": "P2P Diagnostics",
+    "networkDescription": "Check UDP and NAT mapping for direct connections.",
+    "relayTitle": "Relay Latency",
+    "customRelayHint": "Test the custom relay configured in Settings.",
+    "defaultRelayHint": "Test the Iroh default relay connection and latency.",
+    "relayReadyHint": "Run a check to see the relay address and latency.",
+    "relayAddress": "Relay Address",
+    "latency": "Latency",
+    "portTitle": "Local Port Check",
+    "portDescription": "Check whether a Minecraft service is available on a local port.",
+    "port": "Port",
+    "portSuffix": "Minecraft port",
+    "portReadyHint": "Enter a port and check for a local Minecraft service.",
+    "minecraftDetected": "Minecraft service detected",
+    "minecraftNotDetected": "No Minecraft service detected",
+    "reportTitle": "Diagnostics Report",
+    "reportDescription": "Collect the current results for sharing in an issue or support request.",
+    "reportHint": "The report is generated locally and is never uploaded automatically.",
+    "reportNoResults": "No usable diagnostic results were obtained.",
+    "report": { "p2p": "P2P Status" },
+    "milliseconds": "ms",
+    "reportNotChecked": "Not checked",
+    "reportMinecraftDetected": "Minecraft service detected",
+    "reportMinecraftNotDetected": "No Minecraft service detected",
+    "copyReport": "Copy Report",
+    "copied": "Copied",
+    "check": "Run Check",
+    "checking": "Checking…",
+    "readyHint": "Run a check to see public addresses and NAT mapping results.",
+    "publicIpv4": "Public IPv4",
+    "publicIpv6": "Public IPv6",
+    "udp": "UDP Connectivity",
+    "natMapping": "NAT Mapping",
+    "relay": "Relay Availability",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "unknown": "Unknown",
+    "stable": "Stable",
+    "varies": "Varies by Destination",
+    "direct": {
+      "available": {
+        "title": "Direct Connection Likely",
+        "hint": "UDP is available and NAT mapping is stable, so P2P can usually connect directly."
+      },
+      "limited": {
+        "title": "Direct Connection May Be Limited",
+        "hint": "UDP is unavailable or NAT mapping varies by destination, so a relay may be needed."
+      },
+      "unknown": {
+        "title": "Direct Connectivity Is Inconclusive",
+        "hint": "Not enough NAT mapping information was available. Try again later."
+      }
+    },
+    "errors": {
+      "failed": "Network diagnostics failed. Check your connection and try again.",
+      "startFailed": "Could not start network diagnostics.",
+      "timeout": "Network diagnostics timed out. Try again later.",
+      "invalidRelay": "The custom relay address is invalid.",
+      "copyFailed": "Could not copy the report. Check clipboard permissions."
+    }
   },
   "connectionSettings": {
     "startup": "Startup",

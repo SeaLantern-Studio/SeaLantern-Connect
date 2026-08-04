@@ -68,6 +68,7 @@ export type SectionId =
   | "join"
   | "openfrp"
   | "sakurafrp"
+  | "toolbox"
   | "personalize"
   | "settings"
   | "about";
@@ -97,6 +98,7 @@ function loadSection(): SectionId {
     "join",
     "openfrp",
     "sakurafrp",
+    "toolbox",
     "personalize",
     "settings",
     "about",

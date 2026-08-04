@@ -20,6 +20,7 @@
     Settings,
     Square,
     Sun,
+    Wrench,
     X,
   } from "@lucide/svelte";
   import logoUrl from "./assets/logo.png";
@@ -91,6 +92,9 @@
   let PersonalizeView = $state<
     typeof import("./lib/components/PersonalizeView.svelte").default | null
   >(null);
+  let ToolboxView = $state<typeof import("./lib/components/ToolboxView.svelte").default | null>(
+    null,
+  );
   let SettingsView = $state<typeof import("./lib/components/SettingsView.svelte").default | null>(
     null,
   );
@@ -108,6 +112,7 @@
     { id: "join", label: "navigation.joinRoom", icon: LogIn },
     { id: "openfrp", label: "navigation.createOpenFrp", icon: Cloud },
     { id: "sakurafrp", label: "navigation.createSakuraFrp", icon: Flower2 },
+    { id: "toolbox", label: "navigation.toolbox", icon: Wrench },
     { id: "personalize", label: "navigation.personalization", icon: Palette },
     { id: "settings", label: "navigation.settings", icon: Settings },
     { id: "about", label: "navigation.about", icon: Info },
@@ -115,7 +120,7 @@
 
   const title = $derived(
     t(
-      `navigation.${$activeSection === "create" ? "createRoom" : $activeSection === "join" ? "joinRoom" : $activeSection === "openfrp" ? "createOpenFrp" : $activeSection === "sakurafrp" ? "createSakuraFrp" : $activeSection === "personalize" ? "personalization" : $activeSection === "settings" ? "settings" : "about"}`,
+      `navigation.${$activeSection === "create" ? "createRoom" : $activeSection === "join" ? "joinRoom" : $activeSection === "openfrp" ? "createOpenFrp" : $activeSection === "sakurafrp" ? "createSakuraFrp" : $activeSection === "toolbox" ? "toolbox" : $activeSection === "personalize" ? "personalization" : $activeSection === "settings" ? "settings" : "about"}`,
     ),
   );
   const p2pState = $derived(
@@ -298,6 +303,9 @@
         case "personalize":
           PersonalizeView = (await import("./lib/components/PersonalizeView.svelte")).default;
           break;
+        case "toolbox":
+          ToolboxView = (await import("./lib/components/ToolboxView.svelte")).default;
+          break;
         case "settings":
           SettingsView = (await import("./lib/components/SettingsView.svelte")).default;
           break;
@@ -365,7 +373,7 @@
           {/each}
         </div>
         <div class="nav-group nav-group-bottom">
-          {#each sections.slice(4, 7) as item (item.id)}
+          {#each sections.slice(4, 8) as item (item.id)}
             {@const Icon = item.icon}
             <button
               class:active={$activeSection === item.id}
@@ -480,6 +488,12 @@
                 savedPort={$preferences.joinPort}
                 request={$incomingInvite}
               />
+            {:else if $activeSection === "toolbox"}
+              {#if ToolboxView}
+                <ToolboxView value={$preferences} />
+              {:else}
+                {@render viewLoading()}
+              {/if}
             {:else if $activeSection === "personalize"}
               {#if PersonalizeView}
                 <PersonalizeView

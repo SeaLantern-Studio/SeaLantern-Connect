@@ -8,6 +8,7 @@ mod frp;
 mod logging;
 mod p2p;
 mod settings;
+mod toolbox;
 
 use desktop::{autodelay, deeplink, effects, theme, tray, window_state};
 use p2p::{host, join};
@@ -128,6 +129,8 @@ fn main() {
             restart_application,
             frontend_ready,
             frontend_page_loaded,
+            toolbox::run_network_diagnostics,
+            toolbox::run_relay_diagnostics,
             host::start_lan_scan,
             host::get_lan_scan,
             host::restart_lan_scan,

@@ -5,6 +5,7 @@
     "joinRoom": "加入 P2P 房间",
     "createOpenFrp": "OpenFRP 隧道",
     "createSakuraFrp": "SakuraFRP 隧道",
+    "toolbox": "百宝箱",
     "personalization": "个性化",
     "settings": "设置",
     "about": "关于",
@@ -147,6 +148,69 @@
     },
     "restartTitle": "重启后应用窗口材质",
     "restartHint": "窗口材质将在 SeaLantern Connect 重启后生效"
+  },
+  "toolbox": {
+    "back": "返回",
+    "networkTitle": "P2P 网络诊断",
+    "networkDescription": "通过 UDP 与 NAT 映射探测评估当前网络的直连条件。",
+    "relayTitle": "中继节点测速",
+    "customRelayHint": "测试设置中的自定义中继连接和延迟。",
+    "defaultRelayHint": "测试 Iroh 默认中继连接和延迟。",
+    "relayReadyHint": "开始检测后显示中继地址和延迟。",
+    "relayAddress": "中继地址",
+    "latency": "延迟",
+    "portTitle": "本地端口检测",
+    "portDescription": "检查本机端口是否存在可用的 Minecraft 服务。",
+    "port": "端口",
+    "portSuffix": "Minecraft 端口",
+    "portReadyHint": "输入端口并检测本机 Minecraft 服务。",
+    "minecraftDetected": "已检测到 Minecraft 服务",
+    "minecraftNotDetected": "未检测到 Minecraft 服务",
+    "reportTitle": "诊断报告",
+    "reportDescription": "汇总当前检测结果，复制后可用于提交问题或寻求帮助。",
+    "reportHint": "报告只在本地生成，不会自动上传。",
+    "reportNoResults": "未获得可用的检测结果。",
+    "report": { "p2p": "P2P 状态" },
+    "milliseconds": "毫秒",
+    "reportNotChecked": "未检测",
+    "reportMinecraftDetected": "检测到 Minecraft 服务",
+    "reportMinecraftNotDetected": "未检测到 Minecraft 服务",
+    "copyReport": "复制报告",
+    "copied": "已复制",
+    "check": "开始检测",
+    "checking": "检测中…",
+    "readyHint": "开始检测后会显示公网地址和 NAT 映射结果。",
+    "publicIpv4": "公网 IPv4",
+    "publicIpv6": "公网 IPv6",
+    "udp": "UDP 连通性",
+    "natMapping": "NAT 映射",
+    "relay": "中继可用性",
+    "available": "可用",
+    "unavailable": "不可用",
+    "unknown": "无法判断",
+    "stable": "稳定",
+    "varies": "随目标变化",
+    "direct": {
+      "available": {
+        "title": "具备直连条件",
+        "hint": "UDP 可用且 NAT 映射稳定，P2P 连接通常可以尝试直连。"
+      },
+      "limited": {
+        "title": "直连可能受限",
+        "hint": "UDP 不可用或 NAT 映射随目标变化，连接可能需要通过中继。"
+      },
+      "unknown": {
+        "title": "无法判断直连能力",
+        "hint": "未获得足够的 NAT 映射信息，可稍后重试。"
+      }
+    },
+    "errors": {
+      "failed": "网络检测失败，请检查网络后重试。",
+      "startFailed": "无法启动网络检测。",
+      "timeout": "网络检测超时，请稍后重试。",
+      "invalidRelay": "自定义中继地址无效。",
+      "copyFailed": "复制失败，请检查剪贴板权限。"
+    }
   },
   "connectionSettings": {
     "startup": "启动",
