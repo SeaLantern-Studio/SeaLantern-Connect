@@ -17,7 +17,6 @@ fontdb = "0.24"
 flate2 = "1"
 log = "0.4"
 md5 = "0.8"
-keyring = "4"
 reqwest = { version = "0.13", features = ["json", "query", "stream"] }
 sculk = { version = "0.6.0", features = ["persist"] }
 serde = { version = "1", features = ["derive"] }

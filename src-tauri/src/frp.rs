@@ -2,18 +2,25 @@ mod client;
 mod openfrp;
 mod sakurafrp;
 
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use crypto_box::aead::{Aead, AeadCore, OsRng};
+use crypto_box::{SalsaBox, SecretKey};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
-use std::io::{BufRead, BufReader, Read};
+use std::fs;
+use std::io::{BufRead, BufReader, Read, Write};
 #[cfg(target_os = "windows")]
 use std::os::windows::io::AsRawHandle;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_opener::OpenerExt;
+use tempfile::NamedTempFile;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
 #[cfg(target_os = "windows")]
@@ -25,13 +32,19 @@ use windows_sys::Win32::System::JobObjects::{
 
 const STATUS_EVENT: &str = "frp-client-status";
 const PROGRESS_EVENT: &str = "frp-download-progress";
-const CREDENTIAL_SERVICE: &str = "SeaLantern Connect FRP";
 const OPENFRP_PREMIUM_URL: &str = "https://console.openfrp.net/premium";
 const SAKURA_KEYS_URL: &str = "https://www.natfrp.com/user/";
 const SAKURA_PURCHASE_URL: &str = "https://www.natfrp.com/purchase/buy";
 const MAX_OUTPUT_LINES: usize = 120;
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+const CREDENTIAL_FILE: &str = "credential.dat";
+const CREDENTIAL_VERSION: u8 = 1;
+// This keeps tokens out of app-local files without depending on an OS credential prompt.
+const CREDENTIAL_KEY: [u8; 32] = [
+    0x56, 0xa4, 0x12, 0xd9, 0x7c, 0x3e, 0xf1, 0x08, 0x65, 0xb0, 0x2d, 0x94, 0xce, 0x41, 0x7a, 0x1f,
+    0xe8, 0x33, 0x6b, 0x05, 0xaf, 0x72, 0x19, 0xc4, 0x90, 0x2e, 0xbd, 0x58, 0xf6, 0x0a, 0x47, 0x81,
+];
 
 type OutputMap = Arc<Mutex<HashMap<FrpProvider, VecDeque<String>>>>;
 
@@ -255,6 +268,13 @@ pub(crate) struct CreateFrpTunnel {
     remote_port: String,
 }
 
+#[derive(Deserialize, Serialize)]
+struct EncryptedCredential {
+    version: u8,
+    nonce: String,
+    ciphertext: String,
+}
+
 fn status(
     app: &AppHandle,
     state: &FrpState,
@@ -310,15 +330,17 @@ pub(crate) async fn download_frp_client(
 
 #[tauri::command]
 pub(crate) async fn get_frp_session_status(
+    app: AppHandle,
     state: State<'_, FrpState>,
     provider: FrpProvider,
 ) -> Result<FrpSessionStatus, String> {
-    restore_session(&state, provider).await;
+    restore_session(&app, &state, provider).await;
     session_status(&state, provider)
 }
 
 #[tauri::command]
 pub(crate) async fn login_sakurafrp(
+    app: AppHandle,
     state: State<'_, FrpState>,
     credential: String,
 ) -> Result<FrpSessionStatus, String> {
@@ -328,7 +350,7 @@ pub(crate) async fn login_sakurafrp(
         return Err("provider credential is required".to_owned());
     }
     let account = sakurafrp::account(&credential).await?;
-    remember_session(&state, provider, credential, account)?;
+    remember_session(&app, &state, provider, credential, account)?;
     session_status(&state, provider)
 }
 
@@ -339,7 +361,7 @@ pub(crate) async fn login_openfrp(
 ) -> Result<FrpSessionStatus, String> {
     let credential = openfrp::browser(&app).await?;
     let account = openfrp::account(&credential).await?;
-    remember_session(&state, FrpProvider::OpenFrp, credential, account)?;
+    remember_session(&app, &state, FrpProvider::OpenFrp, credential, account)?;
     session_status(&state, FrpProvider::OpenFrp)
 }
 
@@ -366,6 +388,7 @@ pub(crate) fn open_premium(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub(crate) fn logout_frp(
+    app: AppHandle,
     state: State<'_, FrpState>,
     provider: FrpProvider,
 ) -> Result<FrpSessionStatus, String> {
@@ -390,7 +413,7 @@ pub(crate) fn logout_frp(
         .lock()
         .map_err(|_| "FRP output state is unavailable".to_owned())?
         .remove(&provider);
-    if let Err(error) = remove_saved(provider) {
+    if let Err(error) = remove_saved(&app, provider) {
         log::warn!(
             "failed to remove saved {} credential: {error}",
             provider.display_name()
@@ -563,7 +586,7 @@ async fn tunnels(provider: FrpProvider, credential: &str) -> Result<Vec<FrpTunne
     }
 }
 
-async fn restore_session(state: &FrpState, provider: FrpProvider) {
+async fn restore_session(app: &AppHandle, state: &FrpState, provider: FrpProvider) {
     if state
         .accounts
         .lock()
@@ -572,7 +595,7 @@ async fn restore_session(state: &FrpState, provider: FrpProvider) {
     {
         return;
     }
-    let Some(credential) = load_saved(provider) else {
+    let Some(credential) = load_saved(app, provider) else {
         return;
     };
     let account = match provider {
@@ -598,12 +621,13 @@ async fn restore_session(state: &FrpState, provider: FrpProvider) {
 }
 
 fn remember_session(
+    app: &AppHandle,
     state: &FrpState,
     provider: FrpProvider,
     credential: String,
     account: String,
 ) -> Result<(), String> {
-    if let Err(error) = save_credential(provider, &credential) {
+    if let Err(error) = save_credential(app, provider, &credential) {
         log::warn!(
             "failed to persist {} credential: {error}",
             provider.display_name()
@@ -631,32 +655,128 @@ fn cache_session(
     Ok(())
 }
 
-fn credential_entry(provider: FrpProvider) -> Result<keyring::Entry, String> {
-    keyring::Entry::new(CREDENTIAL_SERVICE, provider.directory()).map_err(|error| error.to_string())
+fn credential_path(app: &AppHandle, provider: FrpProvider) -> Result<PathBuf, String> {
+    Ok(client::directory(app, provider)?.join(CREDENTIAL_FILE))
 }
 
-fn save_credential(provider: FrpProvider, credential: &str) -> Result<(), String> {
-    credential_entry(provider)?
-        .set_password(credential)
-        .map_err(|error| error.to_string())
+fn save_credential(app: &AppHandle, provider: FrpProvider, credential: &str) -> Result<(), String> {
+    let saved = encrypt_credential(credential)?;
+    write_saved(&credential_path(app, provider)?, &saved)
 }
 
-fn load_saved(provider: FrpProvider) -> Option<String> {
-    match credential_entry(provider)
-        .and_then(|entry| entry.get_password().map_err(|error| error.to_string()))
-    {
-        Ok(credential) => Some(credential),
+fn encrypt_credential(credential: &str) -> Result<EncryptedCredential, String> {
+    let secret = SecretKey::from(CREDENTIAL_KEY);
+    let cipher = SalsaBox::new(&secret.public_key(), &secret);
+    let nonce = SalsaBox::generate_nonce(&mut OsRng);
+    let ciphertext = cipher
+        .encrypt(&nonce, credential.as_bytes())
+        .map_err(|_| "failed to encrypt credential".to_owned())?;
+    Ok(EncryptedCredential {
+        version: CREDENTIAL_VERSION,
+        nonce: URL_SAFE_NO_PAD.encode(nonce.as_slice()),
+        ciphertext: URL_SAFE_NO_PAD.encode(ciphertext),
+    })
+}
+
+fn load_saved(app: &AppHandle, provider: FrpProvider) -> Option<String> {
+    let path = match credential_path(app, provider) {
+        Ok(path) => path,
         Err(error) => {
-            log::debug!("no saved {} credential: {error}", provider.display_name());
+            log::warn!(
+                "could not resolve saved {} credential: {error}",
+                provider.display_name()
+            );
+            return None;
+        }
+    };
+    match read_saved(&path) {
+        Ok(Some(credential)) => Some(credential),
+        Ok(None) => None,
+        Err(error) => {
+            log::warn!(
+                "could not read saved {} credential: {error}",
+                provider.display_name()
+            );
             None
         }
     }
 }
 
-fn remove_saved(provider: FrpProvider) -> Result<(), String> {
-    credential_entry(provider)?
-        .delete_credential()
-        .map_err(|error| error.to_string())
+fn remove_saved(app: &AppHandle, provider: FrpProvider) -> Result<(), String> {
+    let path = credential_path(app, provider)?;
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+fn write_saved(path: &Path, saved: &EncryptedCredential) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| "credential directory is unavailable".to_owned())?;
+    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    let content = serde_json::to_vec(saved).map_err(|error| error.to_string())?;
+    let mut temporary = NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
+    temporary
+        .write_all(&content)
+        .map_err(|error| error.to_string())?;
+    temporary
+        .as_file()
+        .sync_all()
+        .map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        temporary
+            .as_file()
+            .set_permissions(fs::Permissions::from_mode(0o600))
+            .map_err(|error| error.to_string())?;
+    }
+    let persisted = temporary
+        .persist(path)
+        .map_err(|error| error.error.to_string())?;
+    persisted.sync_all().map_err(|error| error.to_string())?;
+
+    #[cfg(unix)]
+    fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| error.to_string())?;
+
+    Ok(())
+}
+
+fn read_saved(path: &Path) -> Result<Option<String>, String> {
+    let content = match fs::read(path) {
+        Ok(content) => content,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.to_string()),
+    };
+    let saved: EncryptedCredential =
+        serde_json::from_slice(&content).map_err(|error| error.to_string())?;
+    if saved.version != CREDENTIAL_VERSION {
+        return Err("unsupported credential format".to_owned());
+    }
+    decrypt_credential(saved)
+}
+
+fn decrypt_credential(saved: EncryptedCredential) -> Result<Option<String>, String> {
+    let nonce: [u8; 24] = URL_SAFE_NO_PAD
+        .decode(saved.nonce)
+        .map_err(|_| "credential nonce is invalid".to_owned())?
+        .try_into()
+        .map_err(|_| "credential nonce has an invalid length".to_owned())?;
+    let ciphertext = URL_SAFE_NO_PAD
+        .decode(saved.ciphertext)
+        .map_err(|_| "credential ciphertext is invalid".to_owned())?;
+    let secret = SecretKey::from(CREDENTIAL_KEY);
+    let cipher = SalsaBox::new(&secret.public_key(), &secret);
+    let credential = cipher
+        .decrypt(crypto_box::Nonce::from_slice(&nonce), ciphertext.as_ref())
+        .map_err(|_| "credential authentication failed".to_owned())?;
+    String::from_utf8(credential)
+        .map(Some)
+        .map_err(|_| "credential is invalid".to_owned())
 }
 
 fn credential(state: &FrpState, provider: FrpProvider) -> Result<String, String> {
@@ -854,7 +974,10 @@ fn api_message(value: &Value, fallback: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_token, strip_ansi, valid_tunnel_name};
+    use super::{
+        clean_token, decrypt_credential, encrypt_credential, read_saved, strip_ansi,
+        valid_tunnel_name, write_saved,
+    };
 
     #[test]
     fn keeps_sakura_token() {
@@ -872,5 +995,31 @@ mod tests {
     #[test]
     fn strips_ansi() {
         assert_eq!(strip_ansi("\u{1b}[0mready \u{1b}[1;34mnow"), "ready now");
+    }
+
+    #[test]
+    fn saves_encrypted_credential() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("credential.dat");
+        let credential = "sakura-secret-token";
+        let saved = encrypt_credential(credential).unwrap();
+
+        write_saved(&path, &saved).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.contains(credential));
+        assert_eq!(read_saved(&path).unwrap(), Some(credential.to_owned()));
+        assert_eq!(
+            decrypt_credential(saved).unwrap(),
+            Some(credential.to_owned())
+        );
+    }
+
+    #[test]
+    fn ignores_missing_credential() {
+        let directory = tempfile::tempdir().unwrap();
+        assert_eq!(
+            read_saved(&directory.path().join("credential.dat")).unwrap(),
+            None
+        );
     }
 }

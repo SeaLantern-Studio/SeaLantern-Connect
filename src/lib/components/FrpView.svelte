@@ -453,7 +453,7 @@
           </div>
           <span class="frp-credential-note">
             <LockKeyhole size={14} />
-            {t("frp.savedCredentialHint")}
+            {t("frp.secureCredential")}
           </span>
         </form>
         <div class="frp-provider-footer">
