@@ -14,6 +14,7 @@ import { applyTypography, DEFAULT_FONT_SIZE } from "@themes/typography";
 import { getP2pStatus, onP2pStatus } from "@api/p2p";
 import { emptyP2pStatus, type P2pStatus } from "@models/p2p";
 import type { IncomingInvite } from "@domain/invitations";
+import { mergePreferences } from "./state-utils";
 
 const defaultCustomTheme = {
   light: {
@@ -203,7 +204,7 @@ export function changeLocale(value: Preferences["locale"]): void {
 }
 
 export function updatePreferences(update: Partial<Preferences>): void {
-  preferences.update((value) => ({ ...value, ...structuredClone(update) }));
+  preferences.update((value) => mergePreferences(value, update));
   const value = get(preferences);
   void preferencesApi
     .savePersonalization(
