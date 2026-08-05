@@ -27,9 +27,23 @@ No public IP or manual port forwarding is required.
 - **Native look and feel**: Mica and Acrylic on Windows, with Vibrancy and Liquid Glass on macOS.
 - **Personalization**: Bilingual UI, light and dark modes, custom color themes, and font options.
 
-## macOS keychain prompt
+## Credential storage
 
-This application is not notarized by Apple. On first launch or after an upgrade, macOS may prompt you for your login password to allow keychain access. This is expected — the app uses the system keychain to store FRP credentials securely.
+FRP credentials are stored in the system keychain. Windows needs no extra setup; macOS and Linux notes follow.
+
+### macOS
+
+This application is not notarized by Apple. On first launch or after an upgrade, macOS may prompt you for your login password to allow keychain access. This is expected.
+
+### Linux
+
+A freedesktop Secret Service (D-Bus) daemon is required:
+
+- **GNOME**: `gnome-keyring` (usually preinstalled).
+- **KDE**: `kwallet` with the `kwallet-secret-service` bridge.
+- **Other desktops / window managers**: you may need to install and start `gnome-keyring` manually.
+
+Saving credentials will fail if none of these is running.
 
 ## Development
 
