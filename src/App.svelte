@@ -120,11 +120,17 @@
     { id: "about", label: "navigation.about", icon: Info },
   ] as const;
 
-  const title = $derived(
-    t(
-      `navigation.${$activeSection === "create" ? "createRoom" : $activeSection === "join" ? "joinRoom" : $activeSection === "openfrp" ? "createOpenFrp" : $activeSection === "sakurafrp" ? "createSakuraFrp" : $activeSection === "toolbox" ? "toolbox" : $activeSection === "personalize" ? "personalization" : $activeSection === "settings" ? "settings" : "about"}`,
-    ),
-  );
+  const sectionTitleKeys: Record<SectionId, string> = {
+    create: "navigation.createRoom",
+    join: "navigation.joinRoom",
+    openfrp: "navigation.createOpenFrp",
+    sakurafrp: "navigation.createSakuraFrp",
+    toolbox: "navigation.toolbox",
+    personalize: "navigation.personalization",
+    settings: "navigation.settings",
+    about: "navigation.about",
+  };
+  const title = $derived(t(sectionTitleKeys[$activeSection]));
   const p2pState = $derived(
     $session.phase === "active" ? "active" : $session.phase === "idle" ? "idle" : "busy",
   );
