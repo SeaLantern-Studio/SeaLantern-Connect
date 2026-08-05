@@ -1,5 +1,4 @@
 mod client;
-mod credentials;
 mod openfrp;
 mod sakurafrp;
 
@@ -30,6 +29,7 @@ const OPENFRP_PREMIUM_URL: &str = "https://console.openfrp.net/premium";
 const SAKURA_KEYS_URL: &str = "https://www.natfrp.com/user/";
 const SAKURA_PURCHASE_URL: &str = "https://www.natfrp.com/purchase/buy";
 const MAX_OUTPUT_LINES: usize = 120;
+const CREDENTIAL_SERVICE: &str = "SeaLantern Connect FRP";
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
@@ -310,17 +310,15 @@ pub(crate) async fn download_frp_client(
 
 #[tauri::command]
 pub(crate) async fn get_frp_session_status(
-    app: AppHandle,
     state: State<'_, FrpState>,
     provider: FrpProvider,
 ) -> Result<FrpSessionStatus, String> {
-    restore_session(&app, &state, provider).await;
+    restore_session(&state, provider).await;
     session_status(&state, provider)
 }
 
 #[tauri::command]
 pub(crate) async fn login_sakurafrp(
-    app: AppHandle,
     state: State<'_, FrpState>,
     credential: String,
 ) -> Result<FrpSessionStatus, String> {
@@ -330,7 +328,7 @@ pub(crate) async fn login_sakurafrp(
         return Err("provider credential is required".to_owned());
     }
     let account = sakurafrp::account(&credential).await?;
-    remember_session(&app, &state, provider, credential, account)?;
+    remember_session(&state, provider, credential, account)?;
     session_status(&state, provider)
 }
 
@@ -341,7 +339,7 @@ pub(crate) async fn login_openfrp(
 ) -> Result<FrpSessionStatus, String> {
     let credential = openfrp::browser(&app).await?;
     let account = openfrp::account(&credential).await?;
-    remember_session(&app, &state, FrpProvider::OpenFrp, credential, account)?;
+    remember_session(&state, FrpProvider::OpenFrp, credential, account)?;
     session_status(&state, FrpProvider::OpenFrp)
 }
 
@@ -368,7 +366,6 @@ pub(crate) fn open_premium(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub(crate) fn logout_frp(
-    app: AppHandle,
     state: State<'_, FrpState>,
     provider: FrpProvider,
 ) -> Result<FrpSessionStatus, String> {
@@ -393,7 +390,7 @@ pub(crate) fn logout_frp(
         .lock()
         .map_err(|_| "FRP output state is unavailable".to_owned())?
         .remove(&provider);
-    if let Err(error) = credentials::remove(&app, provider) {
+    if let Err(error) = remove_saved(provider) {
         log::warn!(
             "failed to remove saved {} credential: {error}",
             provider.display_name()
@@ -566,7 +563,7 @@ async fn tunnels(provider: FrpProvider, credential: &str) -> Result<Vec<FrpTunne
     }
 }
 
-async fn restore_session(app: &AppHandle, state: &FrpState, provider: FrpProvider) {
+async fn restore_session(state: &FrpState, provider: FrpProvider) {
     if state
         .accounts
         .lock()
@@ -575,7 +572,7 @@ async fn restore_session(app: &AppHandle, state: &FrpState, provider: FrpProvide
     {
         return;
     }
-    let Some(credential) = credentials::load(app, provider) else {
+    let Some(credential) = load_saved(provider) else {
         return;
     };
     let account = match provider {
@@ -601,19 +598,46 @@ async fn restore_session(app: &AppHandle, state: &FrpState, provider: FrpProvide
 }
 
 fn remember_session(
-    app: &AppHandle,
     state: &FrpState,
     provider: FrpProvider,
     credential: String,
     account: String,
 ) -> Result<(), String> {
-    if let Err(error) = credentials::save(app, provider, &credential) {
+    if let Err(error) = save_credential(provider, &credential) {
         log::warn!(
             "failed to persist {} credential: {error}",
             provider.display_name()
         );
     }
     cache_session(state, provider, credential, account)
+}
+
+fn credential_entry(provider: FrpProvider) -> Result<keyring::Entry, String> {
+    keyring::Entry::new(CREDENTIAL_SERVICE, provider.directory()).map_err(|error| error.to_string())
+}
+
+fn save_credential(provider: FrpProvider, credential: &str) -> Result<(), String> {
+    credential_entry(provider)?
+        .set_password(credential)
+        .map_err(|error| error.to_string())
+}
+
+fn load_saved(provider: FrpProvider) -> Option<String> {
+    match credential_entry(provider)
+        .and_then(|entry| entry.get_password().map_err(|error| error.to_string()))
+    {
+        Ok(credential) => Some(credential),
+        Err(error) => {
+            log::debug!("no saved {} credential: {error}", provider.display_name());
+            None
+        }
+    }
+}
+
+fn remove_saved(provider: FrpProvider) -> Result<(), String> {
+    credential_entry(provider)?
+        .delete_credential()
+        .map_err(|error| error.to_string())
 }
 
 fn cache_session(
