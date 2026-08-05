@@ -3,6 +3,7 @@ import { createSubscriber } from "svelte/reactivity";
 import en from "./locales/en.json";
 import zhCN from "./locales/zh-CN.json";
 import type { Locale } from "@models/preferences";
+import type { P2pErrorCode } from "@models/p2p";
 
 type TranslationNode = string | { [key: string]: TranslationNode };
 
@@ -83,4 +84,8 @@ export function backendMessage(error: unknown): string {
   if (knownMessages[message]) return t(knownMessages[message]);
 
   return t("errors.unexpected");
+}
+
+export function p2pErrorMessage(code: P2pErrorCode): string {
+  return t(`errors.category.${code}`);
 }

@@ -1,5 +1,19 @@
 export type P2pPhase = "idle" | "starting" | "active" | "stopping";
 
+export type P2pErrorCode =
+  | "invalid_join_uri"
+  | "invalid_endpoint"
+  | "authorization_denied"
+  | "host_unreachable"
+  | "target_unavailable"
+  | "local_port_unavailable"
+  | "identity_unavailable"
+  | "operation_conflict"
+  | "resource_limit"
+  | "invalid_configuration"
+  | "internal"
+  | "unknown";
+
 export interface P2pPeer {
   id: string;
   route: "direct" | "relay" | null;
@@ -18,7 +32,7 @@ export interface P2pStatus {
   txBytes: number;
   rxBytes: number;
   hostPeers: P2pPeer[];
-  error: string | null;
+  error: P2pErrorCode | null;
   message: string | null;
 }
 

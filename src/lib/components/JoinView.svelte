@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Check, Copy, Radio, RotateCcw, Unplug } from "@lucide/svelte";
   import { saveJoinPort, startJoin, stopJoin, stopTunnel, validateInvite } from "@api/p2p";
-  import { backendMessage, t } from "@i18n";
+  import { backendMessage, p2pErrorMessage, t } from "@i18n";
   import {
     isSameInvite,
     normalizeInvite,
@@ -280,7 +280,7 @@
           : status.message
             ? backendMessage(status.message)
             : status.error
-              ? backendMessage(status.error)
+              ? p2pErrorMessage(status.error)
               : t("join.retryHint"))}
     </p>{/if}
 </div>
