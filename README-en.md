@@ -27,6 +27,12 @@ No public IP or manual port forwarding is required.
 - **Native look and feel**: Mica and Acrylic on Windows, with Vibrancy and Liquid Glass on macOS.
 - **Personalization**: Bilingual UI, light and dark modes, custom color themes, and font options.
 
+## Credential storage security boundary
+
+FRP credentials are stored locally in an authenticated encrypted format rather than as plaintext. This primarily reduces the risk of accidental plaintext exposure through backups, synchronization, or temporary files.
+
+This is not an operating-system credential vault: the encryption key is compiled into the application, so anyone who obtains the installer and analyzes the binary can recover the key and decrypt the credentials. It does not protect against local attackers, malware, or programs already running with the user's permissions. The versioned credential format leaves room to migrate to Windows DPAPI, macOS Keychain, or Linux Secret Service in the future.
+
 ## Development
 
 This project uses [only](https://github.com/KercyDing/only) as its development toolkit. See [here](https://github.com/KercyDing/only#install) for installation instructions.
