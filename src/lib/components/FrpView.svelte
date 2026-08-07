@@ -584,14 +584,14 @@
                 <span>{t("frp.publicAddress")}</span>
                 <div class="frp-detail-address-row">
                   <code>{activeEndpoint ?? t("frp.addressUnavailable")}</code>
-                  <Button variant="outline" disabled={!activeEndpoint} onclick={copyEndpoint}
-                    >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{copied
-                      ? t("frp.copiedAddress")
-                      : t("frp.copyAddress")}</Button
-                  >
                 </div>
               </div>
               <div class="frp-detail-actions">
+                <Button variant="outline" disabled={!activeEndpoint} onclick={copyEndpoint}
+                  >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{copied
+                    ? t("frp.copiedAddress")
+                    : t("frp.copyAddress")}</Button
+                >
                 {#if session.running}<Button
                     variant="danger"
                     disabled={busy}
