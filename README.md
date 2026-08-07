@@ -70,12 +70,6 @@ only dev debug
 only build
 ```
 
-Arch Linux 及其衍生发行版可在本地构建 pacman 包并直接安装：
-
-```bash
-only arch install
-```
-
 ### 本地 CI 测试
 
 提交代码前，请先运行本地 CI 测试：

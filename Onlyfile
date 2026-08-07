@@ -69,13 +69,3 @@ publish(version):
     git commit -am "chore: 升级到 {{ version }}"
     git tag {{ version }}
     git push --atomic origin HEAD {{ version }}
-
-# Arch 本地构建安装
-[arch]
-// 预构建
-_prebuild() ? @os("linux"):
-    bash scripts/makearch.sh build
-
-# 构建并安装本地 pacman 包
-install() ? @os("linux") & _prebuild:
-    bash scripts/makearch.sh install
