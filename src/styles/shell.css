@@ -20,6 +20,13 @@
   color: var(--text);
   background: transparent;
 }
+.sidebar,
+.sidebar *,
+.titlebar,
+.titlebar * {
+  user-select: none;
+  -webkit-user-select: none;
+}
 :root[data-window-material="acrylic"][data-theme="light"] .nav-separator {
   background: rgba(45, 45, 45, 0.28);
 }
@@ -219,7 +226,6 @@
   justify-content: space-between;
   padding: 0 10px 0 22px;
   background: transparent;
-  user-select: none;
   -webkit-app-region: drag;
 }
 .titlebar.macos-overlay {

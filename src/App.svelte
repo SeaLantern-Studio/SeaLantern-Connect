@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { prefersReducedMotion, Tween } from "svelte/motion";
   import { fade, fly } from "svelte/transition";
   import {
     CircleAlert,
@@ -89,6 +91,11 @@
   let disposed = false;
   let sidebarNav = $state<HTMLElement | null>(null);
   let navIndicator = $state<HTMLElement | null>(null);
+  let pageScroller = $state<HTMLDivElement | null>(null);
+  const pageScroll = new Tween(0, {
+    duration: (from, to) => Math.min(320, 140 + Math.abs(to - from) * 0.22),
+    easing: cubicOut,
+  });
   let indicatorFrame: number | null = null;
   let indicatorTimer: number | null = null;
   let PersonalizeView = $state<
@@ -134,7 +141,16 @@
   const p2pState = $derived(
     $session.phase === "active" ? "active" : $session.phase === "idle" ? "idle" : "busy",
   );
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let reducedMotion = $derived(prefersReducedMotion.current);
+
+  $effect(() => {
+    if (pageScroller) pageScroller.scrollTop = pageScroll.current;
+  });
+
+  $effect(() => {
+    void $activeSection;
+    void pageScroll.set(0, { duration: 0 });
+  });
 
   onMount(() => {
     disposed = false;
@@ -204,6 +220,63 @@
     splash = false;
     scheduleNavIndicator();
     void tick().then(() => checkForAutomaticUpdate());
+  }
+
+  function handlePageWheel(event: WheelEvent): void {
+    const scroller = pageScroller;
+    if (!scroller || reducedMotion || event.ctrlKey || event.defaultPrevented) return;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+
+    const delta = normalizedWheelDelta(event, scroller);
+    if (!delta || nestedScrollerCanConsume(event.target, scroller, delta)) return;
+
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const followsTween = Math.abs(scroller.scrollTop - pageScroll.current) < 1;
+    const start = followsTween ? pageScroll.target : scroller.scrollTop;
+    const target = Math.min(maxScroll, Math.max(0, start + delta));
+
+    event.preventDefault();
+    if (!followsTween) void pageScroll.set(scroller.scrollTop, { duration: 0 });
+    void pageScroll.set(target);
+  }
+
+  function syncPageScroll(): void {
+    if (!pageScroller) return;
+    void pageScroll.set(pageScroller.scrollTop, { duration: 0 });
+  }
+
+  function cancelPageMotionOnPointerDown(node: HTMLElement): { destroy: () => void } {
+    node.addEventListener("pointerdown", syncPageScroll);
+    return {
+      destroy: () => node.removeEventListener("pointerdown", syncPageScroll),
+    };
+  }
+
+  function normalizedWheelDelta(event: WheelEvent, scroller: HTMLElement): number {
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 36;
+    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return event.deltaY * scroller.clientHeight;
+    return event.deltaY;
+  }
+
+  function nestedScrollerCanConsume(
+    target: EventTarget | null,
+    boundary: HTMLElement,
+    delta: number,
+  ): boolean {
+    let element = target instanceof Element ? target : null;
+    while (element && element !== boundary) {
+      if (element instanceof HTMLElement) {
+        const { overflowY } = getComputedStyle(element);
+        const scrollable = /(auto|scroll|overlay)/.test(overflowY);
+        const hasRoom =
+          delta < 0
+            ? element.scrollTop > 0
+            : element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+        if (scrollable && hasRoom) return true;
+      }
+      element = element.parentElement;
+    }
+    return false;
   }
 
   async function checkForAutomaticUpdate(): Promise<void> {
@@ -489,7 +562,12 @@
     </header>
 
     <main class="app-content">
-      <div class="page-transition-frame">
+      <div
+        bind:this={pageScroller}
+        use:cancelPageMotionOnPointerDown
+        class="page-transition-frame"
+        onwheel={handlePageWheel}
+      >
         {#key $activeSection}
           <div
             class="page-view"

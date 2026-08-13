@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { prefersReducedMotion, Tween } from "svelte/motion";
   import {
     Check,
     ChevronDown,
@@ -77,7 +79,7 @@
   let tunnelsLoading = $state(false);
   let sessionTimer: number | null = null;
   let outputLog = $state<HTMLPreElement | null>(null);
-  let scrollFrame = 0;
+  const outputScroll = new Tween(0, { duration: 260, easing: cubicOut });
   let nodeOptions = $derived<Option[]>(
     nodes.map((node) => ({
       label: node.vip ? `${node.name} · VIP` : node.name,
@@ -130,6 +132,10 @@
   });
 
   $effect(() => {
+    if (outputLog) outputLog.scrollTop = outputScroll.current;
+  });
+
+  $effect(() => {
     if (client && session) cacheFrpSnapshot(provider, { client, session, tunnels });
   });
 
@@ -160,7 +166,6 @@
       disposed = true;
       cleanup?.();
       if (sessionTimer != null) window.clearInterval(sessionTimer);
-      cancelAnimationFrame(scrollFrame);
     };
   });
 
@@ -363,27 +368,12 @@
   function scrollOutput(): void {
     const element = outputLog;
     if (!element) return;
-    cancelAnimationFrame(scrollFrame);
 
     const target = Math.max(0, element.scrollHeight - element.clientHeight);
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      element.scrollTop = target;
-      return;
+    if (Math.abs(outputScroll.current - element.scrollTop) > 1) {
+      void outputScroll.set(element.scrollTop, { duration: 0 });
     }
-
-    const start = element.scrollTop;
-    const distance = target - start;
-    if (Math.abs(distance) < 1) return;
-
-    const startedAt = performance.now();
-    const duration = 260;
-    const animate = (now: number): void => {
-      const progress = Math.min(1, (now - startedAt) / duration);
-      const eased = 1 - (1 - progress) ** 3;
-      element.scrollTop = start + distance * eased;
-      if (progress < 1) scrollFrame = requestAnimationFrame(animate);
-    };
-    scrollFrame = requestAnimationFrame(animate);
+    void outputScroll.set(target, { duration: prefersReducedMotion.current ? 0 : 260 });
   }
 </script>
 
