@@ -373,9 +373,12 @@
       >
         <div bind:this={navIndicator} class="nav-active-indicator" aria-hidden="true"></div>
         <div class="nav-group">
-          {#each sections.slice(0, 4) as item, index (item.id)}
+          {#each sections.slice(0, 5) as item, index (item.id)}
             {@const Icon = item.icon}
-            {#if index === 2}<div class="nav-separator" aria-hidden="true"></div>{/if}
+            {#if index === 2 || index === 4}<div
+                class="nav-separator"
+                aria-hidden="true"
+              ></div>{/if}
             <button
               class:active={$activeSection === item.id}
               class="nav-item"
@@ -394,7 +397,7 @@
           {/each}
         </div>
         <div class="nav-group nav-group-bottom">
-          {#each sections.slice(4, 8) as item (item.id)}
+          {#each sections.slice(5, 8) as item (item.id)}
             {@const Icon = item.icon}
             <button
               class:active={$activeSection === item.id}

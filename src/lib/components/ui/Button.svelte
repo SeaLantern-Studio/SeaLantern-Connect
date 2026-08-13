@@ -47,6 +47,9 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
+    transform: translateY(0);
+    transform-origin: center;
+    will-change: transform;
     transition:
       transform 0.15s ease,
       background-color 0.15s ease,

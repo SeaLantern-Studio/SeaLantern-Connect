@@ -149,10 +149,13 @@
 }
 .nav-icon {
   justify-self: center;
-  transition: transform 0.25s ease;
+  transform: scale(1);
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 0.22s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
-.nav-item:active .nav-icon {
-  transform: scale(0.9);
+.nav-item:hover .nav-icon {
+  transform: scale(1.1);
 }
 .nav-label {
   min-width: 0;
@@ -168,6 +171,9 @@
 }
 .collapse-button {
   color: inherit;
+}
+.collapse-button:hover .nav-icon {
+  transform: scale(1);
 }
 .p2p-dot {
   width: 7px;
