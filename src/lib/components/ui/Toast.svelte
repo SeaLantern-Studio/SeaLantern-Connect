@@ -24,11 +24,19 @@
     max-width: min(360px, calc(100vw - 32px));
     white-space: normal;
     overflow-wrap: anywhere;
+    --normal-bg: var(--surface) !important;
+    --normal-bg-hover: var(--surface-strong) !important;
+    --normal-border: var(--border) !important;
     --normal-text: var(--primary) !important;
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
     color: var(--primary) !important;
     font-family: var(--app-font-family) !important;
     backdrop-filter: blur(18px) saturate(1.08);
     box-shadow: var(--shadow);
+  }
+  :global([data-sonner-toast].sl-toast:hover) {
+    background: var(--surface-strong) !important;
   }
   :global([data-sonner-toast].sl-toast [data-icon]) {
     color: var(--primary) !important;
