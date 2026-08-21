@@ -59,8 +59,8 @@
       : platform === "windows"
         ? [
             { label: t("personalization.windowMaterials.solid"), value: "solid" },
-            { label: t("personalization.windowMaterials.acrylic"), value: "acrylic" },
             { label: t("personalization.windowMaterials.mica"), value: "mica" },
+            { label: t("personalization.windowMaterials.acrylic"), value: "acrylic" },
           ]
         : [{ label: t("personalization.windowMaterials.solid"), value: "solid" }],
   );

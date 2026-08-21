@@ -440,8 +440,18 @@
   border-color: transparent;
 }
 :root[data-window-material="acrylic"] .header-language-button,
-:root[data-window-material="acrylic"] .theme-switcher {
+:root[data-window-material="acrylic"] .theme-switcher,
+:root[data-window-material="mica"] .header-language-button,
+:root[data-window-material="mica"] .theme-switcher {
   border-color: transparent;
+}
+:root[data-window-material="mica"] .header-language-button,
+:root[data-window-material="mica"] .theme-switcher {
+  background: var(--overlay-surface);
+}
+:root[data-window-material="mica"] .header-language-button,
+:root[data-window-material="mica"] .theme-switcher {
+  background: color-mix(in srgb, var(--overlay-surface) 82%, #fff);
 }
 .page-transition-frame {
   width: 100%;
