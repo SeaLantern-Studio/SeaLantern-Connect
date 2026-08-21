@@ -61,7 +61,6 @@
   const selectedOption = $derived(
     normalized.find((option: NormalizedOption) => option.value === selected),
   );
-  const hasFontPreview = $derived(normalized.some((option) => option.fontFamily));
   const visibleOptions = $derived(
     searchable && searchTerm.trim()
       ? normalized.filter((option) => matchesFuzzy(option.label, searchTerm.trim()))
@@ -82,6 +81,17 @@
   }
   function fontFamilyStyle(fontFamily: string | undefined): string | undefined {
     return fontFamily ? `font-family: ${JSON.stringify(fontFamily)};` : undefined;
+  }
+  function marqueeIfOverflow(node: HTMLElement): { destroy: () => void } {
+    const update = (): void => {
+      const shift = Math.min(0, node.clientWidth - node.scrollWidth);
+      node.classList.toggle("ui-select-marquee", shift < -1);
+      node.style.setProperty("--ui-select-marquee-shift", `${shift}px`);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    requestAnimationFrame(update);
+    return { destroy: () => observer.disconnect() };
   }
   function focusSearchInput(): void {
     if (!open || !searchable) return;
@@ -126,7 +136,7 @@
 {#snippet selectContent()}
   <Select.Content
     align="end"
-    class={`ui-select-content ${hasFontPreview ? "ui-select-font-content" : ""}`}
+    class="ui-select-content"
   >
     {#if searchable}<div class="ui-select-search-wrap">
         <Search class="ui-select-search-icon" size={15} strokeWidth={2} aria-hidden="true" />
@@ -158,8 +168,11 @@
         label={option.label}
         class="ui-select-item"
         onpointerdown={(event) => (lastPointerOrigin = { x: event.clientX, y: event.clientY })}
-        ><span class="ui-select-item-label" style={fontFamilyStyle(option.fontFamily)}
-          >{option.label}</span
+        ><span
+          class="ui-select-item-label"
+          style={fontFamilyStyle(option.fontFamily)}
+          use:marqueeIfOverflow
+          ><span>{option.label}</span></span
         ></Select.Item
       >
     {/each}
@@ -180,8 +193,12 @@
     style={fontFamilyStyle(selectedOption?.fontFamily)}
     onkeydown={handleTriggerKeydown}
   >
-    <span class:ui-select-placeholder={!selectedOption} class="ui-select-value">
-      {selectedOption?.label ?? placeholder}
+    <span
+      class:ui-select-placeholder={!selectedOption}
+      class="ui-select-value"
+      use:marqueeIfOverflow
+    >
+      <span>{selectedOption?.label ?? placeholder}</span>
     </span>
     <ChevronDown class="ui-select-chevron" size={16} strokeWidth={2} aria-hidden="true" />
   </Select.Trigger>
@@ -222,6 +239,7 @@
     transform: rotate(180deg);
   }
   :global(.ui-select-value) {
+    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -233,7 +251,9 @@
   :global(.ui-select-content) {
     z-index: 900;
     margin-top: 6px;
-    min-width: var(--bits-floating-anchor-width, 0px);
+    width: var(--bits-floating-anchor-width, 0px);
+    min-width: 0;
+    max-width: calc(100vw - 32px);
     max-height: 280px;
     overflow: auto;
     padding: 5px;
@@ -250,11 +270,6 @@
   }
   :global(.ui-select-content[data-state="open"]) {
     animation: ui-select-content-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  :global(.ui-select-content.ui-select-font-content) {
-    width: min(280px, calc(100vw - 32px));
-    min-width: min(280px, calc(100vw - 32px));
-    max-width: calc(100vw - 32px);
   }
   :global(.ui-select-search-wrap) {
     min-height: 34px;
@@ -310,14 +325,27 @@
   :global(.ui-select-item[data-highlighted]) {
     background: color-mix(in srgb, var(--primary) 11%, transparent);
   }
-  :global(.ui-select-font-content .ui-select-item) {
+  :global(.ui-select-item) {
     overflow: hidden;
     white-space: nowrap;
   }
-  :global(.ui-select-font-content .ui-select-item-label) {
+  :global(.ui-select-item-label) {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  :global(.ui-select-value > span),
+  :global(.ui-select-item-label > span) {
+    display: inline-block;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+  :global(.ui-select:hover .ui-select-marquee > span),
+  :global(.ui-select-item:hover .ui-select-marquee > span),
+  :global(.ui-select-item[data-highlighted] .ui-select-marquee > span) {
+    animation: ui-select-marquee 1.6s ease-in-out 0.2s infinite alternate;
   }
   @keyframes ui-select-content-in {
     from {
@@ -327,6 +355,18 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+  @keyframes ui-select-marquee {
+    to {
+      transform: translateX(var(--ui-select-marquee-shift));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.ui-select:hover .ui-select-marquee > span),
+    :global(.ui-select-item:hover .ui-select-marquee > span),
+    :global(.ui-select-item[data-highlighted] .ui-select-marquee > span) {
+      animation: none;
     }
   }
 </style>
