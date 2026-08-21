@@ -347,6 +347,52 @@
       materialPrompt = true;
   }
 
+  function setThemeWithRevealAt(
+    theme: "system" | "light" | "dark",
+    origin: { x: number; y: number },
+  ): void {
+    const root = document.documentElement;
+    const effectiveTheme =
+      theme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : theme;
+    const switchTheme = (): void => setTheme(theme);
+
+    if (
+      root.dataset.theme === effectiveTheme ||
+      !document.startViewTransition ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      switchTheme();
+      return;
+    }
+
+    root.style.setProperty("--theme-origin-x", `${origin.x}px`);
+    root.style.setProperty("--theme-origin-y", `${origin.y}px`);
+    const cleanup = (): void => {
+      root.style.removeProperty("--theme-origin-x");
+      root.style.removeProperty("--theme-origin-y");
+    };
+
+    try {
+      const transition = document.startViewTransition(switchTheme);
+      transition.finished.finally(cleanup).catch(() => switchTheme());
+      window.setTimeout(() => {
+        transition.skipTransition();
+        cleanup();
+      }, 800);
+    } catch {
+      switchTheme();
+      cleanup();
+    }
+  }
+
+  function setThemeWithReveal(theme: "system" | "light" | "dark", event: MouseEvent): void {
+    setThemeWithRevealAt(theme, { x: event.clientX, y: event.clientY });
+  }
+
   function sectionLabel(id: string): string {
     return t(sections.find((item) => item.id === id)?.label ?? id);
   }
@@ -525,21 +571,21 @@
             class="theme-button"
             type="button"
             title={t("personalization.followSystem")}
-            onclick={() => setTheme("system")}><Monitor size={16} /></button
+            onclick={(event) => setThemeWithReveal("system", event)}><Monitor size={16} /></button
           >
           <button
             class:active={$preferences.theme === "light"}
             class="theme-button"
             type="button"
             title={t("personalization.light")}
-            onclick={() => setTheme("light")}><Sun size={16} /></button
+            onclick={(event) => setThemeWithReveal("light", event)}><Sun size={16} /></button
           >
           <button
             class:active={$preferences.theme === "dark"}
             class="theme-button"
             type="button"
             title={t("personalization.dark")}
-            onclick={() => setTheme("dark")}><Moon size={16} /></button
+            onclick={(event) => setThemeWithReveal("dark", event)}><Moon size={16} /></button
           >
         </div>
         {#if !isMacOS}
@@ -601,6 +647,7 @@
                 <PersonalizeView
                   value={$preferences}
                   onupdate={(update) => updatePreferences(update)}
+                  onthemechange={(theme, origin) => setThemeWithRevealAt(theme, origin)}
                 />
               {:else}
                 {@render viewLoading()}

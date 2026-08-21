@@ -45,7 +45,7 @@ const defaultCustomTheme = {
 
 export const defaults: Preferences = {
   theme: "system",
-  colorTheme: "inkstone",
+  colorTheme: "default",
   customTheme: defaultCustomTheme,
   fontSize: DEFAULT_FONT_SIZE,
   fontFamily: "",
@@ -171,7 +171,7 @@ export async function loadPreferences(): Promise<void> {
 export function setTheme(theme: ThemePreference): void {
   preferences.update((value) => ({ ...value, theme }));
   const value = get(preferences);
-  if (theme !== "system") applyPreferences(value);
+  applyPreferences(value);
   void preferencesApi
     .saveTheme(theme, systemTheme)
     .then(() => applyPreferences(get(preferences)))

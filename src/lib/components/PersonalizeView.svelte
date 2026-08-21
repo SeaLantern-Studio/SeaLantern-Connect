@@ -7,11 +7,12 @@
   import { getThemeOptions } from "@themes";
   import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@themes/typography";
   import ColorPicker from "./ui/ColorPicker.svelte";
-  import Select, { type Option } from "./ui/Select.svelte";
+  import Select, { type Option, type PointerOrigin } from "./ui/Select.svelte";
 
-  let { value, onupdate } = $props<{
+  let { value, onupdate, onthemechange } = $props<{
     value: Preferences;
     onupdate: (value: Partial<Preferences>) => void;
+    onthemechange?: (theme: Preferences["theme"], origin: PointerOrigin) => void;
   }>();
   let fonts = $state<string[]>([]);
   let liquidGlassSupported = $state(false);
@@ -128,7 +129,11 @@
         class="settings-select"
         value={value.theme}
         options={themeOptions}
-        onValueChange={(next) => onupdate({ theme: next as Preferences["theme"] })}
+        onValueChange={(next, origin) => {
+          const theme = next as Preferences["theme"];
+          if (origin) onthemechange?.(theme, origin);
+          else onupdate({ theme });
+        }}
       />
     </div>
     {#if value.windowMaterial === "solid"}<div class="preference-row">
@@ -139,6 +144,17 @@
           onValueChange={(next) => onupdate({ colorTheme: next as ColorThemeId })}
         />
       </div>{/if}
+    <div class="preference-row">
+      <span>{t("personalization.fontFamily")}</span><Select
+        class="settings-select font-family-select"
+        value={value.fontFamily}
+        options={fontOptions}
+        searchable
+        searchPlaceholder={t("personalization.searchFont")}
+        emptyLabel={t("common.noResults")}
+        onValueChange={(next) => onupdate({ fontFamily: next })}
+      />
+    </div>
     <div class="preference-row">
       <span>{t("personalization.fontSize")}</span>
       <div class="font-size-control">
@@ -156,17 +172,6 @@
           oninput={(event) => onupdate({ fontSize: Number(event.currentTarget.value) })}
         /><output for="font-size-slider">{value.fontSize}px</output>
       </div>
-    </div>
-    <div class="preference-row">
-      <span>{t("personalization.fontFamily")}</span><Select
-        class="settings-select font-family-select"
-        value={value.fontFamily}
-        options={fontOptions}
-        searchable
-        searchPlaceholder={t("personalization.searchFont")}
-        emptyLabel={t("common.noResults")}
-        onValueChange={(next) => onupdate({ fontFamily: next })}
-      />
     </div>
   </section>
   <section class:disabled={!usesCustomTheme} class="settings-section custom-theme-section">

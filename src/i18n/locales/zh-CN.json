@@ -104,11 +104,11 @@
     "themeMode": "主题模式",
     "colorTheme": "颜色主题",
     "fontSize": "文字大小",
-    "fontFamily": "字体",
+    "fontFamily": "字体样式",
     "systemFont": "系统默认字体",
     "searchFont": "搜索字体",
     "colorThemes": {
-      "celadon": "天青",
+      "default": "默认",
       "inkstone": "砚墨",
       "vellum": "素笺",
       "moss": "苔痕",

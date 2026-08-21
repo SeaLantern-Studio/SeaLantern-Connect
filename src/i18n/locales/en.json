@@ -104,11 +104,11 @@
     "themeMode": "Theme Mode",
     "colorTheme": "Color Theme",
     "fontSize": "Text Size",
-    "fontFamily": "Font",
+    "fontFamily": "Font Style",
     "systemFont": "System Font",
     "searchFont": "Search Fonts",
     "colorThemes": {
-      "celadon": "Celadon",
+      "default": "Default",
       "inkstone": "Inkstone",
       "vellum": "Vellum",
       "moss": "Moss",

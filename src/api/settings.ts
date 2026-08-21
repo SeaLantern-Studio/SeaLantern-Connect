@@ -16,8 +16,11 @@ export function getPreferences(): Promise<Preferences> {
 }
 
 export function getSystemFonts(): Promise<string[]> {
-  return invoke("get_system_fonts");
+  systemFontsPromise ??= invoke("get_system_fonts");
+  return systemFontsPromise;
 }
+
+let systemFontsPromise: Promise<string[]> | null = null;
 
 export function getSystemTheme(): Promise<SystemTheme> {
   return invoke("get_system_theme");

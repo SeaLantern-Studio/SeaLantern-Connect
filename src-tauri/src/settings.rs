@@ -99,7 +99,7 @@ impl Default for Preferences {
     fn default() -> Self {
         Self {
             theme: "system".to_owned(),
-            color_theme: "inkstone".to_owned(),
+            color_theme: "default".to_owned(),
             custom_theme: CustomTheme::default(),
             font_size: 14,
             font_family: String::new(),
@@ -354,9 +354,7 @@ pub fn get_system_theme(app: AppHandle) -> theme::SystemTheme {
 
 #[tauri::command]
 pub fn set_color_theme(color_theme: String, state: State<'_, SettingsState>) -> Result<(), String> {
-    if !is_color_theme(&color_theme) {
-        return Err("invalid color theme".to_owned());
-    }
+    let color_theme = normalize_color_theme(&color_theme).to_owned();
     state.update(|preferences| preferences.color_theme = color_theme)
 }
 
@@ -397,9 +395,7 @@ pub fn set_personalization(
     if !matches!(update.theme.as_str(), "system" | "light" | "dark") {
         return Err("invalid theme preference".to_owned());
     }
-    if !is_color_theme(&update.color_theme) {
-        return Err("invalid color theme".to_owned());
-    }
+    let color_theme = normalize_color_theme(&update.color_theme).to_owned();
     if !is_custom_theme(&update.custom_theme) {
         return Err("invalid custom theme".to_owned());
     }
@@ -415,7 +411,7 @@ pub fn set_personalization(
     let window_material = update.window_material;
     state.update(|preferences| {
         preferences.theme = update.theme;
-        preferences.color_theme = update.color_theme;
+        preferences.color_theme = color_theme;
         preferences.custom_theme = update.custom_theme;
         preferences.font_size = update.font_size;
         preferences.font_family = font_family;
@@ -551,9 +547,7 @@ fn parse_preferences(content: &str) -> Preferences {
             }
         } else if let Some(value) = line.strip_prefix("color_theme=") {
             let value = value.trim();
-            if let Some(color_theme) = normalize_color_theme(value) {
-                preferences.color_theme = color_theme.to_owned();
-            }
+            preferences.color_theme = normalize_color_theme(value).to_owned();
         } else if let Some(value) = line.strip_prefix("custom_theme=") {
             if let Ok(theme) = serde_json::from_str::<CustomTheme>(value.trim())
                 && is_custom_theme(&theme)
@@ -627,13 +621,6 @@ fn parse_preferences(content: &str) -> Preferences {
     preferences
 }
 
-fn is_color_theme(value: &str) -> bool {
-    matches!(
-        value,
-        "celadon" | "inkstone" | "vellum" | "moss" | "gloaming" | "custom"
-    )
-}
-
 fn is_custom_theme(theme: &CustomTheme) -> bool {
     [&theme.light, &theme.dark].into_iter().all(|colors| {
         [
@@ -664,15 +651,15 @@ fn normalize_font_family(value: &str) -> Option<String> {
     (value.len() <= 128 && !value.chars().any(char::is_control)).then(|| value.to_owned())
 }
 
-fn normalize_color_theme(value: &str) -> Option<&'static str> {
+fn normalize_color_theme(value: &str) -> &'static str {
     match value {
-        "celadon" | "default" => Some("celadon"),
-        "inkstone" | "neutral" | "midnight" => Some("inkstone"),
-        "vellum" | "warm" | "sunset" => Some("vellum"),
-        "moss" | "mountain" | "sage" | "ocean" => Some("moss"),
-        "gloaming" | "mauve" | "rose" => Some("gloaming"),
-        "custom" => Some("custom"),
-        _ => None,
+        "default" => "default",
+        "inkstone" | "neutral" | "midnight" => "inkstone",
+        "vellum" | "warm" | "sunset" => "vellum",
+        "moss" | "mountain" | "sage" | "ocean" => "moss",
+        "gloaming" | "mauve" | "rose" => "gloaming",
+        "custom" => "custom",
+        _ => "default",
     }
 }
 
@@ -725,13 +712,13 @@ mod tests {
     }
 
     #[test]
-    fn ignores_unknown_theme() {
+    fn falls_back_to_default_theme() {
         let preferences = parse_preferences(
             "theme=neon\ncolor_theme=unknown\nfont_size=30\nsplash_duration_ms=4000\nlocale=fr\nauto_lightweight_minutes=0\nreconnect_timeout_secs=45\n",
         );
 
         assert_eq!(preferences.theme, "system");
-        assert_eq!(preferences.color_theme, "inkstone");
+        assert_eq!(preferences.color_theme, "default");
         assert_eq!(preferences.font_size, 14);
         assert_eq!(preferences.splash_duration_ms, 1000);
         assert_eq!(preferences.locale, "zh-CN");
@@ -761,7 +748,7 @@ mod tests {
     #[test]
     fn migrates_old_palette() {
         for (old, current) in [
-            ("default", "celadon"),
+            ("default", "default"),
             ("neutral", "inkstone"),
             ("midnight", "inkstone"),
             ("warm", "vellum"),

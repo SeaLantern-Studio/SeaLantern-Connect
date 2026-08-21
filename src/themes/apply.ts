@@ -1,31 +1,10 @@
-import { getThemeColors, type ColorThemeId, type ThemeColors } from ".";
+import { getThemeColors, type ColorThemeId } from ".";
+import type { ThemeColors } from "@models/preferences";
 import type { CustomTheme, ThemePreference, WindowMaterial } from "@models/preferences";
 
 const nativeMaterialColors: Record<"light" | "dark", ThemeColors> = {
-  light: {
-    bg: "#f3f3f3",
-    bgSecondary: "#f9f9f9",
-    bgTertiary: "#ffffff",
-    primary: "#0067c0",
-    primarySolid: "#0078d4",
-    primarySolidHover: "#005fb8",
-    secondary: "#5f6368",
-    textPrimary: "#1b1b1b",
-    textSecondary: "#5f5f5f",
-    border: "#d6d6d6",
-  },
-  dark: {
-    bg: "#202020",
-    bgSecondary: "#292929",
-    bgTertiary: "#333333",
-    primary: "#60cdff",
-    primarySolid: "#0078d4",
-    primarySolidHover: "#1a86d9",
-    secondary: "#c5c5c5",
-    textPrimary: "#f5f5f5",
-    textSecondary: "#c4c4c4",
-    border: "#454545",
-  },
+  light: getThemeColors("default", "light"),
+  dark: getThemeColors("default", "dark"),
 };
 
 function rgba(hex: string, alpha: number): string {

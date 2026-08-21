@@ -5,3 +5,27 @@
 @import "./styles/frp.css";
 @import "./styles/p2p.css";
 @import "./styles/responsive.css";
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+  opacity: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  clip-path: circle(0% at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%));
+  will-change: clip-path;
+  animation: theme-circle-reveal 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes theme-circle-reveal {
+  to {
+    clip-path: circle(150% at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%));
+  }
+}

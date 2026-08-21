@@ -6,6 +6,10 @@
     value: string | number;
     fontFamily?: string;
   }
+  export interface PointerOrigin {
+    x: number;
+    y: number;
+  }
   interface NormalizedOption {
     label: string;
     value: string;
@@ -32,55 +36,60 @@
     emptyLabel?: string;
     class?: string;
     portal?: boolean;
-    onValueChange?: (value: string) => void;
+    onValueChange?: (value: string, origin?: PointerOrigin) => void;
   }>();
   const normalized: NormalizedOption[] = $derived(
     options.map((item: Option) => ({ ...item, value: String(item.value) })),
   );
+  function matchesFuzzy(label: string, query: string): boolean {
+    let queryIndex = 0;
+    const normalizedLabel = label.toLocaleLowerCase();
+    const normalizedQuery = query.toLocaleLowerCase();
+    for (const character of normalizedLabel) {
+      if (character === normalizedQuery[queryIndex]) queryIndex += 1;
+      if (queryIndex === normalizedQuery.length) return true;
+    }
+    return normalizedQuery.length === 0;
+  }
   let selected = $state<string | undefined>(value == null ? undefined : String(value));
   let open = $state(false);
+  let optionsReady = $state(!searchable);
   let searchTerm = $state("");
   let searchInput = $state<HTMLInputElement | null>(null);
-  let focusFrameFirst = 0;
-  let focusFrameSecond = 0;
+  let lastPointerOrigin = $state<PointerOrigin | undefined>();
+  const initialOptionLimit = 100;
   const selectedOption = $derived(
     normalized.find((option: NormalizedOption) => option.value === selected),
   );
   const hasFontPreview = $derived(normalized.some((option) => option.fontFamily));
   const visibleOptions = $derived(
     searchable && searchTerm.trim()
-      ? normalized.filter((option) =>
-          option.label.toLocaleLowerCase().includes(searchTerm.trim().toLocaleLowerCase()),
-        )
-      : normalized,
+      ? normalized.filter((option) => matchesFuzzy(option.label, searchTerm.trim()))
+      : normalized.slice(0, initialOptionLimit),
   );
+  const renderedOptions = $derived(optionsReady ? visibleOptions : []);
   $effect(() => {
     const next = value == null ? undefined : String(value);
     if (selected !== next) selected = next;
-  });
-  $effect(() => {
-    if (!open || !searchable) return;
-    focusFrameFirst = requestAnimationFrame(() => {
-      focusFrameSecond = requestAnimationFrame(() => {
-        if (open && searchable) searchInput?.focus({ preventScroll: true });
-      });
-    });
-    return () => {
-      cancelAnimationFrame(focusFrameFirst);
-      cancelAnimationFrame(focusFrameSecond);
-    };
   });
   function update(next: string | undefined): void {
     if (next == null) return;
     selected = next;
     value = next;
-    onValueChange?.(next);
+    const origin = lastPointerOrigin;
+    lastPointerOrigin = undefined;
+    onValueChange?.(next, origin);
   }
   function fontFamilyStyle(fontFamily: string | undefined): string | undefined {
     return fontFamily ? `font-family: ${JSON.stringify(fontFamily)};` : undefined;
   }
-  function focusOnMount(node: HTMLInputElement): void {
-    node.focus({ preventScroll: true });
+  function focusSearchInput(): void {
+    if (!open || !searchable) return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (open && searchable) searchInput?.focus({ preventScroll: true });
+      });
+    });
   }
   function handleTriggerKeydown(event: KeyboardEvent): void {
     if (
@@ -101,10 +110,15 @@
     searchTerm += event.key;
   }
   function handleOpenChange(nextOpen: boolean): void {
-    if (!nextOpen) {
+    if (nextOpen) {
+      optionsReady = false;
+      requestAnimationFrame(() => {
+        if (open) optionsReady = true;
+      });
+      window.setTimeout(focusSearchInput, 32);
+    } else {
       searchTerm = "";
-      cancelAnimationFrame(focusFrameFirst);
-      cancelAnimationFrame(focusFrameSecond);
+      optionsReady = !searchable;
     }
   }
 </script>
@@ -120,19 +134,30 @@
           bind:this={searchInput}
           class="ui-select-search"
           type="search"
-          use:focusOnMount
           value={searchTerm}
           placeholder={searchPlaceholder}
           aria-label={searchPlaceholder}
           oninput={(event) => (searchTerm = event.currentTarget.value)}
+          onblur={(event) => {
+            const nextTarget = event.relatedTarget as HTMLElement | null;
+            if (open && searchable && !nextTarget?.closest(".ui-select-item")) {
+              window.setTimeout(focusSearchInput, 0);
+            }
+          }}
           onkeydown={(event) => {
             if (event.key !== "Escape") event.stopPropagation();
           }}
         />
       </div>{/if}
-    {#if visibleOptions.length === 0}<div class="ui-select-empty">{emptyLabel}</div>{/if}
-    {#each visibleOptions as option (option.value)}
-      <Select.Item value={option.value} label={option.label} class="ui-select-item"
+    {#if renderedOptions.length === 0 && searchTerm}<div class="ui-select-empty">
+        {emptyLabel}
+      </div>{/if}
+    {#each renderedOptions as option (option.value)}
+      <Select.Item
+        value={option.value}
+        label={option.label}
+        class="ui-select-item"
+        onpointerdown={(event) => (lastPointerOrigin = { x: event.clientX, y: event.clientY })}
         ><span class="ui-select-item-label" style={fontFamilyStyle(option.fontFamily)}
           >{option.label}</span
         ></Select.Item
@@ -146,7 +171,7 @@
   bind:open
   {disabled}
   value={selected}
-  items={visibleOptions.map((option) => ({ value: option.value, label: option.label }))}
+  items={renderedOptions.map((option) => ({ value: option.value, label: option.label }))}
   onValueChange={update}
   onOpenChange={handleOpenChange}
 >
@@ -207,6 +232,7 @@
   }
   :global(.ui-select-content) {
     z-index: 900;
+    margin-top: 6px;
     min-width: var(--bits-floating-anchor-width, 0px);
     max-height: 280px;
     overflow: auto;
