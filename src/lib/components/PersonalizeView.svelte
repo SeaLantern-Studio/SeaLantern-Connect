@@ -11,6 +11,7 @@
   import Button from "./ui/Button.svelte";
   import ColorPicker from "./ui/ColorPicker.svelte";
   import Select, { type Option, type PointerOrigin } from "./ui/Select.svelte";
+  import Slider from "./ui/Slider.svelte";
   import Toggle from "./ui/Toggle.svelte";
   import { Download, RotateCcw, Upload, X } from "@lucide/svelte";
 
@@ -70,9 +71,6 @@
     })),
   );
   const customColors = $derived(value.customTheme[activePlan]);
-  const fontSizeProgress = $derived(
-    `${((value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
-  );
   const fontOptions = $derived([
     { label: t("personalization.systemFont"), value: "" },
     ...(value.fontFamily && !fonts.includes(value.fontFamily)
@@ -304,18 +302,14 @@
     <div class="preference-row">
       <span>{t("personalization.fontSize")}</span>
       <div class="font-size-control">
-        <input
+        <Slider
           id="font-size-slider"
-          class="settings-slider"
-          type="range"
           min={MIN_FONT_SIZE}
           max={MAX_FONT_SIZE}
-          step="1"
           value={value.fontSize}
-          style={`--slider-progress: ${fontSizeProgress}`}
-          aria-label={t("personalization.fontSize")}
-          aria-valuetext={`${value.fontSize}px`}
-          oninput={(event) => onupdate({ fontSize: Number(event.currentTarget.value) })}
+          ariaLabel={t("personalization.fontSize")}
+          ariaValueText={`${value.fontSize}px`}
+          onvaluechange={(next) => onupdate({ fontSize: next })}
         /><output for="font-size-slider">{value.fontSize}px</output>
       </div>
     </div>
@@ -372,63 +366,54 @@
         <div class="preference-row">
           <span>{t("personalization.backgroundOpacity")}</span>
           <div class="font-size-control">
-            <input
-              class="settings-slider"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
+            <Slider
+              min={0}
+              max={1}
+              step={0.05}
               value={value.backgroundOpacity}
-              style={`--slider-progress: ${value.backgroundOpacity * 100}%`}
-              oninput={(event) =>
-                onupdate({ backgroundOpacity: Number(event.currentTarget.value) })}
+              ariaLabel={t("personalization.backgroundOpacity")}
+              ariaValueText={`${Math.round(value.backgroundOpacity * 100)}%`}
+              onvaluechange={(next) => onupdate({ backgroundOpacity: next })}
             /><output>{Math.round(value.backgroundOpacity * 100)}%</output>
           </div>
         </div>
         <div class="preference-row">
           <span>{t("personalization.backgroundBlur")}</span>
           <div class="font-size-control">
-            <input
-              class="settings-slider"
-              type="range"
-              min="0"
-              max="20"
-              step="1"
+            <Slider
+              min={0}
+              max={20}
               value={value.backgroundBlur}
-              style={`--slider-progress: ${value.backgroundBlur * 5}%`}
-              oninput={(event) => onupdate({ backgroundBlur: Number(event.currentTarget.value) })}
+              ariaLabel={t("personalization.backgroundBlur")}
+              ariaValueText={`${value.backgroundBlur}px`}
+              onvaluechange={(next) => onupdate({ backgroundBlur: next })}
             /><output>{value.backgroundBlur}px</output>
           </div>
         </div>
         <div class="preference-row">
           <span>{t("personalization.backgroundBrightness")}</span>
           <div class="font-size-control">
-            <input
-              class="settings-slider"
-              type="range"
-              min="0.5"
-              max="1.5"
-              step="0.1"
+            <Slider
+              min={0.5}
+              max={1.5}
+              step={0.1}
               value={value.backgroundBrightness}
-              style={`--slider-progress: ${(value.backgroundBrightness - 0.5) * 100}%`}
-              oninput={(event) =>
-                onupdate({ backgroundBrightness: Number(event.currentTarget.value) })}
+              ariaLabel={t("personalization.backgroundBrightness")}
+              ariaValueText={value.backgroundBrightness.toFixed(1)}
+              onvaluechange={(next) => onupdate({ backgroundBrightness: next })}
             /><output>{value.backgroundBrightness.toFixed(1)}</output>
           </div>
         </div>
         <div class="preference-row">
           <span>{t("personalization.backgroundCardBlur")}</span>
           <div class="font-size-control">
-            <input
-              class="settings-slider"
-              type="range"
-              min="8"
-              max="30"
-              step="1"
+            <Slider
+              min={8}
+              max={30}
               value={value.backgroundCardBlur}
-              style={`--slider-progress: ${((value.backgroundCardBlur - 8) / 22) * 100}%`}
-              oninput={(event) =>
-                onupdate({ backgroundCardBlur: Number(event.currentTarget.value) })}
+              ariaLabel={t("personalization.backgroundCardBlur")}
+              ariaValueText={`${value.backgroundCardBlur}px`}
+              onvaluechange={(next) => onupdate({ backgroundCardBlur: next })}
             /><output>{value.backgroundCardBlur}px</output>
           </div>
         </div>

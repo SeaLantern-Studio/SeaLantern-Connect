@@ -75,6 +75,8 @@ export function applyColorTheme(
     "--surface-strong",
     nativeMaterial ? rgba(colors.bgTertiary, opacity.strong) : colors.bgTertiary,
   );
+  root.style.setProperty("--slider-track", colors.bgTertiary);
+  root.style.setProperty("--slider-thumb-border", colors.bgSecondary);
   root.style.setProperty("--overlay-surface", colors.bgSecondary);
   root.style.setProperty("--primary", colors.primary);
   root.style.setProperty(

@@ -13,6 +13,8 @@
   --surface: #ffffff;
   --surface-soft: #f1f5f9;
   --surface-strong: #e2e8f0;
+  --slider-track: var(--surface-strong);
+  --slider-thumb-border: var(--surface);
   --overlay-surface: #ffffff;
   --border: #e2e8f0;
   --text: #0f172a;
