@@ -1,6 +1,14 @@
 import AppKit
 
 private let glassIdentifier = NSUserInterfaceItemIdentifier("SeaLanternLiquidGlass")
+// window-vibrancy uses this tag for the NSVisualEffectView installed by Tauri.
+private let tauriVibrancyTag = 91_376_254
+
+private func clearTauriVibrancy(from window: NSWindow) {
+    while let vibrancyView = window.contentView?.viewWithTag(tauriVibrancyTag) {
+        vibrancyView.removeFromSuperview()
+    }
+}
 
 @available(macOS 26.0, *)
 private func installLiquidGlass(on window: NSWindow) -> Bool {
@@ -66,6 +74,7 @@ public func setLiquidGlass(
     }
     let update = {
         let window = Unmanaged<NSWindow>.fromOpaque(windowPointer).takeUnretainedValue()
+        clearTauriVibrancy(from: window)
         if #available(macOS 26.0, *) {
             return enabled == 0
                 ? removeLiquidGlass(from: window)

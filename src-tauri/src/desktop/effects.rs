@@ -84,9 +84,6 @@ pub(crate) fn set_material(
         let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
             return Ok(());
         };
-        window
-            .set_effects(None)
-            .map_err(|error| error.to_string())?;
 
         if material == "liquid_glass" && set_liquid_glass(app, true)? {
             return Ok(());
