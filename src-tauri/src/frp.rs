@@ -221,6 +221,7 @@ pub(crate) struct FrpSessionStatus {
     authenticated: bool,
     account_name: Option<String>,
     running: bool,
+    connected: bool,
     tunnel_id: Option<String>,
     output: Vec<String>,
 }
@@ -249,10 +250,32 @@ pub(crate) struct FrpNode {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CreateFrpTunnel {
+    pub tunnel_id: Option<String>,
     node_id: String,
     name: String,
     local_port: u16,
     remote_port: String,
+}
+
+#[tauri::command]
+pub(crate) async fn edit_frp_tunnel(
+    state: State<'_, FrpState>,
+    provider: FrpProvider,
+    request: CreateFrpTunnel,
+) -> Result<Vec<FrpTunnel>, String> {
+    let tunnel_id = request.tunnel_id.as_deref().unwrap_or("").trim();
+    if tunnel_id.is_empty() {
+        return Err("a tunnel must be selected".to_owned());
+    }
+    validate_tunnel(provider, &request)?;
+    let credential = credential(&state, provider)?;
+    match provider {
+        FrpProvider::OpenFrp => openfrp::edit(&credential, tunnel_id, &request).await?,
+        FrpProvider::SakuraFrp => {
+            return Err("SakuraFRP tunnel editing is not supported yet".to_owned());
+        }
+    }
+    tunnels(provider, &credential).await
 }
 
 fn status(
@@ -704,18 +727,29 @@ fn session_status(state: &FrpState, provider: FrpProvider) -> Result<FrpSessionS
         .map_err(|_| "FRP tunnel state is unavailable".to_owned())?
         .get(&provider)
         .cloned();
-    let output = state
+    let output: Vec<String> = state
         .outputs
         .lock()
         .map_err(|_| "FRP output state is unavailable".to_owned())?
         .get(&provider)
         .map(|lines| lines.iter().cloned().collect())
         .unwrap_or_default();
+    let connected = output.iter().any(|line| {
+        let line = line.to_ascii_lowercase();
+        line.contains("login to server success")
+            || line.contains("start proxy success")
+            || line.contains("连接节点成功")
+            || line.contains("隧道启动成功")
+            || line.contains("登入成功")
+            || line.contains("登录成功")
+            || line.contains("启动成功")
+    });
     Ok(FrpSessionStatus {
         provider,
         authenticated: account_name.is_some(),
         account_name,
         running,
+        connected,
         tunnel_id,
         output,
     })

@@ -165,6 +165,7 @@ fn main() {
             frp::list_frp_tunnels,
             frp::list_frp_nodes,
             frp::create_frp_tunnel,
+            frp::edit_frp_tunnel,
             frp::delete_frp_tunnel,
             frp::start_frp_tunnel,
             frp::stop_frp_tunnel,

@@ -49,6 +49,7 @@
     "refreshTunnels": "Refresh Tunnels",
     "createTunnel": "Create Tunnel",
     "deleteTunnel": "Delete Tunnel",
+    "toggleTunnelLayout": "{columns}-column layout",
     "deleteTunnelHint": "Delete tunnel “{name}”? This permanently removes its provider-side configuration.",
     "confirmDeleteTunnel": "Delete Tunnel",
     "deletingTunnel": "Deleting…",
@@ -65,6 +66,7 @@
     "noTunnels": "No tunnels yet — create one here",
     "selectTunnelHint": "Select a tunnel on the left to view details and actions",
     "running": "Running",
+    "connecting": "Connecting",
     "stopped": "Stopped",
     "start": "Start Tunnel",
     "stop": "Stop Tunnel",
@@ -72,7 +74,8 @@
     "addressUnavailable": "Public address unavailable",
     "copyAddress": "Copy Address",
     "copiedAddress": "Copied",
-    "clientOutput": "Client Log"
+    "clientOutput": "Client Log",
+    "copyClientOutput": "Copy client log"
   },
   "about": {
     "description": "P2P and FRP connectivity for Minecraft multiplayer",

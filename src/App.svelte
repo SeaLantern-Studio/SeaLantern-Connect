@@ -41,10 +41,11 @@
     type AppUpdate,
   } from "@api/app";
   import { getInitialDeepLinks, getPendingDeepLinks, onDeepLinks } from "@api/deeplink";
-  import { preloadFrpProvider } from "@api/frp";
+  import { getFrpSessionStatus, preloadFrpProvider } from "@api/frp";
   import { locale, t } from "@i18n";
   import { inviteFromDeepLinkUrls } from "@domain/invitations";
   import type { Preferences } from "@models/preferences";
+  import type { FrpSessionStatus } from "@models/frp";
   import Button from "./lib/components/ui/Button.svelte";
   import Dialog from "./lib/components/ui/Dialog.svelte";
   import HostView from "./lib/components/HostView.svelte";
@@ -111,6 +112,11 @@
   });
   let indicatorFrame: number | null = null;
   let indicatorTimer: number | null = null;
+  let frpStatusTimer: number | null = null;
+  let frpSessions = $state<Record<"openfrp" | "sakurafrp", FrpSessionStatus | null>>({
+    openfrp: null,
+    sakurafrp: null,
+  });
   let PersonalizeView = $state<
     typeof import("./lib/components/PersonalizeView.svelte").default | null
   >(null);
@@ -169,6 +175,8 @@
     disposed = false;
     void initialize();
     window.addEventListener("resize", updateNavIndicator);
+    void refreshFrpSessions();
+    frpStatusTimer = window.setInterval(() => void refreshFrpSessions(), 1000);
     return () => {
       disposed = true;
       unlistenDeepLinks?.();
@@ -177,10 +185,19 @@
       stopSystemThemeListener?.();
       if (indicatorFrame != null) window.cancelAnimationFrame(indicatorFrame);
       if (indicatorTimer != null) window.clearTimeout(indicatorTimer);
+      if (frpStatusTimer != null) window.clearInterval(frpStatusTimer);
       window.removeEventListener("resize", updateNavIndicator);
       disposeSession();
     };
   });
+
+  async function refreshFrpSessions(): Promise<void> {
+    const [openfrp, sakurafrp] = await Promise.all([
+      getFrpSessionStatus("open_frp").catch(() => null),
+      getFrpSessionStatus("sakura_frp").catch(() => null),
+    ]);
+    if (!disposed) frpSessions = { openfrp, sakurafrp };
+  }
 
   function notifyFrontendReady(): void {
     void markFrontendReady().catch((error) =>
@@ -527,6 +544,10 @@
               {#if p2pState !== "idle" && (($session.mode === "host" && item.id === "create") || ($session.mode === "join" && item.id === "join"))}<span
                   class:active={p2pState === "active"}
                   class:busy={p2pState === "busy"}
+                  class="p2p-dot"
+                ></span>{:else if (item.id === "openfrp" || item.id === "sakurafrp") && frpSessions[item.id]?.running}<span
+                  class:active={frpSessions[item.id]?.connected}
+                  class:busy={!frpSessions[item.id]?.connected}
                   class="p2p-dot"
                 ></span>{/if}
             </button>

@@ -106,6 +106,13 @@ export function createFrpTunnel(
   return invoke("create_frp_tunnel", { provider, request });
 }
 
+export function editFrpTunnel(
+  provider: FrpProvider,
+  request: CreateFrpTunnel & { tunnelId: string },
+): Promise<FrpTunnel[]> {
+  return invoke("edit_frp_tunnel", { provider, request });
+}
+
 export function deleteFrpTunnel(provider: FrpProvider, tunnelId: string): Promise<FrpTunnel[]> {
   return invoke("delete_frp_tunnel", { provider, tunnelId });
 }

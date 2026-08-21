@@ -294,6 +294,32 @@ pub(super) async fn create(credential: &str, request: &CreateFrpTunnel) -> Resul
     Ok(())
 }
 
+pub(super) async fn edit(
+    credential: &str,
+    tunnel_id: &str,
+    request: &CreateFrpTunnel,
+) -> Result<(), String> {
+    let node_id = request
+        .node_id
+        .parse::<u64>()
+        .map_err(|_| "OpenFRP returned an invalid node ID".to_owned())?;
+    let proxy_id = tunnel_id
+        .parse::<u64>()
+        .map_err(|_| "OpenFRP returned an invalid tunnel ID".to_owned())?;
+    let body = serde_json::json!({
+        "proxy_id": proxy_id, "node_id": node_id, "name": request.name.trim(),
+        "type": "tcp", "local_addr": "127.0.0.1", "local_port": request.local_port.to_string(),
+        "remote_port": request.remote_port.trim(), "domain_bind": "", "custom": "",
+        "dataGzip": true, "dataEncrypt": false, "url_route": "", "host_rewrite": "",
+        "request_from": "", "request_pass": ""
+    });
+    let value = post("editProxy", credential, Some(&body)).await?;
+    if value.get("flag").and_then(Value::as_bool) != Some(true) {
+        return Err(api_message(&value, "OpenFRP rejected the tunnel edit"));
+    }
+    Ok(())
+}
+
 pub(super) async fn remove(credential: &str, tunnel_id: &str) -> Result<(), String> {
     let body = serde_json::json!({ "proxy_id": tunnel_id });
     let value = post("removeProxy", credential, Some(&body)).await?;

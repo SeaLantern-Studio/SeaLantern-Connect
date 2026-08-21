@@ -567,7 +567,7 @@
 .frp-tunnel-manager .frp-tunnel-list {
   flex: none;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--frp-tunnel-columns, 2), minmax(0, 1fr));
   align-content: start;
   gap: 8px;
   max-height: 236px;
@@ -601,7 +601,7 @@
 .frp-tunnel-manager-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
@@ -610,17 +610,13 @@
   min-width: 132px;
 }
 
-.frp-view:has(.frp-running-view) {
-  min-height: 100%;
-}
 .frp-view:has(.frp-running-view) .frp-provider-section {
-  min-height: min(620px, calc(100vh - 160px));
-  align-content: stretch;
+  min-height: 0;
 }
 .frp-running-view {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(280px, 1fr);
+  grid-template-rows: auto 240px;
   gap: 20px;
 }
 .frp-running-summary {
@@ -668,6 +664,10 @@
   font-size: 0.7857rem;
   font-weight: 600;
 }
+.frp-running-status.connecting {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
 .frp-running-address {
   min-width: 0;
   display: grid;
@@ -692,6 +692,9 @@
   justify-content: flex-end;
   gap: 8px;
 }
+.frp-running-actions .ui-button:first-child {
+  min-width: 126px;
+}
 .frp-running-terminal {
   min-height: 0;
   display: grid;
@@ -704,12 +707,17 @@
 .frp-terminal-heading {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 38px;
   padding: 0 13px;
   color: var(--text);
   border-bottom: 1px solid var(--border);
   background: var(--surface-strong);
   font-size: 0.7857rem;
+}
+.frp-terminal-heading .ui-button {
+  min-width: 30px;
+  padding: 0;
 }
 .frp-terminal-heading span {
   display: inline-flex;

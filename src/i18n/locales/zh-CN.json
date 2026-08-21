@@ -49,6 +49,7 @@
     "refreshTunnels": "刷新隧道",
     "createTunnel": "创建隧道",
     "deleteTunnel": "删除隧道",
+    "toggleTunnelLayout": "{columns}列布局",
     "deleteTunnelHint": "确定要删除隧道“{name}”吗？此操作会永久删除服务商端的配置。",
     "confirmDeleteTunnel": "确认删除",
     "deletingTunnel": "正在删除…",
@@ -65,6 +66,7 @@
     "noTunnels": "当前账号还没有隧道，可在此创建",
     "selectTunnelHint": "在左侧选择一条隧道以查看详情和操作",
     "running": "运行中",
+    "connecting": "正在连接",
     "stopped": "已停止",
     "start": "启动隧道",
     "stop": "停止隧道",
@@ -72,7 +74,8 @@
     "addressUnavailable": "暂未获取公网地址",
     "copyAddress": "复制地址",
     "copiedAddress": "已复制",
-    "clientOutput": "客户端日志"
+    "clientOutput": "客户端日志",
+    "copyClientOutput": "复制客户端日志"
   },
   "about": {
     "description": "面向 Minecraft 联机的 P2P 与 FRP 连接工具",

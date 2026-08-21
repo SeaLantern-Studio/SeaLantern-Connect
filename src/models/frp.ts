@@ -20,6 +20,7 @@ export interface FrpSessionStatus {
   authenticated: boolean;
   accountName: string | null;
   running: boolean;
+  connected: boolean;
   tunnelId: string | null;
   output: string[];
 }
@@ -42,6 +43,7 @@ export interface FrpNode {
 }
 
 export interface CreateFrpTunnel {
+  tunnelId?: string;
   nodeId: string;
   name: string;
   localPort: number;
