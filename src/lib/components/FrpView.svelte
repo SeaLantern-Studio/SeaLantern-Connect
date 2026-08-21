@@ -4,7 +4,6 @@
   import { prefersReducedMotion, Tween } from "svelte/motion";
   import {
     Check,
-    ChevronDown,
     Copy,
     Download,
     ExternalLink,
@@ -127,7 +126,7 @@
   });
 
   $effect(() => {
-    if (!outputLength || !outputLog?.closest("details")?.open) return;
+    if (!outputLength || !outputLog) return;
     requestAnimationFrame(scrollOutput);
   });
 
@@ -275,19 +274,6 @@
       error = String(reason);
     }
   }
-  async function logout(): Promise<void> {
-    if (busy) return;
-    busy = true;
-    try {
-      session = await logoutFrp(provider);
-      tunnels = [];
-      selectedTunnelId = "";
-    } catch (reason) {
-      error = String(reason);
-    } finally {
-      busy = false;
-    }
-  }
   async function beginCreate(): Promise<void> {
     creating = true;
     error = "";
@@ -301,6 +287,20 @@
       error = String(reason);
     } finally {
       nodesLoading = false;
+    }
+  }
+
+  async function logout(): Promise<void> {
+    if (busy) return;
+    busy = true;
+    try {
+      session = await logoutFrp(provider);
+      tunnels = [];
+      selectedTunnelId = "";
+    } catch (reason) {
+      error = String(reason);
+    } finally {
+      busy = false;
     }
   }
 
@@ -360,11 +360,6 @@
     window.setTimeout(() => (copied = false), 1600);
   }
 
-  function handleOutputToggle(event: Event): void {
-    const panel = event.currentTarget;
-    if (panel instanceof HTMLDetailsElement && panel.open) requestAnimationFrame(scrollOutput);
-  }
-
   function scrollOutput(): void {
     const element = outputLog;
     if (!element) return;
@@ -378,10 +373,20 @@
 </script>
 
 <div class="workspace frp-view">
-  <section class="frp-provider-header">
-    <h2>{provider === "open_frp" ? "OpenFRP" : "SakuraFRP"}</h2>
-    <p>{provider === "open_frp" ? t("frp.openFrpDescription") : t("frp.sakuraFrpDescription")}</p>
-  </section>
+  {#if !session?.running}<section class="frp-provider-header">
+      <div>
+        <h2>{provider === "open_frp" ? "OpenFRP" : "SakuraFRP"}</h2>
+        <p>
+          {provider === "open_frp" ? t("frp.openFrpDescription") : t("frp.sakuraFrpDescription")}
+        </p>
+      </div>
+      {#if session?.authenticated}<div class="frp-account-row">
+          <span class="frp-account-name">{session.accountName ?? "--"}</span>
+          <Button variant="ghost" size="sm" title={t("frp.logout")} onclick={logout}
+            ><LogOut size={16} /></Button
+          >
+        </div>{/if}
+    </section>{/if}
   <section class="frp-provider-section">
     {#if loading || !client?.installed}
       <div class="frp-section-heading">
@@ -499,122 +504,93 @@
             </button>
           </div>
         </div>{/if}
-    {:else}
-      <div class="frp-section-heading">
-        <div><span>{t("frp.account")}</span><strong>{t("frp.authorization")}</strong></div>
-        <div class="frp-account-row">
-          <span class="frp-account-name">{session.accountName ?? "--"}</span>
-          <Button variant="ghost" size="sm" title={t("frp.logout")} onclick={logout}
-            ><LogOut size={15} /></Button
+    {:else if session.running && activeTunnel}
+      <div class="frp-running-view">
+        <div class="frp-running-summary">
+          <div class="frp-running-identity">
+            <span class="frp-tunnel-state online"></span>
+            <div>
+              <strong>{activeTunnel.name}</strong>
+              <small>{activeTunnel.node ?? "--"}</small>
+            </div>
+          </div>
+          <div class="frp-running-status">
+            <span class="frp-tunnel-state online"></span>{t("frp.running")}
+          </div>
+          <div class="frp-running-address">
+            <span>{t("frp.publicAddress")}</span>
+            <code>{activeEndpoint ?? t("frp.addressUnavailable")}</code>
+          </div>
+          <div class="frp-running-actions">
+            <Button variant="outline" disabled={!activeEndpoint} onclick={copyEndpoint}
+              >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{copied
+                ? t("frp.copiedAddress")
+                : t("frp.copyAddress")}</Button
+            ><Button variant="danger" disabled={busy} loading={busy} onclick={toggleTunnel}
+              ><Square size={15} />{t("frp.stop")}</Button
+            >
+          </div>
+        </div>
+        <section class="frp-running-terminal">
+          <div class="frp-terminal-heading">
+            <span><Terminal size={15} />{t("frp.clientOutput")}</span>
+          </div>
+          <pre bind:this={outputLog} aria-live="polite">{session.output.join("\n")}</pre>
+        </section>
+      </div>
+    {:else if tunnelsLoading && tunnels.length === 0}
+      <div class="frp-checking">
+        <LoaderCircle class="spin" size={18} />{t("frp.loadingTunnels")}
+      </div>
+    {:else}<div class="frp-tunnel-manager">
+        <div class="frp-tunnel-panel-head">
+          <div class="frp-tunnel-panel-title">
+            <strong>{t("frp.tunnels")}</strong>
+            <span class="frp-tunnel-count">{tunnels.length}</span>
+          </div>
+          <div class="frp-tunnel-panel-actions">
+            <Button variant="ghost" size="sm" title={t("frp.createTunnel")} onclick={beginCreate}
+              ><Plus size={16} /></Button
+            ><Button
+              variant="ghost"
+              size="sm"
+              disabled={tunnelsLoading}
+              title={t("frp.refreshTunnels")}
+              onclick={loadTunnels}
+              ><RefreshCw class={tunnelsLoading ? "spin" : ""} size={16} /></Button
+            ><Button
+              variant="ghost"
+              size="sm"
+              disabled={!selectedTunnel || busy}
+              title={t("frp.deleteTunnel")}
+              onclick={() => (deleteOpen = true)}><Trash2 size={16} /></Button
+            >
+          </div>
+        </div>
+        {#if tunnels.length}<div class="frp-tunnel-list">
+            {#each tunnels as tunnel (tunnel.id)}<button
+                class:selected={selectedTunnelId === tunnel.id}
+                class="frp-tunnel-row"
+                type="button"
+                onclick={() => {
+                  selectedTunnelId = tunnel.id;
+                }}
+                ><span class:online={tunnel.online} class="frp-tunnel-state"></span><span
+                  ><strong>{tunnel.name}</strong><small>{tunnel.node ?? "--"}</small></span
+                ></button
+              >{/each}
+          </div>{:else}<div class="frp-detail-empty">
+            <p>{t("frp.noTunnels")}</p>
+            <Button variant="outline" size="sm" onclick={beginCreate}
+              ><Plus size={15} />{t("frp.createTunnel")}</Button
+            >
+          </div>{/if}
+        <div class="frp-tunnel-manager-footer">
+          <Button disabled={!selectedTunnel || busy} loading={busy} onclick={toggleTunnel}
+            ><Play size={15} />{t("frp.start")}</Button
           >
         </div>
       </div>
-      {#if tunnelsLoading && tunnels.length === 0}
-        <div class="frp-checking">
-          <LoaderCircle class="spin" size={18} />{t("frp.loadingTunnels")}
-        </div>
-      {:else}
-        <div class="frp-tunnel-layout">
-          <section class="frp-tunnel-panel">
-            <div class="frp-tunnel-panel-head">
-              <div class="frp-tunnel-panel-title">
-                <strong>{t("frp.tunnels")}</strong>
-                <span class="frp-tunnel-count">{tunnels.length}</span>
-              </div>
-              <div class="frp-tunnel-panel-actions">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  title={t("frp.createTunnel")}
-                  onclick={beginCreate}><Plus size={16} /></Button
-                ><Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={tunnelsLoading}
-                  title={t("frp.refreshTunnels")}
-                  onclick={loadTunnels}
-                  ><RefreshCw class={tunnelsLoading ? "spin" : ""} size={16} /></Button
-                ><Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!selectedTunnel || busy}
-                  title={t("frp.deleteTunnel")}
-                  onclick={() => (deleteOpen = true)}><Trash2 size={16} /></Button
-                >
-              </div>
-            </div>
-            {#if tunnels.length}<div class="frp-tunnel-list">
-                {#each tunnels as tunnel (tunnel.id)}<button
-                    class:selected={selectedTunnelId === tunnel.id}
-                    class="frp-tunnel-row"
-                    type="button"
-                    disabled={session.running}
-                    onclick={() => (selectedTunnelId = tunnel.id)}
-                    ><span class:online={tunnel.online} class="frp-tunnel-state"></span><span
-                      ><strong>{tunnel.name}</strong><small>{tunnel.node ?? "--"}</small></span
-                    ><code>{tunnel.remoteEndpoint ?? "--"}</code></button
-                  >{/each}
-              </div>{/if}
-          </section>
-          <aside class="frp-tunnel-detail">
-            {#if activeTunnel}
-              <div class="frp-detail-identity">
-                <span class:online={session.running || activeTunnel.online} class="frp-tunnel-state"
-                ></span>
-                <div>
-                  <strong>{activeTunnel.name}</strong>
-                  <small>{activeTunnel.node ?? "--"}</small>
-                </div>
-              </div>
-              <div class:active={session.running} class="frp-detail-status">
-                <span class:online={session.running} class="frp-tunnel-state"
-                ></span>{session.running ? t("frp.running") : t("frp.stopped")}
-              </div>
-              <div class="frp-detail-address">
-                <span>{t("frp.publicAddress")}</span>
-                <div class="frp-detail-address-row">
-                  <code>{activeEndpoint ?? t("frp.addressUnavailable")}</code>
-                </div>
-              </div>
-              <div class="frp-detail-actions">
-                <Button variant="outline" disabled={!activeEndpoint} onclick={copyEndpoint}
-                  >{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}{copied
-                    ? t("frp.copiedAddress")
-                    : t("frp.copyAddress")}</Button
-                >
-                {#if session.running}<Button
-                    variant="danger"
-                    disabled={busy}
-                    loading={busy}
-                    onclick={toggleTunnel}><Square size={15} />{t("frp.stop")}</Button
-                  >{:else}<Button disabled={busy} loading={busy} onclick={toggleTunnel}
-                    ><Play size={15} />{t("frp.start")}</Button
-                  >{/if}
-              </div>
-            {:else if tunnels.length}
-              <div class="frp-detail-empty">
-                <p>{t("frp.selectTunnelHint")}</p>
-              </div>
-            {:else}
-              <div class="frp-detail-empty">
-                <p>{t("frp.noTunnels")}</p>
-                <Button variant="outline" size="sm" onclick={beginCreate}
-                  ><Plus size={15} />{t("frp.createTunnel")}</Button
-                >
-              </div>
-            {/if}
-          </aside>
-        </div>
-        {#if session.running}<details class="frp-output-panel" open ontoggle={handleOutputToggle}>
-            <summary
-              ><span><Terminal size={15} />{t("frp.clientOutput")}</span><ChevronDown
-                class="frp-output-chevron"
-                size={16}
-              /></summary
-            >
-            <pre bind:this={outputLog} aria-live="polite">{session.output.join("\n")}</pre>
-          </details>{/if}
-      {/if}
     {/if}
     {#if error}<p class="field-error">{error}</p>{/if}
   </section>

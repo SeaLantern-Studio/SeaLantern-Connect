@@ -78,6 +78,23 @@
   .frp-tunnel-panel {
     max-height: none;
   }
+  .frp-tunnel-manager .frp-tunnel-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .frp-running-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .frp-running-status {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .frp-running-identity {
+    padding-right: 88px;
+  }
+  .frp-running-actions {
+    justify-content: flex-end;
+  }
   .font-size-control {
     max-width: none;
     justify-self: stretch;
