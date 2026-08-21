@@ -46,6 +46,12 @@ export interface Preferences {
   reconnectTimeoutSecs: number | null;
   relayCustom: boolean;
   relayUrl: string;
+  backgroundEnabled: boolean;
+  backgroundImage: string;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  backgroundBrightness: number;
+  backgroundCardBlur: number;
 }
 
 export interface PersonalizationUpdate {
@@ -55,6 +61,12 @@ export interface PersonalizationUpdate {
   fontSize: number;
   fontFamily: string;
   windowMaterial: WindowMaterial;
+  backgroundEnabled: boolean;
+  backgroundImage: string;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  backgroundBrightness: number;
+  backgroundCardBlur: number;
 }
 
 export interface ApplicationSettingsUpdate {

@@ -8,6 +8,8 @@
   import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@themes/typography";
   import ColorPicker from "./ui/ColorPicker.svelte";
   import Select, { type Option, type PointerOrigin } from "./ui/Select.svelte";
+  import Toggle from "./ui/Toggle.svelte";
+  import { X } from "@lucide/svelte";
 
   let { value, onupdate, onthemechange } = $props<{
     value: Preferences;
@@ -18,6 +20,7 @@
   let liquidGlassSupported = $state(false);
   let platform = $state<"macos" | "windows" | "other">("other");
   let customPlan = $state<"light" | "dark">("light");
+  let backgroundFileInput = $state<HTMLInputElement>();
   const customColorFields: Array<{ key: keyof ThemeColors; label: string }> = [
     { key: "bg", label: "background" },
     { key: "bgSecondary", label: "surface" },
@@ -89,6 +92,20 @@
         [customPlan]: { ...value.customTheme[customPlan], [field]: color },
       },
     });
+  }
+
+  function chooseBackground(): void {
+    backgroundFileInput?.click();
+  }
+
+  function handleBackgroundFile(event: Event): void {
+    const file = (event.currentTarget as HTMLInputElement).files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") onupdate({ backgroundImage: reader.result, backgroundEnabled: true });
+    };
+    reader.readAsDataURL(file);
   }
 
   onMount(async () => {
@@ -173,6 +190,59 @@
         /><output for="font-size-slider">{value.fontSize}px</output>
       </div>
     </div>
+  </section>
+  <section class="settings-section background-section">
+    <div class="settings-section-heading"><h2>{t("personalization.backgroundSection")}</h2></div>
+    <div class="preference-row switch-row">
+      <span>{t("personalization.backgroundEnabled")}</span><Toggle
+        checked={value.backgroundEnabled}
+        label={t("personalization.backgroundEnabled")}
+        oncheckedchange={(checked) => onupdate({ backgroundEnabled: checked })}
+      />
+    </div>
+    {#if value.backgroundEnabled}<div class="background-settings">
+        <input
+          bind:this={backgroundFileInput}
+          class="background-file-input"
+          type="file"
+          accept="image/*"
+          onchange={handleBackgroundFile}
+        />
+        <div class="preference-row background-preview-row">
+          <span>{t("personalization.backgroundPreview")}</span>
+          <div class="background-picker">
+            <div
+              class:has-image={Boolean(value.backgroundImage)}
+              class="background-preview"
+              style={value.backgroundImage
+                ? `background-image: url(${JSON.stringify(value.backgroundImage)})`
+                : ""}
+              role="button"
+              tabindex="0"
+              aria-label={t("personalization.chooseBackground")}
+              onclick={() => !value.backgroundImage && chooseBackground()}
+              onkeydown={(event) => {
+                if (!value.backgroundImage && (event.key === "Enter" || event.key === " ")) chooseBackground();
+              }}
+            >
+              {#if value.backgroundImage}<button
+                  class="background-remove-button"
+                  type="button"
+                  aria-label={t("personalization.clearBackground")}
+                  onclick={(event) => {
+                    event.stopPropagation();
+                    onupdate({ backgroundImage: "" });
+                  }}><X size={13} /></button
+                >{/if}
+              {#if !value.backgroundImage}<span>{t("personalization.chooseBackground")}</span>{/if}
+            </div>
+          </div>
+        </div>
+        <div class="preference-row"><span>{t("personalization.backgroundOpacity")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0" max="1" step="0.05" value={value.backgroundOpacity} style={`--slider-progress: ${value.backgroundOpacity * 100}%`} oninput={(event) => onupdate({ backgroundOpacity: Number(event.currentTarget.value) })} /><output>{Math.round(value.backgroundOpacity * 100)}%</output></div></div>
+        <div class="preference-row"><span>{t("personalization.backgroundBlur")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0" max="20" step="1" value={value.backgroundBlur} style={`--slider-progress: ${value.backgroundBlur * 5}%`} oninput={(event) => onupdate({ backgroundBlur: Number(event.currentTarget.value) })} /><output>{value.backgroundBlur}px</output></div></div>
+        <div class="preference-row"><span>{t("personalization.backgroundBrightness")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0.5" max="1.5" step="0.1" value={value.backgroundBrightness} style={`--slider-progress: ${(value.backgroundBrightness - 0.5) * 100}%`} oninput={(event) => onupdate({ backgroundBrightness: Number(event.currentTarget.value) })} /><output>{value.backgroundBrightness.toFixed(1)}</output></div></div>
+        <div class="preference-row"><span>{t("personalization.backgroundCardBlur")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="8" max="30" step="1" value={value.backgroundCardBlur} style={`--slider-progress: ${((value.backgroundCardBlur - 8) / 22) * 100}%`} oninput={(event) => onupdate({ backgroundCardBlur: Number(event.currentTarget.value) })} /><output>{value.backgroundCardBlur}px</output></div></div>
+      </div>{/if}
   </section>
   <section class:disabled={!usesCustomTheme} class="settings-section custom-theme-section">
     <div class="settings-section-heading"><h2>{t("personalization.customTheme")}</h2></div>

@@ -62,6 +62,12 @@ export const defaults: Preferences = {
   reconnectTimeoutSecs: null,
   relayCustom: false,
   relayUrl: "",
+  backgroundEnabled: false,
+  backgroundImage: "",
+  backgroundOpacity: 0.3,
+  backgroundBlur: 0,
+  backgroundBrightness: 1,
+  backgroundCardBlur: 8,
 };
 
 export type SectionId =
@@ -215,6 +221,12 @@ export function updatePreferences(update: Partial<Preferences>): void {
         fontSize: value.fontSize,
         fontFamily: value.fontFamily,
         windowMaterial: value.windowMaterial,
+        backgroundEnabled: value.backgroundEnabled,
+        backgroundImage: value.backgroundImage,
+        backgroundOpacity: value.backgroundOpacity,
+        backgroundBlur: value.backgroundBlur,
+        backgroundBrightness: value.backgroundBrightness,
+        backgroundCardBlur: value.backgroundCardBlur,
       },
       systemTheme,
     )

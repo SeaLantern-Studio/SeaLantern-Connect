@@ -72,7 +72,7 @@ impl Default for CustomTheme {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Preferences {
     theme: String,
@@ -93,6 +93,12 @@ pub struct Preferences {
     reconnect_timeout_secs: Option<u64>,
     relay_custom: bool,
     relay_url: String,
+    background_enabled: bool,
+    background_image: String,
+    background_opacity: f32,
+    background_blur: u32,
+    background_brightness: f32,
+    background_card_blur: u32,
 }
 
 impl Default for Preferences {
@@ -116,6 +122,12 @@ impl Default for Preferences {
             reconnect_timeout_secs: None,
             relay_custom: false,
             relay_url: String::new(),
+            background_enabled: false,
+            background_image: String::new(),
+            background_opacity: 0.3,
+            background_blur: 0,
+            background_brightness: 1.0,
+            background_card_blur: 8,
         }
     }
 }
@@ -136,6 +148,12 @@ pub struct PersonalizationUpdate {
     font_size: u32,
     font_family: String,
     window_material: String,
+    background_enabled: bool,
+    background_image: String,
+    background_opacity: f32,
+    background_blur: u32,
+    background_brightness: f32,
+    background_card_blur: u32,
 }
 
 #[derive(Deserialize)]
@@ -407,6 +425,13 @@ pub fn set_personalization(
     if !is_window_material(&update.window_material) {
         return Err("invalid window material".to_owned());
     }
+    if !(0.0..=1.0).contains(&update.background_opacity)
+        || !(0.5..=1.5).contains(&update.background_brightness)
+        || update.background_blur > 20
+        || !(8..=30).contains(&update.background_card_blur)
+    {
+        return Err("invalid background settings".to_owned());
+    }
     let theme = update.theme.clone();
     let window_material = update.window_material;
     state.update(|preferences| {
@@ -416,6 +441,12 @@ pub fn set_personalization(
         preferences.font_size = update.font_size;
         preferences.font_family = font_family;
         preferences.window_material = window_material.clone();
+        preferences.background_enabled = update.background_enabled;
+        preferences.background_image = update.background_image;
+        preferences.background_opacity = update.background_opacity;
+        preferences.background_blur = update.background_blur;
+        preferences.background_brightness = update.background_brightness;
+        preferences.background_card_blur = update.background_card_blur;
     })?;
     if let Err(error) = theme::apply_material(&app, &window_material, &theme, system_theme) {
         log::error!("window material update failed: {error}");
@@ -491,7 +522,7 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
         .ok_or_else(|| "settings directory is unavailable".to_owned())?;
     std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     let content = format!(
-        "theme={}\ncolor_theme={}\ncustom_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nauto_update={}\nlocale={}\nremember_window_state={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\n",
+        "theme={}\ncolor_theme={}\ncustom_theme={}\nfont_size={}\nfont_family={}\nsplash_duration_ms={}\nsilent_start={}\nauto_update={}\nlocale={}\nremember_window_state={}\nwindow_material={}\nauto_lightweight_minutes={}\nhost_uri_lifetime={}\njoin_uri={}\njoin_port={}\nreconnect_timeout_secs={}\nrelay_custom={}\nrelay_url={}\nbackground_enabled={}\nbackground_image={}\nbackground_opacity={}\nbackground_blur={}\nbackground_brightness={}\nbackground_card_blur={}\n",
         preferences.theme,
         preferences.color_theme,
         serde_json::to_string(&preferences.custom_theme).map_err(|error| error.to_string())?,
@@ -514,6 +545,12 @@ fn save_preferences(path: &Path, preferences: &Preferences) -> Result<(), String
             .map_or_else(|| "unlimited".to_owned(), |value| value.to_string()),
         preferences.relay_custom,
         preferences.relay_url,
+        preferences.background_enabled,
+        preferences.background_image,
+        preferences.background_opacity,
+        preferences.background_blur,
+        preferences.background_brightness,
+        preferences.background_card_blur,
     );
     let mut temporary =
         tempfile::NamedTempFile::new_in(parent).map_err(|error| error.to_string())?;
@@ -616,6 +653,18 @@ fn parse_preferences(content: &str) -> Preferences {
             preferences.relay_custom = value.trim() == "true";
         } else if let Some(value) = line.strip_prefix("relay_url=") {
             preferences.relay_url = value.trim().to_owned();
+        } else if let Some(value) = line.strip_prefix("background_enabled=") {
+            preferences.background_enabled = value.trim() == "true";
+        } else if let Some(value) = line.strip_prefix("background_image=") {
+            preferences.background_image = value.trim().to_owned();
+        } else if let Some(value) = line.strip_prefix("background_opacity=") {
+            preferences.background_opacity = value.trim().parse().ok().filter(|v: &f32| (0.0..=1.0).contains(v)).unwrap_or(0.3);
+        } else if let Some(value) = line.strip_prefix("background_blur=") {
+            preferences.background_blur = value.trim().parse().ok().filter(|v: &u32| *v <= 20).unwrap_or(0);
+        } else if let Some(value) = line.strip_prefix("background_brightness=") {
+            preferences.background_brightness = value.trim().parse().ok().filter(|v: &f32| (0.5..=1.5).contains(v)).unwrap_or(1.0);
+        } else if let Some(value) = line.strip_prefix("background_card_blur=") {
+            preferences.background_card_blur = value.trim().parse().ok().filter(|v: &u32| (8..=30).contains(v)).unwrap_or(8);
         }
     }
     preferences

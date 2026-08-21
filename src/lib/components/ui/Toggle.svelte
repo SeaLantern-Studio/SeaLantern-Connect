@@ -55,6 +55,16 @@
   .ui-toggle.checked span {
     transform: translateX(16px);
   }
+  :global(:root[data-theme="light"]) .ui-toggle:not(.checked) {
+    background: color-mix(in srgb, var(--text) 4%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
+  }
+  :global(:root[data-theme="light"]) .ui-toggle:not(.checked) span {
+    background: var(--surface);
+    box-shadow:
+      0 1px 4px #0003,
+      0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent);
+  }
   :global(:root[data-theme="dark"]) .ui-toggle:not(.checked) {
     background: color-mix(in srgb, var(--text) 12%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 32%, transparent);

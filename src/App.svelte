@@ -79,6 +79,20 @@
   let availableUpdate = $state<AppUpdate | null>(null);
   let installingUpdate = $state(false);
   let restarting = $state(false);
+  let appShell = $state<HTMLDivElement | null>(null);
+  let backgroundLayer = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    const shell = appShell;
+    const layer = backgroundLayer;
+    if (!shell || !layer) return;
+    const background = $preferences;
+    const enabled = background.backgroundEnabled && Boolean(background.backgroundImage);
+    layer.style.backgroundImage = enabled ? `url("${background.backgroundImage}")` : "none";
+    layer.style.backgroundSize = "cover";
+    layer.style.opacity = enabled ? String(background.backgroundOpacity) : "0";
+    layer.style.filter = `blur(${background.backgroundBlur}px) brightness(${background.backgroundBrightness})`;
+  });
   let maximized = $state(false);
   let isMacOS = $state(false);
   let splashDurationMs = $state(1000);
@@ -478,7 +492,14 @@
     <SplashScreen {loading} durationMs={splashDurationMs} onReady={finishSplash} />
   </div>
 {:else}
-  <div class:sidebar-collapsed={$sidebarCollapsed} class="app-shell">
+  <div
+    bind:this={appShell}
+    class:sidebar-collapsed={$sidebarCollapsed}
+    class:background-enabled={$preferences.backgroundEnabled && Boolean($preferences.backgroundImage)}
+    class="app-shell"
+    style={`--app-background-opacity: ${$preferences.backgroundOpacity}; --app-background-blur: ${$preferences.backgroundBlur}px; --app-background-brightness: ${$preferences.backgroundBrightness}; --card-background-blur: ${$preferences.backgroundCardBlur}px; --page-background-blur: ${Math.max(0, $preferences.backgroundCardBlur - 8)}px`}
+  >
+    <div bind:this={backgroundLayer} class="app-background" aria-hidden="true"></div>
     <aside class:collapsed={$sidebarCollapsed} class:macos-sidebar={isMacOS} class="sidebar">
       <div class="sidebar-brand" data-tauri-drag-region title="SeaLantern Connect">
         <img src={logoUrl} alt="" draggable="false" />
