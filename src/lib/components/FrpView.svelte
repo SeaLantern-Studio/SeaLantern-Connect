@@ -58,9 +58,9 @@
   import Select, { type Option } from "./ui/Select.svelte";
 
   let { provider } = $props<{ provider: FrpProvider }>();
-  function storedTunnelColumns(provider: FrpProvider): 2 | 3 | 4 {
+  function storedTunnelColumns(frpProvider: FrpProvider): 2 | 3 | 4 {
     if (typeof localStorage === "undefined") return 2;
-    const value = localStorage.getItem(`sealantern-tunnel-columns-${provider}`);
+    const value = localStorage.getItem(`sealantern-tunnel-columns-${frpProvider}`);
     return value === "3" ? 3 : value === "4" ? 4 : 2;
   }
   const snapshot = untrack(() => getCachedFrpSnapshot(provider));

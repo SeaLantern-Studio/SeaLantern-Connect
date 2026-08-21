@@ -26,9 +26,7 @@ function materialOpacity(
     case "vibrancy":
       return { surface: 0.14, soft: 0.08, strong: 0.18, content: 0.4, shell: 0.18 };
     case "liquid_glass":
-      return dark
-        ? { surface: 0.42, soft: 0.32, strong: 0.56, content: 0.62, shell: 0.5 }
-        : { surface: 0.55, soft: 0.38, strong: 0.68, content: 0.7, shell: 0.5 };
+      return { surface: 0.14, soft: 0.08, strong: 0.18, content: 0.4, shell: 0.18 };
     default:
       return { surface: 1, soft: 1, strong: 1, content: 1, shell: 1 };
   }
