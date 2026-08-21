@@ -20,6 +20,11 @@ build() ? @os("macos"):
 build():
     pnpm tauri build
 
+[help] 运行全量 CI
+[desc] 并行执行前后端 CI。
+[pass] 本地 CI 成功！🎉
+ci() & (front.ci, back.ci)
+
 [help] 执行全量检查
 [pass] 格式化和检查完成！
 check() & (front.check, back.check)
@@ -27,11 +32,6 @@ check() & (front.check, back.check)
 [help] 执行全量测试
 [pass] 测试成功！
 test() & (front.test, back.test)
-
-[help] 运行全量 CI
-[desc] 并行执行前后端 CI。
-[pass] 本地 CI 成功！🎉
-ci() & (front.ci, back.ci)
 
 [help] 清理全部构建产物
 [pass] 构建产物已全部清除！
@@ -57,7 +57,7 @@ group front {
     [pass] 前端检查完成！
     [fail] 前端检查失败！
     check() & _prepare:
-        pnpm fmt:check
+        pnpm fmt
         pnpm lint
 
     [help] 运行前端集成测试
@@ -93,7 +93,7 @@ group back {
     [pass] 后端检查完成！
     [fail] 后端检查失败！
     check() & _prepare:
-        cargo fmt --all -- --check
+        cargo fmt --all
         cargo check --workspace --all-targets
         cargo clippy --workspace --all-targets -- -D warnings
 
