@@ -7,10 +7,10 @@
 
 [help] 启动开发模式
 dev(level = "info") ? @os("windows") shell~=pwsh:
-    $env:SL_LOG = "{{ level }}"; pnpm tauri dev
+    $env:SL_LOG = "{{level}}"; pnpm tauri dev
 
 dev(level = "info"):
-    SL_LOG={{ level }} pnpm tauri dev
+    SL_LOG={{level}} pnpm tauri dev
 
 [help] 构建应用
 build() ? @os("macos"):
@@ -130,10 +130,10 @@ group version {
     [pass] 成功发布！
     [fail] 版本号不对哦~
     publish(version):
-        pnpm cv {{ version }}
+        pnpm cv {{version}}
         pnpm notice
         only ci
-        git commit -am "chore: 升级到 {{ version }}"
-        git tag {{ version }}
-        git push --atomic origin HEAD {{ version }}
+        git commit -am "chore: 升级到 {{version}}"
+        git tag {{version}}
+        git push --atomic origin HEAD {{version}}
 }
