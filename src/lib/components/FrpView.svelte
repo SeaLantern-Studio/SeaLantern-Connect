@@ -334,9 +334,16 @@
     remotePort = selectedTunnel.remoteEndpoint?.split(":").at(-1) ?? "";
     if (nodes.length === 0) {
       nodesLoading = true;
-      try { nodes = await listFrpNodes(provider); } catch (reason) { error = String(reason); } finally { nodesLoading = false; }
+      try {
+        nodes = await listFrpNodes(provider);
+      } catch (reason) {
+        error = String(reason);
+      } finally {
+        nodesLoading = false;
+      }
     }
-    selectedNodeId = nodes.find((node) => node.name === selectedTunnel.node)?.id ?? nodes[0]?.id ?? "";
+    selectedNodeId =
+      nodes.find((node) => node.name === selectedTunnel.node)?.id ?? nodes[0]?.id ?? "";
   }
 
   function closeCreate(): void {
@@ -580,9 +587,8 @@
             </div>
           </div>
           <div class:connecting class="frp-running-status">
-            <span class:online={session.connected} class="frp-tunnel-state"></span>{session.connected
-              ? t("frp.running")
-              : t("frp.connecting")}
+            <span class:online={session.connected} class="frp-tunnel-state"
+            ></span>{session.connected ? t("frp.running") : t("frp.connecting")}
           </div>
           <div class="frp-running-address">
             <span>{t("frp.publicAddress")}</span>
@@ -652,19 +658,24 @@
               size="sm"
               disabled={!selectedTunnel || busy}
               title={t("frp.deleteTunnel")}
-              onclick={() => (deleteOpen = true)}>
+              onclick={() => (deleteOpen = true)}
+            >
               <Trash2 size={16} />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               title={t("frp.toggleTunnelLayout", { columns: tunnelColumns })}
-              onclick={cycleTunnelColumns}>
+              onclick={cycleTunnelColumns}
+            >
               <LayoutGrid size={16} />
             </Button>
           </div>
         </div>
-        {#if tunnels.length}<div class="frp-tunnel-list" style={`--frp-tunnel-columns: ${tunnelColumns}`}>
+        {#if tunnels.length}<div
+            class="frp-tunnel-list"
+            style={`--frp-tunnel-columns: ${tunnelColumns}`}
+          >
             {#each tunnels as tunnel (tunnel.id)}<button
                 class:selected={selectedTunnelId === tunnel.id}
                 class="frp-tunnel-row"
@@ -738,10 +749,11 @@
       >
       {#if error}<small class="frp-field-error frp-dialog-error">{error}</small>{/if}
       <div class="frp-create-actions">
-        <Button variant="outline" type="button" onclick={closeCreate}
-          >{t("common.cancel")}</Button
+        <Button variant="outline" type="button" onclick={closeCreate}>{t("common.cancel")}</Button
         ><Button type="submit" disabled={!validCreate || !editChanged} loading={busy}
-          >{#if editing}<Pencil size={16} />{:else}<Plus size={16} />{/if}{editing ? "保存修改" : t("frp.createTunnel")}</Button
+          >{#if editing}<Pencil size={16} />{:else}<Plus size={16} />{/if}{editing
+            ? "保存修改"
+            : t("frp.createTunnel")}</Button
         >
       </div>
     </form>

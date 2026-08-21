@@ -543,6 +543,7 @@
                   class:active={p2pState === "active"}
                   class:busy={p2pState === "busy"}
                   class="p2p-dot"
+
                 ></span>{:else if (item.id === "openfrp" || item.id === "sakurafrp") && frpSessions[item.id]?.running}<span
                   class:active={frpSessions[item.id]?.connected}
                   class:busy={!frpSessions[item.id]?.connected}

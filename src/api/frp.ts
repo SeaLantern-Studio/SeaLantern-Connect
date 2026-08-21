@@ -38,8 +38,8 @@ export async function preloadFrpProvider(provider: FrpProvider): Promise<void> {
   if (existing) return existing;
   const task = (async () => {
     const client = await getFrpClientStatus(provider);
-    const session = await restoreFrpSessions().then(
-      (sessions) => sessions.find((candidate) => candidate.provider === provider)!,
+    const session = await restoreFrpSessions().then((sessions) =>
+      sessions.find((candidate) => candidate.provider === provider)!,
     );
     const tunnels = session.authenticated ? await listFrpTunnels(provider) : [];
     cacheFrpSnapshot(provider, { client, session, tunnels });
