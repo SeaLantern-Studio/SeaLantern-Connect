@@ -25,6 +25,7 @@
     emptyLabel = "No results",
     class: className = "",
     portal = true,
+    glass = false,
     onValueChange,
   } = $props<{
     value?: string | number;
@@ -36,6 +37,7 @@
     emptyLabel?: string;
     class?: string;
     portal?: boolean;
+    glass?: boolean;
     onValueChange?: (value: string, origin?: PointerOrigin) => void;
   }>();
   const normalized: NormalizedOption[] = $derived(
@@ -219,7 +221,11 @@
 </script>
 
 {#snippet selectContent()}
-  <Select.Content id={`${selectId}-listbox`} align="end" class="ui-select-content">
+  <Select.Content
+    id={`${selectId}-listbox`}
+    align="end"
+    class={`ui-select-content ${glass ? "ui-select-content--glass" : ""}`}
+  >
     {#if searchable}<div class="ui-select-search-wrap">
         <Search class="ui-select-search-icon" size={15} strokeWidth={2} aria-hidden="true" />
         <input
@@ -288,7 +294,7 @@
   onOpenChange={handleOpenChange}
 >
   <Select.Trigger
-    class={`ui-select ${className}`}
+    class={`ui-select ${glass ? "ui-select--glass" : ""} ${className}`}
     style={fontFamilyStyle(selectedOption?.fontFamily)}
     onkeydown={handleTriggerKeydown}
   >
@@ -341,6 +347,27 @@
   :global(.ui-select[data-state="open"] .ui-select-chevron) {
     transform: rotate(180deg);
   }
+  :global(.ui-select--glass),
+  :global(:root[data-native-material] .ui-select) {
+    background: color-mix(in srgb, var(--material-content-bg) 62%, transparent);
+    border-color: color-mix(in srgb, var(--border) 38%, rgba(255, 255, 255, 0.82));
+    border-radius: 14px;
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.4),
+      inset 0 -1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(28px) saturate(1.28);
+    -webkit-backdrop-filter: blur(28px) saturate(1.28);
+  }
+  :global(.ui-select--glass:hover),
+  :global(.ui-select--glass[data-state="open"]),
+  :global(:root[data-native-material] .ui-select:hover),
+  :global(:root[data-native-material] .ui-select[data-state="open"]) {
+    background: color-mix(in srgb, var(--material-content-bg) 82%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 66%, var(--border));
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.54),
+      0 8px 24px rgba(0, 0, 0, 0.13);
+  }
   :global(.ui-select-value) {
     flex: 1;
     min-width: 0;
@@ -373,6 +400,20 @@
   }
   :global(.ui-select-content[data-state="open"]) {
     animation: ui-select-content-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  :global(.ui-select-content--glass),
+  :global(:root[data-native-material] .ui-select-content) {
+    padding: 7px;
+    background: color-mix(in srgb, var(--material-content-bg) 92%, transparent);
+    border-color: color-mix(in srgb, var(--border) 28%, rgba(255, 255, 255, 0.9));
+    border-radius: 18px;
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.68),
+      inset 0 -1px rgba(255, 255, 255, 0.18),
+      0 18px 40px rgba(0, 0, 0, 0.18),
+      0 4px 12px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(40px) saturate(1.34);
+    -webkit-backdrop-filter: blur(40px) saturate(1.34);
   }
   :global(.ui-select-search-wrap) {
     min-height: 34px;
@@ -431,6 +472,16 @@
   :global(.ui-select-item.is-selected) {
     color: var(--primary);
     font-weight: 600;
+  }
+  :global(.ui-select-content--glass .ui-select-item),
+  :global(:root[data-native-material] .ui-select-content .ui-select-item) {
+    min-height: 36px;
+    padding: 7px 12px;
+    border-radius: 11px;
+  }
+  :global(.ui-select-content--glass .ui-select-item.is-selected),
+  :global(:root[data-native-material] .ui-select-content .ui-select-item.is-selected) {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
   }
   :global(.ui-select-item-check) {
     flex: none;
