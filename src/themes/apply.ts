@@ -24,7 +24,7 @@ function materialOpacity(
 } {
   switch (material) {
     case "mica":
-      return { surface: 0.3, soft: 0.46, strong: 0.38, content: 0.5, shell: 0.4 };
+      return { surface: 0, soft: 0.46, strong: 0.38, content: 0.5, shell: 0.4 };
     case "acrylic":
       return dark
         ? { surface: 0.26, soft: 0.42, strong: 0.34, content: 0.46, shell: 0.36 }
