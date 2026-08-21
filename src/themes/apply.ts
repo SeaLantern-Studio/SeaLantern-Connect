@@ -60,6 +60,12 @@ export function applyColorTheme(
   root.dataset.theme = dark ? "dark" : "light";
   root.dataset.windowMaterial = windowMaterial;
   root.toggleAttribute("data-native-material", nativeMaterial);
+  root.style.setProperty(
+    "--material-content-bg",
+    nativeMaterial
+      ? rgba(colors.bgSecondary, Math.min(0.7, Math.max(opacity.surface + 0.2, 0.4)))
+      : colors.bgSecondary,
+  );
   root.style.setProperty("--background", nativeMaterial ? "transparent" : colors.bg);
   root.style.setProperty(
     "--surface",

@@ -371,7 +371,7 @@
   background: transparent;
 }
 :root[data-native-material] .app-content {
-  background: var(--surface-soft);
+  background: var(--material-content-bg, var(--surface));
   box-shadow: var(--card-shadow);
 }
 :root[data-window-material="acrylic"] .app-content {
