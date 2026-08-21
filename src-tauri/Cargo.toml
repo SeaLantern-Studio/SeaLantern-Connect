@@ -36,6 +36,7 @@ tauri-plugin-window-state = "2"
 tempfile = "3"
 tokio = { version = "1", features = ["fs", "io-util", "macros", "rt", "sync", "time"] }
 zip = { version = "8", default-features = false, features = ["deflate"] }
+tauri-plugin-dialog = "2"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Console", "Win32_System_JobObjects", "Win32_System_Registry", "Win32_System_Threading"] }

@@ -10,6 +10,7 @@
   } from "@api/app";
   import { t } from "@i18n";
   import { Check, Download, ExternalLink, RefreshCw } from "@lucide/svelte";
+  import { showToast } from "../state";
 
   let version = $state("--");
   let update = $state<AppUpdate | null>(null);
@@ -25,6 +26,7 @@
     } catch (error) {
       console.error("Failed to check for updates", error);
       updateState = "error";
+      showToast(t("about.updateError"), "error");
     }
   }
 
@@ -36,6 +38,7 @@
     } catch (error) {
       console.error("Failed to install update", error);
       updateState = "error";
+      showToast(t("about.installUpdateError"), "error");
     }
   }
 

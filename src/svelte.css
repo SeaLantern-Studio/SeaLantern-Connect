@@ -17,64 +17,6 @@
     transform: rotate(360deg);
   }
 }
-.toast-region {
-  position: fixed;
-  top: 58px;
-  right: 18px;
-  z-index: 1200;
-  width: min(320px, calc(100vw - 36px));
-  display: grid;
-  gap: 8px;
-}
-.toast-item {
-  min-height: 46px;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 26px;
-  align-items: center;
-  gap: 9px;
-  padding: 9px;
-  color: var(--text);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-}
-.toast-icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
-  border-radius: 7px;
-}
-.toast-success .toast-icon {
-  color: var(--success);
-}
-.toast-error .toast-icon {
-  color: var(--danger);
-}
-.toast-message {
-  overflow-wrap: anywhere;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.toast-close {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-.toast-close:hover {
-  color: var(--text);
-}
-
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 68px minmax(0, 1fr);

@@ -89,6 +89,7 @@
     "updateAvailable": "发现新版本 v{version}",
     "installUpdate": "下载并安装",
     "updateError": "检查更新失败，请稍后重试",
+    "installUpdateError": "更新安装失败，请稍后重试",
     "frpDescription": "FRP 隧道由 OpenFRP 和 SakuraFRP 服务商供应。\nSeaLantern Connect 为独立客户端，与服务商无关。"
   },
   "window": {
@@ -126,6 +127,16 @@
       "custom": "自定义"
     },
     "customTheme": "自定义主题",
+    "resetCustomTheme": "重置",
+    "importCustomTheme": "导入",
+    "exportCustomTheme": "导出",
+    "importCustomThemeSuccess": "主题导入成功",
+    "exportCustomThemeSuccess": "主题导出成功",
+    "customThemeFileError": "主题文件操作失败",
+    "invalidCustomTheme": "CSS 格式错误，导入失败",
+    "invalidBackground": "图片读取失败，请选择有效的图片文件",
+    "backgroundSelected": "背景图片已设置",
+    "backgroundRemoved": "背景图片已移除",
     "customThemePalette": "编辑配色",
     "customThemeLight": "浅色",
     "customThemeDark": "深色",
@@ -226,6 +237,7 @@
   "connectionSettings": {
     "startup": "启动",
     "autostart": "开机时自动启动",
+    "autostartError": "开机启动设置失败",
     "silentStart": "静默启动",
     "splashDuration": "启动动画时长",
     "disabled": "关闭",

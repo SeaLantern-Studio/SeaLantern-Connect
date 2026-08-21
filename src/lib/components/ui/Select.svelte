@@ -91,7 +91,7 @@
   }
   function marqueeIfOverflow(node: HTMLElement): { destroy: () => void } {
     let frame = 0;
-    const update = (): void => {
+    const updateMarquee = (): void => {
       node.classList.remove("ui-select-marquee");
       const track = node.firstElementChild as HTMLElement | null;
       const content = track?.firstElementChild as HTMLElement | null;
@@ -108,7 +108,7 @@
     };
     const scheduleUpdate = (): void => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(update);
+      frame = requestAnimationFrame(updateMarquee);
     };
     const resizeObserver = new ResizeObserver(scheduleUpdate);
     const mutationObserver = new MutationObserver(scheduleUpdate);
@@ -219,11 +219,7 @@
 </script>
 
 {#snippet selectContent()}
-  <Select.Content
-    id={`${selectId}-listbox`}
-    align="end"
-    class="ui-select-content"
-  >
+  <Select.Content id={`${selectId}-listbox`} align="end" class="ui-select-content">
     {#if searchable}<div class="ui-select-search-wrap">
         <Search class="ui-select-search-icon" size={15} strokeWidth={2} aria-hidden="true" />
         <input
@@ -302,8 +298,9 @@
       use:marqueeIfOverflow
     >
       <span class="ui-select-marquee-track"
-        ><span>{selectedOption?.label ?? placeholder}</span
-        ><span aria-hidden="true">{selectedOption?.label ?? placeholder}</span></span
+        ><span>{selectedOption?.label ?? placeholder}</span><span aria-hidden="true"
+          >{selectedOption?.label ?? placeholder}</span
+        ></span
       >
     </span>
     <ChevronDown class="ui-select-chevron" size={16} strokeWidth={2} aria-hidden="true" />
@@ -468,7 +465,9 @@
     display: inline-block;
   }
   :global(.ui-select:hover .ui-select-value.ui-select-marquee > .ui-select-marquee-track),
-  :global(.ui-select[data-state="open"] .ui-select-value.ui-select-marquee > .ui-select-marquee-track),
+  :global(
+    .ui-select[data-state="open"] .ui-select-value.ui-select-marquee > .ui-select-marquee-track
+  ),
   :global(.ui-select-item:hover .ui-select-marquee > .ui-select-marquee-track),
   :global(.ui-select-item.keyboard-highlighted .ui-select-marquee > .ui-select-marquee-track) {
     animation: ui-select-marquee 2.8s linear 0.6s infinite;
@@ -490,7 +489,9 @@
   }
   @media (prefers-reduced-motion: reduce) {
     :global(.ui-select:hover .ui-select-value.ui-select-marquee > .ui-select-marquee-track),
-    :global(.ui-select[data-state="open"] .ui-select-value.ui-select-marquee > .ui-select-marquee-track),
+    :global(
+      .ui-select[data-state="open"] .ui-select-value.ui-select-marquee > .ui-select-marquee-track
+    ),
     :global(.ui-select-item:hover .ui-select-marquee > .ui-select-marquee-track),
     :global(.ui-select-item.keyboard-highlighted .ui-select-marquee > .ui-select-marquee-track) {
       animation: none;

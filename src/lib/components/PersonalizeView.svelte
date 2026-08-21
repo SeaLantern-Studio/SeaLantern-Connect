@@ -1,15 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getSystemFonts, supportsLiquidGlass } from "@api/settings";
+  import { getSystemFonts, openTextFile, saveTextFile, supportsLiquidGlass } from "@api/settings";
   import { t } from "@i18n";
   import type { ColorThemeId } from "@models/preferences";
   import type { Preferences, ThemeColors } from "@models/preferences";
   import { getThemeOptions } from "@themes";
+  import { DEFAULT_CUSTOM_THEME } from "@themes/custom";
   import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@themes/typography";
+  import { showToast } from "../state";
+  import Button from "./ui/Button.svelte";
   import ColorPicker from "./ui/ColorPicker.svelte";
   import Select, { type Option, type PointerOrigin } from "./ui/Select.svelte";
   import Toggle from "./ui/Toggle.svelte";
-  import { X } from "@lucide/svelte";
+  import { Download, RotateCcw, Upload, X } from "@lucide/svelte";
 
   let { value, onupdate, onthemechange } = $props<{
     value: Preferences;
@@ -19,7 +22,7 @@
   let fonts = $state<string[]>([]);
   let liquidGlassSupported = $state(false);
   let platform = $state<"macos" | "windows" | "other">("other");
-  let customPlan = $state<"light" | "dark">("light");
+  let activePlan = $state<"light" | "dark">("light");
   let backgroundFileInput = $state<HTMLInputElement>();
   const customColorFields: Array<{ key: keyof ThemeColors; label: string }> = [
     { key: "bg", label: "background" },
@@ -66,14 +69,7 @@
       label: t(`personalization.colorThemes.${option.value}`),
     })),
   );
-  const customPlanOptions = $derived<Option[]>([
-    { label: t("personalization.customThemeLight"), value: "light" },
-    { label: t("personalization.customThemeDark"), value: "dark" },
-  ]);
-  const usesCustomTheme = $derived(
-    value.windowMaterial === "solid" && value.colorTheme === "custom",
-  );
-  const customColors = $derived(value.customTheme[customPlan]);
+  const customColors = $derived(value.customTheme[activePlan]);
   const fontSizeProgress = $derived(
     `${((value.fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100}%`,
   );
@@ -89,9 +85,116 @@
     onupdate({
       customTheme: {
         ...value.customTheme,
-        [customPlan]: { ...value.customTheme[customPlan], [field]: color },
+        [activePlan]: { ...value.customTheme[activePlan], [field]: color },
       },
     });
+  }
+
+  function syncActivePlan(): void {
+    activePlan = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  }
+
+  function resetCustomPalette(): void {
+    onupdate({
+      customTheme: {
+        ...value.customTheme,
+        [activePlan]: { ...DEFAULT_CUSTOM_THEME[activePlan] },
+      },
+    });
+  }
+
+  function customPaletteCss(): string {
+    return [
+      ":root {",
+      "  /* SeaLantern Connect custom theme */",
+      ...(["light", "dark"] as const).flatMap((plan) => [
+        `  /* ${plan} */`,
+        ...customColorFields.map(
+          ({ key }) => `  --sl-custom-${plan}-${key}: ${value.customTheme[plan][key]};`,
+        ),
+      ]),
+      "}",
+      "",
+    ].join("\n");
+  }
+
+  async function exportCustomPalette(): Promise<void> {
+    const css = customPaletteCss();
+    try {
+      const saved = await saveTextFile(css, "sl-connect-custom.css");
+      if (saved === true) {
+        showToast(t("personalization.exportCustomThemeSuccess"), "success");
+        return;
+      }
+      if (saved === null) return;
+    } catch {
+      showToast(t("personalization.customThemeFileError"), "error");
+    }
+  }
+
+  async function importCustomPalette(): Promise<void> {
+    try {
+      const css = await openTextFile();
+      if (css !== null) applyImportedPalette(css);
+    } catch {
+      showToast(t("personalization.customThemeFileError"), "error");
+    }
+  }
+
+  function applyImportedPalette(css: string): void {
+    const expected = new Set(
+      (["light", "dark"] as const).flatMap((plan) =>
+        customColorFields.map(({ key }) => `${plan}-${key}`),
+      ),
+    );
+    const parsed = new Map<string, string>();
+    let hasExtraField = false;
+    let hasInvalidValue = false;
+    try {
+      const stylesheet = new CSSStyleSheet();
+      stylesheet.replaceSync(css);
+      const visitRules = (rules: CSSRuleList): void => {
+        for (const rule of Array.from(rules)) {
+          if ("style" in rule && rule.style instanceof CSSStyleDeclaration) {
+            for (const property of Array.from(rule.style)) {
+              if (!property.startsWith("--sl-custom-")) continue;
+              const token = property.slice("--sl-custom-".length);
+              if (!expected.has(token)) {
+                hasExtraField = true;
+                continue;
+              }
+              const color = rule.style.getPropertyValue(property).trim();
+              if (!/^#[\da-f]{6}$/i.test(color)) {
+                hasInvalidValue = true;
+                continue;
+              }
+              parsed.set(token, color);
+            }
+          }
+          if ("cssRules" in rule && rule.cssRules) visitRules(rule.cssRules as CSSRuleList);
+        }
+      };
+      visitRules(stylesheet.cssRules);
+    } catch {
+      showToast(t("personalization.invalidCustomTheme"), "error");
+      return;
+    }
+    const hasMissingField = [...expected].some((key) => !parsed.has(key));
+    if (hasMissingField || hasExtraField || hasInvalidValue) {
+      showToast(t("personalization.invalidCustomTheme"), "error");
+      return;
+    }
+    const imported = {
+      light: { ...value.customTheme.light },
+      dark: { ...value.customTheme.dark },
+    };
+    for (const plan of ["light", "dark"] as const) {
+      for (const { key } of customColorFields) {
+        imported[plan][key] = parsed.get(`${plan}-${key}`)!;
+      }
+    }
+    onupdate({ customTheme: imported });
+    showToast(t("personalization.importCustomThemeSuccess"), "success");
   }
 
   function chooseBackground(): void {
@@ -100,11 +203,27 @@
 
   function handleBackgroundFile(event: Event): void {
     const file = (event.currentTarget as HTMLInputElement).files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast(t("personalization.invalidBackground"), "error");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") onupdate({ backgroundImage: reader.result, backgroundEnabled: true });
-    };
+    reader.addEventListener(
+      "load",
+      () => {
+        if (typeof reader.result === "string") {
+          onupdate({ backgroundImage: reader.result, backgroundEnabled: true });
+          showToast(t("personalization.backgroundSelected"), "success");
+        }
+      },
+      { once: true },
+    );
+    reader.addEventListener(
+      "error",
+      () => showToast(t("personalization.invalidBackground"), "error"),
+      { once: true },
+    );
     reader.readAsDataURL(file);
   }
 
@@ -126,6 +245,16 @@
         liquidGlassSupported = false;
       }
     }
+  });
+
+  onMount(() => {
+    syncActivePlan();
+    const themeObserver = new MutationObserver(syncActivePlan);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => themeObserver.disconnect();
   });
 </script>
 
@@ -153,14 +282,14 @@
         }}
       />
     </div>
-    {#if value.windowMaterial === "solid"}<div class="preference-row">
-        <span>{t("personalization.colorTheme")}</span><Select
-          class="settings-select"
-          value={value.colorTheme}
-          options={colorOptions}
-          onValueChange={(next) => onupdate({ colorTheme: next as ColorThemeId })}
-        />
-      </div>{/if}
+    <div class="preference-row">
+      <span>{t("personalization.colorTheme")}</span><Select
+        class="settings-select"
+        value={value.colorTheme}
+        options={colorOptions}
+        onValueChange={(next) => onupdate({ colorTheme: next as ColorThemeId })}
+      />
+    </div>
     <div class="preference-row">
       <span>{t("personalization.fontFamily")}</span><Select
         class="settings-select font-family-select"
@@ -222,7 +351,8 @@
               aria-label={t("personalization.chooseBackground")}
               onclick={() => !value.backgroundImage && chooseBackground()}
               onkeydown={(event) => {
-                if (!value.backgroundImage && (event.key === "Enter" || event.key === " ")) chooseBackground();
+                if (!value.backgroundImage && (event.key === "Enter" || event.key === " "))
+                  chooseBackground();
               }}
             >
               {#if value.backgroundImage}<button
@@ -232,44 +362,117 @@
                   onclick={(event) => {
                     event.stopPropagation();
                     onupdate({ backgroundImage: "" });
-                  }}><X size={13} /></button
+                    showToast(t("personalization.backgroundRemoved"), "success");
+                  }}><X size={11} /></button
                 >{/if}
               {#if !value.backgroundImage}<span>{t("personalization.chooseBackground")}</span>{/if}
             </div>
           </div>
         </div>
-        <div class="preference-row"><span>{t("personalization.backgroundOpacity")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0" max="1" step="0.05" value={value.backgroundOpacity} style={`--slider-progress: ${value.backgroundOpacity * 100}%`} oninput={(event) => onupdate({ backgroundOpacity: Number(event.currentTarget.value) })} /><output>{Math.round(value.backgroundOpacity * 100)}%</output></div></div>
-        <div class="preference-row"><span>{t("personalization.backgroundBlur")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0" max="20" step="1" value={value.backgroundBlur} style={`--slider-progress: ${value.backgroundBlur * 5}%`} oninput={(event) => onupdate({ backgroundBlur: Number(event.currentTarget.value) })} /><output>{value.backgroundBlur}px</output></div></div>
-        <div class="preference-row"><span>{t("personalization.backgroundBrightness")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="0.5" max="1.5" step="0.1" value={value.backgroundBrightness} style={`--slider-progress: ${(value.backgroundBrightness - 0.5) * 100}%`} oninput={(event) => onupdate({ backgroundBrightness: Number(event.currentTarget.value) })} /><output>{value.backgroundBrightness.toFixed(1)}</output></div></div>
-        <div class="preference-row"><span>{t("personalization.backgroundCardBlur")}</span><div class="font-size-control"><input class="settings-slider" type="range" min="8" max="30" step="1" value={value.backgroundCardBlur} style={`--slider-progress: ${((value.backgroundCardBlur - 8) / 22) * 100}%`} oninput={(event) => onupdate({ backgroundCardBlur: Number(event.currentTarget.value) })} /><output>{value.backgroundCardBlur}px</output></div></div>
+        <div class="preference-row">
+          <span>{t("personalization.backgroundOpacity")}</span>
+          <div class="font-size-control">
+            <input
+              class="settings-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={value.backgroundOpacity}
+              style={`--slider-progress: ${value.backgroundOpacity * 100}%`}
+              oninput={(event) =>
+                onupdate({ backgroundOpacity: Number(event.currentTarget.value) })}
+            /><output>{Math.round(value.backgroundOpacity * 100)}%</output>
+          </div>
+        </div>
+        <div class="preference-row">
+          <span>{t("personalization.backgroundBlur")}</span>
+          <div class="font-size-control">
+            <input
+              class="settings-slider"
+              type="range"
+              min="0"
+              max="20"
+              step="1"
+              value={value.backgroundBlur}
+              style={`--slider-progress: ${value.backgroundBlur * 5}%`}
+              oninput={(event) => onupdate({ backgroundBlur: Number(event.currentTarget.value) })}
+            /><output>{value.backgroundBlur}px</output>
+          </div>
+        </div>
+        <div class="preference-row">
+          <span>{t("personalization.backgroundBrightness")}</span>
+          <div class="font-size-control">
+            <input
+              class="settings-slider"
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.1"
+              value={value.backgroundBrightness}
+              style={`--slider-progress: ${(value.backgroundBrightness - 0.5) * 100}%`}
+              oninput={(event) =>
+                onupdate({ backgroundBrightness: Number(event.currentTarget.value) })}
+            /><output>{value.backgroundBrightness.toFixed(1)}</output>
+          </div>
+        </div>
+        <div class="preference-row">
+          <span>{t("personalization.backgroundCardBlur")}</span>
+          <div class="font-size-control">
+            <input
+              class="settings-slider"
+              type="range"
+              min="8"
+              max="30"
+              step="1"
+              value={value.backgroundCardBlur}
+              style={`--slider-progress: ${((value.backgroundCardBlur - 8) / 22) * 100}%`}
+              oninput={(event) =>
+                onupdate({ backgroundCardBlur: Number(event.currentTarget.value) })}
+            /><output>{value.backgroundCardBlur}px</output>
+          </div>
+        </div>
       </div>{/if}
   </section>
-  <section class:disabled={!usesCustomTheme} class="settings-section custom-theme-section">
-    <div class="settings-section-heading"><h2>{t("personalization.customTheme")}</h2></div>
-    <div class="preference-row">
-      <span>{t("personalization.customThemePalette")}</span><Select
-        class="settings-select"
-        value={customPlan}
-        options={customPlanOptions}
-        disabled={!usesCustomTheme}
-        onValueChange={(next) => {
-          if (next === "light" || next === "dark") customPlan = next;
-        }}
-      />
-    </div>
-    <div class="custom-theme-grid">
-      {#each customColorFields as field (field.key)}<label class="custom-color-field">
-          <span>{t(`personalization.customColors.${field.label}`)}</span>
-          <span class="custom-color-control">
-            <ColorPicker
-              value={customColors[field.key]}
-              disabled={!usesCustomTheme}
-              label={t(`personalization.customColors.${field.label}`)}
-              onvaluechange={(color) => updateCustomColor(field.key, color)}
-            />
-            <code>{customColors[field.key].toUpperCase()}</code>
-          </span>
-        </label>{/each}
-    </div>
-  </section>
+  {#if value.colorTheme === "custom"}<section class="settings-section custom-theme-section">
+      <div class="settings-section-heading custom-theme-heading">
+        <h2>{t("personalization.customTheme")}</h2>
+        <div class="custom-theme-actions">
+          <Button
+            variant="ghost"
+            size="sm"
+            title={t("personalization.importCustomTheme")}
+            onclick={importCustomPalette}
+            ><Upload size={15} />{t("personalization.importCustomTheme")}</Button
+          >
+          <Button
+            variant="ghost"
+            size="sm"
+            title={t("personalization.exportCustomTheme")}
+            onclick={exportCustomPalette}
+            ><Download size={15} />{t("personalization.exportCustomTheme")}</Button
+          >
+          <Button
+            variant="ghost"
+            size="sm"
+            title={t("personalization.resetCustomTheme")}
+            onclick={resetCustomPalette}
+            ><RotateCcw size={15} />{t("personalization.resetCustomTheme")}</Button
+          >
+        </div>
+      </div>
+      <div class="custom-theme-grid">
+        {#each customColorFields as field (field.key)}<label class="custom-color-field">
+            <span>{t(`personalization.customColors.${field.label}`)}</span>
+            <span class="custom-color-control">
+              <ColorPicker
+                value={customColors[field.key]}
+                label={t(`personalization.customColors.${field.label}`)}
+                onvaluechange={(color) => updateCustomColor(field.key, color)}
+              />
+              <code>{customColors[field.key].toUpperCase()}</code>
+            </span>
+          </label>{/each}
+      </div>
+    </section>{/if}
 </div>

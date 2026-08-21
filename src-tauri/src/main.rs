@@ -58,6 +58,16 @@ fn frontend_page_loaded(page: String) {
     log::debug!("frontend: {page} loaded");
 }
 
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(path).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn write_text_file(path: String, content: String) -> Result<(), String> {
+    std::fs::write(path, content).map_err(|error| error.to_string())
+}
+
 fn main() {
     #[cfg(all(target_os = "windows", debug_assertions))]
     attach_parent_console();
@@ -86,6 +96,7 @@ fn main() {
         .manage(autodelay::AutoDelay::new())
         .manage(deeplink::PendingDeepLinks::default())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -129,6 +140,8 @@ fn main() {
             restart_application,
             frontend_ready,
             frontend_page_loaded,
+            read_text_file,
+            write_text_file,
             toolbox::run_network_diagnostics,
             toolbox::run_relay_diagnostics,
             host::start_lan_scan,

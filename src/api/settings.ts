@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import type {
   ApplicationSettingsUpdate,
   ConnectionSettingsUpdate,
@@ -28,6 +29,25 @@ export function getSystemTheme(): Promise<SystemTheme> {
 
 export function supportsLiquidGlass(): Promise<boolean> {
   return invoke("supports_liquid_glass");
+}
+
+export async function saveTextFile(content: string, defaultPath: string): Promise<boolean | null> {
+  const path = await save({
+    defaultPath,
+    filters: [{ name: "CSS", extensions: ["css"] }],
+  });
+  if (!path) return null;
+  await invoke("write_text_file", { path, content });
+  return true;
+}
+
+export async function openTextFile(): Promise<string | null> {
+  const selected = await open({
+    multiple: false,
+    filters: [{ name: "CSS", extensions: ["css"] }],
+  });
+  const path = Array.isArray(selected) ? selected[0] : selected;
+  return path ? invoke<string>("read_text_file", { path }) : null;
 }
 
 export function saveTheme(theme: ThemePreference, systemTheme: SystemTheme): Promise<void> {

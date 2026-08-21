@@ -89,6 +89,7 @@
     "updateAvailable": "Version v{version} is available",
     "installUpdate": "Download and Install",
     "updateError": "Could not check for updates. Try again later",
+    "installUpdateError": "Could not install the update. Try again later",
     "frpDescription": "FRP tunnels are provided by OpenFRP and SakuraFRP.\nSeaLantern Connect is independent and unaffiliated."
   },
   "window": {
@@ -126,6 +127,16 @@
       "custom": "Custom"
     },
     "customTheme": "Custom Theme",
+    "resetCustomTheme": "Reset",
+    "importCustomTheme": "Import",
+    "exportCustomTheme": "Export",
+    "importCustomThemeSuccess": "Theme imported",
+    "exportCustomThemeSuccess": "Theme exported",
+    "customThemeFileError": "Could not access the theme file",
+    "invalidCustomTheme": "Invalid CSS format. Import failed.",
+    "invalidBackground": "Could not read the image. Choose a valid image file",
+    "backgroundSelected": "Background image selected",
+    "backgroundRemoved": "Background image removed",
     "customThemePalette": "Edit Palette",
     "customThemeLight": "Light",
     "customThemeDark": "Dark",
@@ -226,6 +237,7 @@
   "connectionSettings": {
     "startup": "Startup",
     "autostart": "Launch at Startup",
+    "autostartError": "Could not update launch at startup",
     "silentStart": "Start in Background",
     "splashDuration": "Splash Duration",
     "disabled": "Off",

@@ -3,7 +3,7 @@
   import { disableAutostart, enableAutostart, getAutostartEnabled } from "@api/autostart";
   import { t } from "@i18n";
   import type { Preferences } from "@models/preferences";
-  import { updateApplication, updateConnection, updateLightweight } from "../state";
+  import { showToast, updateApplication, updateConnection, updateLightweight } from "../state";
   import Input from "./ui/Input.svelte";
   import Select, { type Option } from "./ui/Select.svelte";
   import Toggle from "./ui/Toggle.svelte";
@@ -67,6 +67,7 @@
     } catch (error) {
       autostartEnabled = previous;
       console.error("Failed to update autostart", error);
+      showToast(t("connectionSettings.autostartError"), "error");
     } finally {
       autostartUpdating = false;
     }

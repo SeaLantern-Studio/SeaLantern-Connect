@@ -10,43 +10,18 @@ import {
   type ThemePreference,
 } from "@models/preferences";
 import { applyColorTheme } from "@themes/apply";
+import { DEFAULT_CUSTOM_THEME } from "@themes/custom";
 import { applyTypography, DEFAULT_FONT_SIZE } from "@themes/typography";
 import { getP2pStatus, onP2pStatus } from "@api/p2p";
 import { emptyP2pStatus, type P2pStatus } from "@models/p2p";
 import type { IncomingInvite } from "@domain/invitations";
 import { mergePreferences } from "./state-utils";
-
-const defaultCustomTheme = {
-  light: {
-    bg: "#f7f7f6",
-    bgSecondary: "#f0f0ef",
-    bgTertiary: "#dedfe0",
-    primary: "#45505d",
-    primarySolid: "#45505d",
-    primarySolidHover: "#36414d",
-    secondary: "#69727c",
-    textPrimary: "#202326",
-    textSecondary: "#666b70",
-    border: "#d6d8da",
-  },
-  dark: {
-    bg: "#111214",
-    bgSecondary: "#191a1d",
-    bgTertiary: "#25272b",
-    primary: "#aab4c0",
-    primarySolid: "#455666",
-    primarySolidHover: "#536778",
-    secondary: "#c1c7cf",
-    textPrimary: "#f1f1f2",
-    textSecondary: "#a6a8ae",
-    border: "#30343a",
-  },
-};
+import { toast } from "svelte-sonner";
 
 export const defaults: Preferences = {
   theme: "system",
   colorTheme: "default",
-  customTheme: defaultCustomTheme,
+  customTheme: DEFAULT_CUSTOM_THEME,
   fontSize: DEFAULT_FONT_SIZE,
   fontFamily: "",
   splashDurationMs: 1000,
@@ -64,7 +39,7 @@ export const defaults: Preferences = {
   relayUrl: "",
   backgroundEnabled: false,
   backgroundImage: "",
-  backgroundOpacity: 0.3,
+  backgroundOpacity: 0.75,
   backgroundBlur: 0,
   backgroundBrightness: 1,
   backgroundCardBlur: 8,
@@ -84,15 +59,8 @@ export const sidebarCollapsed = writable(false);
 export const preferences = writable<Preferences>(structuredClone(defaults));
 export const session = writable<P2pStatus>({ ...emptyP2pStatus });
 export const incomingInvite = writable<IncomingInvite | null>(null);
-export const toasts = writable<ToastItem[]>([]);
 
 export type ToastTone = "success" | "error" | "info";
-export interface ToastItem {
-  id: number;
-  message: string;
-  tone: ToastTone;
-}
-let nextToastId = 0;
 let unlisten: (() => void) | null = null;
 let preferencesLoaded = false;
 let systemTheme = SystemTheme.Light;
@@ -132,12 +100,10 @@ export function consumeInvite(id: number): void {
 }
 
 export function showToast(message: string, tone: ToastTone = "info"): void {
-  const id = ++nextToastId;
-  toasts.update((items) => [...items.slice(-2), { id, message, tone }]);
-  window.setTimeout(
-    () => toasts.update((items) => items.filter((item) => item.id !== id)),
-    tone === "error" ? 4000 : 2600,
-  );
+  const options = { duration: tone === "error" ? 4000 : 2600 };
+  if (tone === "success") toast.success(message, options);
+  else if (tone === "error") toast.error(message, options);
+  else toast.info(message, options);
 }
 
 function applyPreferences(value: Preferences): void {
@@ -182,6 +148,11 @@ export function setTheme(theme: ThemePreference): void {
     .saveTheme(theme, systemTheme)
     .then(() => applyPreferences(get(preferences)))
     .catch((error) => console.error("Failed to save theme", error));
+}
+
+export function getEffectiveTheme(theme: ThemePreference): "light" | "dark" {
+  if (theme !== "system") return theme;
+  return systemTheme === SystemTheme.Dark ? "dark" : "light";
 }
 
 export function startSystemThemeListener(): () => void {

@@ -124,7 +124,7 @@ impl Default for Preferences {
             relay_url: String::new(),
             background_enabled: false,
             background_image: String::new(),
-            background_opacity: 0.3,
+            background_opacity: 0.75,
             background_blur: 0,
             background_brightness: 1.0,
             background_card_blur: 8,
@@ -658,13 +658,33 @@ fn parse_preferences(content: &str) -> Preferences {
         } else if let Some(value) = line.strip_prefix("background_image=") {
             preferences.background_image = value.trim().to_owned();
         } else if let Some(value) = line.strip_prefix("background_opacity=") {
-            preferences.background_opacity = value.trim().parse().ok().filter(|v: &f32| (0.0..=1.0).contains(v)).unwrap_or(0.3);
+            preferences.background_opacity = value
+                .trim()
+                .parse()
+                .ok()
+                .filter(|v: &f32| (0.0..=1.0).contains(v))
+                .unwrap_or(0.75);
         } else if let Some(value) = line.strip_prefix("background_blur=") {
-            preferences.background_blur = value.trim().parse().ok().filter(|v: &u32| *v <= 20).unwrap_or(0);
+            preferences.background_blur = value
+                .trim()
+                .parse()
+                .ok()
+                .filter(|v: &u32| *v <= 20)
+                .unwrap_or(0);
         } else if let Some(value) = line.strip_prefix("background_brightness=") {
-            preferences.background_brightness = value.trim().parse().ok().filter(|v: &f32| (0.5..=1.5).contains(v)).unwrap_or(1.0);
+            preferences.background_brightness = value
+                .trim()
+                .parse()
+                .ok()
+                .filter(|v: &f32| (0.5..=1.5).contains(v))
+                .unwrap_or(1.0);
         } else if let Some(value) = line.strip_prefix("background_card_blur=") {
-            preferences.background_card_blur = value.trim().parse().ok().filter(|v: &u32| (8..=30).contains(v)).unwrap_or(8);
+            preferences.background_card_blur = value
+                .trim()
+                .parse()
+                .ok()
+                .filter(|v: &u32| (8..=30).contains(v))
+                .unwrap_or(8);
         }
     }
     preferences

@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   grid-template-rows: 48px minmax(0, 1fr);
-  background: var(--surface-soft);
+  background: var(--material-shell-bg, var(--background));
   position: relative;
   isolation: isolate;
   transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -27,14 +27,18 @@
   background: transparent;
   backdrop-filter: none;
 }
+:root[data-theme="light"] .app-shell.background-enabled .app-content {
+  border-color: color-mix(in srgb, var(--border) 45%, transparent);
+}
 .app-shell.background-enabled .page-transition-frame {
-  background: color-mix(in srgb, var(--surface-soft) 30%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 20%, transparent);
   backdrop-filter: blur(var(--page-background-blur, 8px)) saturate(1.06);
 }
 :root[data-theme="dark"] .app-shell.background-enabled .page-transition-frame {
   background: color-mix(in srgb, var(--surface-soft) 42%, transparent);
 }
-.app-shell.background-enabled :is(
+.app-shell.background-enabled
+  :is(
     .settings-section,
     .join-panel,
     .connection-panel,
@@ -43,7 +47,7 @@
     .frp-tunnel-panel,
     .frp-output-panel
   ) {
-  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  background: color-mix(in srgb, var(--surface) 54%, transparent);
   backdrop-filter: blur(var(--card-background-blur, 8px)) saturate(1.08);
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -121,7 +125,7 @@
   text-overflow: ellipsis;
 }
 .sidebar-brand-name small {
-  color: inherit;
+  color: var(--accent);
   font-size: 0.7143rem;
   font-weight: 500;
   line-height: 1.1;
@@ -191,6 +195,9 @@
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   font-weight: 500;
 }
+.nav-item.active .nav-icon {
+  color: inherit;
+}
 .nav-active-indicator {
   position: absolute;
   z-index: 2;
@@ -210,6 +217,7 @@
 }
 .nav-icon {
   justify-self: center;
+  color: var(--accent);
   transform: scale(1);
   transform-origin: center;
   will-change: transform;

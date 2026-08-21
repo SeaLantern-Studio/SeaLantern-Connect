@@ -12,6 +12,7 @@
     "core:window:allow-close",
     "autostart:default",
     "deep-link:default",
+    "dialog:default",
     "opener:default",
     "process:default",
     "updater:default"

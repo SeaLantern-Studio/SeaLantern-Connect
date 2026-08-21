@@ -4,8 +4,6 @@
   import { prefersReducedMotion, Tween } from "svelte/motion";
   import { fade, fly } from "svelte/transition";
   import {
-    CircleAlert,
-    CircleCheck,
     Cloud,
     Copy,
     Flower2,
@@ -52,10 +50,12 @@
   import HostView from "./lib/components/HostView.svelte";
   import JoinView from "./lib/components/JoinView.svelte";
   import SplashScreen from "./lib/components/shared/SplashScreen.svelte";
+  import Toast from "./lib/components/ui/Toast.svelte";
   import {
     activeSection,
     changeLocale,
     disposeSession,
+    getEffectiveTheme,
     importInvite,
     initializeSession,
     incomingInvite,
@@ -67,7 +67,6 @@
     sidebarCollapsed,
     startSystemThemeListener,
     type SectionId,
-    toasts,
     updatePreferences,
   } from "./lib/state";
 
@@ -366,15 +365,11 @@
     origin: { x: number; y: number },
   ): void {
     const root = document.documentElement;
-    const effectiveTheme =
-      theme === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : theme;
+    const effectiveTheme = getEffectiveTheme(theme);
     const switchTheme = (): void => setTheme(theme);
 
     if (
+      get(preferences).theme === theme ||
       root.dataset.theme === effectiveTheme ||
       !document.startViewTransition ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -495,7 +490,8 @@
   <div
     bind:this={appShell}
     class:sidebar-collapsed={$sidebarCollapsed}
-    class:background-enabled={$preferences.backgroundEnabled && Boolean($preferences.backgroundImage)}
+    class:background-enabled={$preferences.backgroundEnabled &&
+      Boolean($preferences.backgroundImage)}
     class="app-shell"
     style={`--app-background-opacity: ${$preferences.backgroundOpacity}; --app-background-blur: ${$preferences.backgroundBlur}px; --app-background-brightness: ${$preferences.backgroundBrightness}; --card-background-blur: ${$preferences.backgroundCardBlur}px; --page-background-blur: ${Math.max(0, $preferences.backgroundCardBlur - 8)}px`}
   >
@@ -710,27 +706,7 @@
 {/snippet}
 
 <div class="sr-only">{currentLocale}</div>
-<div class="toast-region" aria-live="polite">
-  {#each $toasts as item (item.id)}
-    <div class={`toast-item toast-${item.tone}`} role={item.tone === "error" ? "alert" : "status"}>
-      <span class="toast-icon"
-        >{#if item.tone === "success"}<CircleCheck
-            size={17}
-          />{:else if item.tone === "error"}<CircleAlert size={17} />{:else}<Info
-            size={17}
-          />{/if}</span
-      >
-      <span class="toast-message">{item.message}</span>
-      <button
-        class="toast-close"
-        type="button"
-        aria-label={t("common.dismiss")}
-        onclick={() => toasts.update((items) => items.filter((value) => value.id !== item.id))}
-        ><X size={15} /></button
-      >
-    </div>
-  {/each}
-</div>
+<Toast />
 
 <Dialog bind:open={materialPrompt} title={t("personalization.restartTitle")}>
   <p>{t("personalization.restartHint")}</p>

@@ -1,11 +1,5 @@
 import { getThemeColors, type ColorThemeId } from ".";
-import type { ThemeColors } from "@models/preferences";
 import type { CustomTheme, ThemePreference, WindowMaterial } from "@models/preferences";
-
-const nativeMaterialColors: Record<"light" | "dark", ThemeColors> = {
-  light: getThemeColors("default", "light"),
-  dark: getThemeColors("default", "dark"),
-};
 
 function rgba(hex: string, alpha: number): string {
   const value = Number.parseInt(hex.slice(1), 16);
@@ -47,11 +41,9 @@ export function applyColorTheme(
   windowMaterial: WindowMaterial,
   customTheme: CustomTheme,
 ): void {
-  const usesMaterialPalette = windowMaterial !== "solid";
   const dark = preference === "system" ? systemDark : preference === "dark";
-  const colors = usesMaterialPalette
-    ? nativeMaterialColors[dark ? "dark" : "light"]
-    : colorTheme === "custom"
+  const colors =
+    colorTheme === "custom"
       ? customTheme[dark ? "dark" : "light"]
       : getThemeColors(colorTheme, dark ? "dark" : "light");
   const opacity = materialOpacity(windowMaterial, dark);
