@@ -18,6 +18,7 @@ export interface FrpSnapshot {
 
 const snapshots = new Map<FrpProvider, FrpSnapshot>();
 const preloadTasks = new Map<FrpProvider, Promise<void>>();
+let restoreTask: Promise<FrpSessionStatus[]> | null = null;
 
 export function getCachedFrpSnapshot(provider: FrpProvider): FrpSnapshot | null {
   return snapshots.get(provider) ?? null;
@@ -37,7 +38,9 @@ export async function preloadFrpProvider(provider: FrpProvider): Promise<void> {
   if (existing) return existing;
   const task = (async () => {
     const client = await getFrpClientStatus(provider);
-    const session = await getFrpSessionStatus(provider);
+    const session = await restoreFrpSessions().then(
+      (sessions) => sessions.find((candidate) => candidate.provider === provider)!,
+    );
     const tunnels = session.authenticated ? await listFrpTunnels(provider) : [];
     cacheFrpSnapshot(provider, { client, session, tunnels });
   })();
@@ -65,6 +68,16 @@ export function onFrpDownloadProgress(
 
 export function getFrpSessionStatus(provider: FrpProvider): Promise<FrpSessionStatus> {
   return invoke("get_frp_session_status", { provider });
+}
+
+export function restoreFrpSessions(): Promise<FrpSessionStatus[]> {
+  if (!restoreTask) {
+    restoreTask = invoke("restore_frp_sessions");
+    void restoreTask.catch(() => {
+      restoreTask = null;
+    });
+  }
+  return restoreTask;
 }
 
 export function loginSakuraFrp(credential: string): Promise<FrpSessionStatus> {

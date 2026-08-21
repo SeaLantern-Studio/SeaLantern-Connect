@@ -4,7 +4,7 @@ mod sakurafrp;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, BufReader, Read};
 #[cfg(target_os = "windows")]
 use std::os::windows::io::AsRawHandle;
@@ -30,6 +30,7 @@ const SAKURA_KEYS_URL: &str = "https://www.natfrp.com/user/";
 const SAKURA_PURCHASE_URL: &str = "https://www.natfrp.com/purchase/buy";
 const MAX_OUTPUT_LINES: usize = 120;
 const CREDENTIAL_SERVICE: &str = "SeaLantern Connect FRP";
+const CREDENTIAL_ACCOUNT: &str = "credentials";
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
@@ -97,6 +98,39 @@ pub(crate) enum FrpProvider {
     SakuraFrp,
 }
 
+#[derive(Default, Deserialize, Serialize)]
+struct SavedCredentials {
+    open_frp: Option<String>,
+    sakura_frp: Option<String>,
+}
+
+impl SavedCredentials {
+    fn credential(&self, provider: FrpProvider) -> Option<&str> {
+        match provider {
+            FrpProvider::OpenFrp => self.open_frp.as_deref(),
+            FrpProvider::SakuraFrp => self.sakura_frp.as_deref(),
+        }
+    }
+
+    fn set(&mut self, provider: FrpProvider, credential: String) {
+        match provider {
+            FrpProvider::OpenFrp => self.open_frp = Some(credential),
+            FrpProvider::SakuraFrp => self.sakura_frp = Some(credential),
+        }
+    }
+
+    fn remove(&mut self, provider: FrpProvider) {
+        match provider {
+            FrpProvider::OpenFrp => self.open_frp = None,
+            FrpProvider::SakuraFrp => self.sakura_frp = None,
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.open_frp.is_none() && self.sakura_frp.is_none()
+    }
+}
+
 impl FrpProvider {
     fn directory(self) -> &'static str {
         match self {
@@ -141,6 +175,7 @@ struct FrpDownloadProgress {
 
 pub(crate) struct FrpState {
     downloading: Mutex<Option<FrpProvider>>,
+    restored: Mutex<HashSet<FrpProvider>>,
     credentials: Mutex<HashMap<FrpProvider, String>>,
     accounts: Mutex<HashMap<FrpProvider, String>>,
     processes: Mutex<HashMap<FrpProvider, Child>>,
@@ -154,6 +189,7 @@ impl FrpState {
     pub(crate) fn new() -> Self {
         Self {
             downloading: Mutex::new(None),
+            restored: Mutex::new(HashSet::new()),
             credentials: Mutex::new(HashMap::new()),
             accounts: Mutex::new(HashMap::new()),
             processes: Mutex::new(HashMap::new()),
@@ -336,8 +372,26 @@ pub(crate) async fn get_frp_session_status(
     state: State<'_, FrpState>,
     provider: FrpProvider,
 ) -> Result<FrpSessionStatus, String> {
-    restore_session(&state, provider).await;
     session_status(&state, provider)
+}
+
+#[tauri::command]
+pub(crate) async fn restore_frp_sessions(
+    state: State<'_, FrpState>,
+) -> Result<Vec<FrpSessionStatus>, String> {
+    let saved_credentials = load_saved_credentials();
+    for provider in [FrpProvider::OpenFrp, FrpProvider::SakuraFrp] {
+        restore_session(
+            &state,
+            provider,
+            saved_credentials.credential(provider).map(str::to_owned),
+        )
+        .await;
+    }
+    [FrpProvider::OpenFrp, FrpProvider::SakuraFrp]
+        .into_iter()
+        .map(|provider| session_status(&state, provider))
+        .collect()
 }
 
 #[tauri::command]
@@ -413,7 +467,7 @@ pub(crate) fn logout_frp(
         .lock()
         .map_err(|_| "FRP output state is unavailable".to_owned())?
         .remove(&provider);
-    if let Err(error) = remove_saved(provider) {
+    if let Err(error) = remove_saved_credential(provider) {
         log::warn!(
             "failed to remove saved {} credential: {error}",
             provider.display_name()
@@ -586,7 +640,15 @@ async fn tunnels(provider: FrpProvider, credential: &str) -> Result<Vec<FrpTunne
     }
 }
 
-async fn restore_session(state: &FrpState, provider: FrpProvider) {
+async fn restore_session(state: &FrpState, provider: FrpProvider, credential: Option<String>) {
+    let should_restore = state
+        .restored
+        .lock()
+        .map(|mut restored| restored.insert(provider))
+        .unwrap_or(false);
+    if !should_restore {
+        return;
+    }
     if state
         .accounts
         .lock()
@@ -595,7 +657,7 @@ async fn restore_session(state: &FrpState, provider: FrpProvider) {
     {
         return;
     }
-    let Some(credential) = load_saved(provider) else {
+    let Some(credential) = credential else {
         return;
     };
     let account = match provider {
@@ -635,32 +697,49 @@ fn remember_session(
     cache_session(state, provider, credential, account)
 }
 
-fn credential_entry(provider: FrpProvider) -> Result<keyring::Entry, String> {
-    keyring::Entry::new(CREDENTIAL_SERVICE, provider.directory()).map_err(|error| error.to_string())
+fn credential_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT).map_err(|error| error.to_string())
 }
 
 fn save_credential(provider: FrpProvider, credential: &str) -> Result<(), String> {
-    credential_entry(provider)?
-        .set_password(credential)
+    let mut credentials = load_saved_credentials();
+    credentials.set(provider, credential.to_owned());
+    let serialized = serde_json::to_string(&credentials).map_err(|error| error.to_string())?;
+    credential_entry()?
+        .set_password(&serialized)
         .map_err(|error| error.to_string())
 }
 
-fn load_saved(provider: FrpProvider) -> Option<String> {
-    match credential_entry(provider)
+fn load_saved_credentials() -> SavedCredentials {
+    match credential_entry()
         .and_then(|entry| entry.get_password().map_err(|error| error.to_string()))
     {
-        Ok(credential) => Some(credential),
+        Ok(credentials) => match serde_json::from_str(&credentials) {
+            Ok(credentials) => credentials,
+            Err(error) => {
+                log::warn!("could not parse saved FRP credentials: {error}");
+                SavedCredentials::default()
+            }
+        },
         Err(error) => {
-            log::debug!("no saved {} credential: {error}", provider.display_name());
-            None
+            log::debug!("no saved FRP credentials: {error}");
+            SavedCredentials::default()
         }
     }
 }
 
-fn remove_saved(provider: FrpProvider) -> Result<(), String> {
-    credential_entry(provider)?
-        .delete_credential()
-        .map_err(|error| error.to_string())
+fn remove_saved_credential(provider: FrpProvider) -> Result<(), String> {
+    let mut credentials = load_saved_credentials();
+    credentials.remove(provider);
+    let entry = credential_entry()?;
+    if credentials.is_empty() {
+        entry.delete_credential().map_err(|error| error.to_string())
+    } else {
+        let serialized = serde_json::to_string(&credentials).map_err(|error| error.to_string())?;
+        entry
+            .set_password(&serialized)
+            .map_err(|error| error.to_string())
+    }
 }
 
 fn cache_session(
