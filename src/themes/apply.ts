@@ -19,22 +19,24 @@ function materialOpacity(
   surface: number;
   soft: number;
   strong: number;
+  content: number;
+  shell: number;
 } {
   switch (material) {
     case "mica":
-      return { surface: 0.3, soft: 0.46, strong: 0.38 };
+      return { surface: 0.3, soft: 0.46, strong: 0.38, content: 0.5, shell: 0.4 };
     case "acrylic":
       return dark
-        ? { surface: 0.26, soft: 0.42, strong: 0.34 }
-        : { surface: 0.18, soft: 0.26, strong: 0.22 };
+        ? { surface: 0.26, soft: 0.42, strong: 0.34, content: 0.46, shell: 0.36 }
+        : { surface: 0.18, soft: 0.26, strong: 0.22, content: 0.4, shell: 0.28 };
     case "vibrancy":
-      return { surface: 0.14, soft: 0.08, strong: 0.18 };
+      return { surface: 0.14, soft: 0.08, strong: 0.18, content: 0.4, shell: 0.18 };
     case "liquid_glass":
       return dark
-        ? { surface: 0.42, soft: 0.32, strong: 0.56 }
-        : { surface: 0.55, soft: 0.38, strong: 0.68 };
+        ? { surface: 0.42, soft: 0.32, strong: 0.56, content: 0.62, shell: 0.5 }
+        : { surface: 0.55, soft: 0.38, strong: 0.68, content: 0.7, shell: 0.5 };
     default:
-      return { surface: 1, soft: 1, strong: 1 };
+      return { surface: 1, soft: 1, strong: 1, content: 1, shell: 1 };
   }
 }
 
@@ -62,9 +64,11 @@ export function applyColorTheme(
   root.toggleAttribute("data-native-material", nativeMaterial);
   root.style.setProperty(
     "--material-content-bg",
-    nativeMaterial
-      ? rgba(colors.bgSecondary, Math.min(0.7, Math.max(opacity.surface + 0.2, 0.4)))
-      : colors.bgSecondary,
+    nativeMaterial ? rgba(colors.bgSecondary, opacity.content) : colors.bgSecondary,
+  );
+  root.style.setProperty(
+    "--material-shell-bg",
+    nativeMaterial ? rgba(colors.bg, opacity.shell) : colors.bg,
   );
   root.style.setProperty("--background", nativeMaterial ? "transparent" : colors.bg);
   root.style.setProperty(

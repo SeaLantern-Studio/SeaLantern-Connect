@@ -368,7 +368,7 @@
   background: var(--surface);
 }
 :root[data-native-material] .app-shell {
-  background: transparent;
+  background: var(--material-shell-bg, var(--surface-soft));
 }
 :root[data-native-material] .app-content {
   background: var(--material-content-bg, var(--surface));
