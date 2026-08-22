@@ -46,15 +46,22 @@ export function applyColorTheme(
       : getThemeColors(colorTheme, dark ? "dark" : "light");
   const opacity = materialOpacity(windowMaterial, dark);
   const root = document.documentElement;
+  const windows = /Windows/i.test(navigator.userAgent);
   const nativeMaterial =
     windowMaterial !== "solid" && /Windows|Macintosh|Mac OS X/i.test(navigator.userAgent);
 
   root.dataset.theme = dark ? "dark" : "light";
+  root.dataset.platform = windows ? "windows" : "other";
   root.dataset.windowMaterial = windowMaterial;
   root.toggleAttribute("data-native-material", nativeMaterial);
   root.style.setProperty(
     "--material-content-bg",
     nativeMaterial ? rgba(colors.bgSecondary, opacity.content) : colors.bgSecondary,
+  );
+  // Select surfaces keep the native-material glass alpha even in solid mode.
+  root.style.setProperty(
+    "--select-material-bg",
+    rgba(colors.bgSecondary, nativeMaterial ? opacity.content : 0.5),
   );
   root.style.setProperty(
     "--material-shell-bg",

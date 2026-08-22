@@ -11,6 +11,7 @@
   import { t } from "@i18n";
   import { Check, Download, ExternalLink, RefreshCw } from "@lucide/svelte";
   import { showToast } from "../state";
+  import Button from "./ui/Button.svelte";
 
   let version = $state("--");
   let update = $state<AppUpdate | null>(null);
@@ -102,15 +103,15 @@
       </p>
     </div>
     {#if updateState === "available"}
-      <button class="about-update-button" type="button" onclick={installUpdate}>
+      <Button class="about-update-button" size="sm" onclick={() => void installUpdate()}>
         <Download size={15} strokeWidth={2} />
         {t("about.installUpdate")}
-      </button>
+      </Button>
     {:else}
-      <button
+      <Button
         class="about-update-button"
-        type="button"
-        onclick={checkForUpdates}
+        size="sm"
+        onclick={() => void checkForUpdates()}
         disabled={updateState === "checking" || updateState === "downloading"}
       >
         {#if updateState === "current"}
@@ -119,7 +120,7 @@
           <RefreshCw size={15} strokeWidth={2} />
         {/if}
         {updateState === "checking" ? t("about.checkingUpdates") : t("about.checkUpdates")}
-      </button>
+      </Button>
     {/if}
   </div>
   <div class="about-frp">

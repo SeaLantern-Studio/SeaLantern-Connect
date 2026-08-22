@@ -598,9 +598,12 @@ pub(crate) async fn start_frp_tunnel(
         .map_err(|error| error.to_string())?;
     #[cfg(target_os = "windows")]
     if let Err(error) = state.process_job.assign(&process) {
-        let _ = process.kill();
-        let _ = process.wait();
-        return Err(format!("failed to supervise FRP process: {error}"));
+        // Some Windows FRP clients are already attached to a restricted job. Failing to
+        // attach our cleanup job must not turn a successfully spawned tunnel into an error.
+        log::warn!(
+            "failed to attach {} process to cleanup job: {error}; continuing without job supervision",
+            provider.display_name()
+        );
     }
     state
         .outputs

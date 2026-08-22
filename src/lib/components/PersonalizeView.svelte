@@ -64,9 +64,6 @@
           ]
         : [{ label: t("personalization.windowMaterials.solid"), value: "solid" }],
   );
-  const glassSelects = $derived(
-    ["vibrancy", "liquid_glass", "mica", "acrylic"].includes(value.windowMaterial),
-  );
   const colorOptions = $derived<Option[]>(
     getThemeOptions().map((option) => ({
       ...option,
@@ -265,7 +262,6 @@
     <div class="preference-row">
       <span>{t("personalization.windowMaterial")}</span><Select
         class="settings-select"
-        glass={glassSelects}
         value={value.windowMaterial}
         options={materialOptions}
         onValueChange={(next) =>
@@ -275,7 +271,6 @@
     <div class="preference-row">
       <span>{t("personalization.themeMode")}</span><Select
         class="settings-select"
-        glass={glassSelects}
         value={value.theme}
         options={themeOptions}
         onValueChange={(next, origin) => {
@@ -288,7 +283,6 @@
     <div class="preference-row">
       <span>{t("personalization.colorTheme")}</span><Select
         class="settings-select"
-        glass={glassSelects}
         value={value.colorTheme}
         options={colorOptions}
         onValueChange={(next) => onupdate({ colorTheme: next as ColorThemeId })}
@@ -297,7 +291,6 @@
     <div class="preference-row">
       <span>{t("personalization.fontFamily")}</span><Select
         class="settings-select font-family-select"
-        glass={glassSelects}
         value={value.fontFamily}
         options={fontOptions}
         searchable

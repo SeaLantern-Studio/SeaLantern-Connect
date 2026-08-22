@@ -45,6 +45,18 @@
     padding: 0 18px;
     border: 1px solid transparent;
     border-radius: 8px;
+    border-color: color-mix(in srgb, var(--border) 72%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--select-material-bg, var(--material-content-bg)) 50%,
+      transparent
+    );
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.18),
+      inset 0 -1px rgba(0, 0, 0, 0.08),
+      0 4px 14px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(20px) saturate(1.18);
+    -webkit-backdrop-filter: blur(20px) saturate(1.18);
     font-weight: 600;
     cursor: pointer;
     transform: translateY(0);
@@ -67,18 +79,22 @@
   }
   .ui-button-solid {
     color: #fff;
-    background: var(--primary-solid, var(--primary));
+    border-color: color-mix(in srgb, var(--primary) 58%, var(--border));
+    background: color-mix(in srgb, var(--primary-solid, var(--primary)) 78%, transparent);
   }
   .ui-button-solid:hover:not(:disabled) {
-    background: var(--primary-solid-hover, var(--primary-hover));
+    background: color-mix(
+      in srgb,
+      var(--primary-solid-hover, var(--primary-hover)) 88%,
+      transparent
+    );
   }
   .ui-button-outline {
     color: var(--primary);
-    background: transparent;
-    border-color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 72%, var(--border));
   }
   .ui-button-outline:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    background: color-mix(in srgb, var(--primary) 18%, transparent);
   }
   .ui-button-ghost {
     color: var(--muted);
@@ -90,7 +106,6 @@
   }
   .ui-button-danger {
     color: var(--danger);
-    background: transparent;
     border-color: color-mix(in srgb, var(--danger) 70%, transparent);
   }
   .ui-button-danger:hover:not(:disabled) {

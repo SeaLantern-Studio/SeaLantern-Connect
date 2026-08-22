@@ -136,24 +136,8 @@ h1 {
   font-size: 0.8571rem;
 }
 .about-update-button {
-  display: inline-flex;
   flex: none;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--sl-radius-md);
-  color: var(--text-primary);
-  background: var(--surface);
-  cursor: pointer;
-}
-.about-update-button:hover:not(:disabled) {
-  background: var(--surface-strong);
-}
-.about-update-button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+  min-width: 112px;
 }
 .about-frp h3 {
   font-size: 1rem;
