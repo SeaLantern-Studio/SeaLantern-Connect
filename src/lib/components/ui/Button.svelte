@@ -59,16 +59,18 @@
     -webkit-backdrop-filter: blur(20px) saturate(1.18);
     font-weight: 600;
     cursor: pointer;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
     transform-origin: center;
-    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, backdrop-filter;
     transition:
       transform 0.15s ease,
       background-color 0.15s ease,
       border-color 0.15s ease;
   }
   .ui-button:hover:not(:disabled) {
-    transform: translateY(-1px);
+    transform: translate3d(0, -1px, 0);
   }
   .ui-button:disabled {
     opacity: 0.45;

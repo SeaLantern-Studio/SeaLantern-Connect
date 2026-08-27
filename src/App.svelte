@@ -2,7 +2,7 @@
   import { onMount, tick } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { prefersReducedMotion, Tween } from "svelte/motion";
-  import { fade, fly } from "svelte/transition";
+  import { fade, type TransitionConfig } from "svelte/transition";
   import {
     Cloud,
     Copy,
@@ -113,6 +113,7 @@
   let indicatorFrame: number | null = null;
   let indicatorTimer: number | null = null;
   let frpStatusTimer: number | null = null;
+  let pageDirection = $state(1);
   let frpSessions = $state<Record<"openfrp" | "sakurafrp", FrpSessionStatus | null>>({
     openfrp: null,
     sakurafrp: null,
@@ -421,6 +422,29 @@
     return t(sections.find((item) => item.id === id)?.label ?? id);
   }
 
+  function navigateSection(section: SectionId): void {
+    const currentIndex = sections.findIndex((item) => item.id === $activeSection);
+    const nextIndex = sections.findIndex((item) => item.id === section);
+    pageDirection = nextIndex >= currentIndex ? 1 : -1;
+    navigate(section);
+  }
+
+  function pageSlide(
+    node: Element,
+    { entering, duration }: { entering: boolean; duration: number },
+  ): TransitionConfig {
+    const computedTransform = getComputedStyle(node).transform;
+    const baseTransform = computedTransform === "none" ? "" : computedTransform;
+    const distance = node.parentElement?.clientHeight ?? node.clientHeight;
+    const offset = pageDirection * distance * (entering ? 1 : -1);
+    return {
+      duration,
+      easing: cubicOut,
+      css: (_progress, remaining) =>
+        `transform: ${baseTransform} translate3d(0, ${remaining * offset}px, 0)`,
+    };
+  }
+
   function updateNavIndicator(): void {
     if (indicatorFrame != null) window.cancelAnimationFrame(indicatorFrame);
     indicatorFrame = window.requestAnimationFrame(() => {
@@ -535,7 +559,7 @@
               class="nav-item"
               type="button"
               title={sectionLabel(item.id)}
-              onclick={() => navigate(item.id)}
+              onclick={() => navigateSection(item.id)}
             >
               <Icon class="nav-icon" size={19} />
               <span class="nav-label">{sectionLabel(item.id)}</span>
@@ -560,7 +584,7 @@
               class="nav-item"
               type="button"
               title={sectionLabel(item.id)}
-              onclick={() => navigate(item.id)}
+              onclick={() => navigateSection(item.id)}
             >
               <Icon class="nav-icon" size={19} /><span class="nav-label"
                 >{sectionLabel(item.id)}</span
@@ -645,21 +669,21 @@
     </header>
 
     <main class="app-content">
-      <div
-        bind:this={pageScroller}
-        use:cancelPageMotionOnPointerDown
-        class="page-transition-frame"
-        onwheel={handlePageWheel}
-      >
+      <div class="page-transition-frame">
         {#key $activeSection}
           <div
+            bind:this={pageScroller}
+            use:cancelPageMotionOnPointerDown
             class="page-view"
-            in:fly={{
-              y: reducedMotion ? 0 : 8,
-              duration: reducedMotion ? 0 : 180,
-              delay: reducedMotion ? 0 : 100,
+            onwheel={handlePageWheel}
+            in:pageSlide={{
+              entering: true,
+              duration: reducedMotion ? 0 : 260,
             }}
-            out:fly={{ y: reducedMotion ? 0 : -4, duration: reducedMotion ? 0 : 100 }}
+            out:pageSlide={{
+              entering: false,
+              duration: reducedMotion ? 0 : 260,
+            }}
           >
             {#if $activeSection === "create"}<HostView
                 status={$session}
